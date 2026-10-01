@@ -1,17 +1,53 @@
 {
   "trainingsweek": [
-    { "day": "Montag", "training": [{ "type": "running", "title": "Dauerlauf 1" }] },
-    { "day": "Dienstag", "training": [{ "type": "biking", "title": "Longride" }] },
-    { "day": "Mittwoch", "training": [{ "type": "weightLifting", "title": "Plan A - Unterkörper (Hüfte & Runpf)" }] },
-    { "day": "Donnerstag", "training": [{ "type": "biking", "title": "Indoor Grundlage" }] },
-    { "day": "Freitag", "training": [{ "type": "weightLifting", "title": "Plan B - Oberkörper (Schulter)" }] },
-    { "day": "Samstag", "training": [{ "type": "swimming", "title": "Mischung" }] },
+    {
+      "day": "Montag",
+      "training": [
+        { "type": "running", "title": "Dauerlauf 1", "time": "06:45", "duration": 55, "intensity": "RPE 4", "description": "Locker im Grundlagenbereich, Puls unter 145. Letzte 5 Minuten auslaufen." }
+      ]
+    },
+    {
+      "day": "Dienstag",
+      "training": [
+        { "type": "biking", "title": "Longride", "time": "17:00", "duration": 180, "intensity": "RPE 5", "description": "GA1 durchgehend, alle 45 Minuten essen. Flache Runde." }
+      ]
+    },
+    {
+      "day": "Mittwoch",
+      "training": [
+        { "type": "weightLifting", "title": "Plan A - Unterkörper (Hüfte & Runpf)", "time": "18:30", "duration": 60, "intensity": "RPE 7", "description": "Kniebeuge 4 × 6, Hip Thrust 3 × 10, Ausfallschritte 3 × 12, Plank 3 × 60 s." }
+      ]
+    },
+    {
+      "day": "Donnerstag",
+      "training": [
+        { "type": "biking", "title": "Indoor Grundlage", "time": "18:00", "duration": 75, "intensity": "RPE 4", "description": "Rolle, gleichmäßig 65 % FTP, Trittfrequenz 90." }
+      ]
+    },
+    {
+      "day": "Freitag",
+      "training": [
+        { "type": "weightLifting", "title": "Plan B - Oberkörper (Schulter)", "time": "18:30", "duration": 55, "intensity": "RPE 7", "description": "Schulterdrücken 4 × 8, Klimmzüge 4 × max, Seitheben 3 × 15." }
+      ]
+    },
+    {
+      "day": "Samstag",
+      "training": [
+        { "type": "swimming", "title": "Mischung", "time": "09:00", "duration": 45, "intensity": "RPE 5", "description": "400 m ein, 6 × 100 m Zielzeit 1:38, 4 × 50 m Beine, 300 m locker aus." }
+      ]
+    },
     {
       "day": "Sonntag",
       "training": [
-        { "type": "weightLifting", "title": "Ganzkörper" },
-        { "type": "running", "title": "Recoveryrun" }
+        { "type": "weightLifting", "title": "Ganzkörper", "time": "10:00", "duration": 50, "intensity": "RPE 6", "description": "Zirkel, 3 Runden, 60 s Pause." },
+        { "type": "running", "title": "Recoveryrun", "time": "17:30", "duration": 30, "intensity": "RPE 2", "description": "Sehr locker, Gesprächstempo." }
       ]
     }
-  ]
+  ],
+  "recovery": {
+    "score": 78,
+    "sleepMinutes": 432,
+    "hrv": 62,
+    "restingHr": 48
+  }
 }

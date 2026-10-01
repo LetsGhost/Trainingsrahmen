@@ -35,15 +35,45 @@ Pi OS Lite 64-bit (kein Desktop)
 ## Server-Format
 
 ```json
-{ "trainingsweek": [ { "day": "Montag", "training": [ { "type": "running", "title": "Dauerlauf 1" } ] } ] }
+{
+  "trainingsweek": [
+    {
+      "day": "Montag",
+      "training": [
+        {
+          "type": "running",
+          "title": "Dauerlauf 1",
+          "time": "06:45",
+          "duration": 55,
+          "intensity": "RPE 4",
+          "description": "Locker im Grundlagenbereich."
+        }
+      ]
+    }
+  ],
+  "recovery": { "score": 78, "sleepMinutes": 432, "hrv": 62, "restingHr": 48 }
+}
 ```
 
+| Feld | Pflicht | Bedeutung |
+|---|---|---|
+| `day` | ja | Deutscher Wochentag, „Montag" bis „Sonntag" |
+| `type` | ja | `running`, `biking`, `swimming`, `weightLifting`; alles andere wird „Sonstiges" |
+| `title` | ja | Name der Einheit |
+| `time` | nein | Startzeit als `"HH:MM"` |
+| `duration` | nein | Dauer in Minuten (Zahl) |
+| `intensity` | nein | Freitext, z. B. `"RPE 5"`; nur in der Tagesansicht |
+| `description` | nein | Freitext; nur in der Tagesansicht |
+| `recovery.score` | nein | Erholung 0–100 |
+| `recovery.sleepMinutes` | nein | Schlaf in Minuten |
+| `recovery.hrv` | nein | HRV in ms |
+| `recovery.restingHr` | nein | Ruhepuls |
+
 - `display/js/adapter.js` ist die einzige Stelle, die dieses Format kennt.
-- Typen: `running`, `biking`, `swimming`, `weightLifting`; alles andere wird „Sonstiges".
+- Fehlt ein optionales Feld, lässt die Anzeige den Teil weg. Der heutige Serverstand (nur `type` und `title`) liegt als `fixtures/data.minimal.json` bei.
 - Ein Tag ohne Einheiten ist ein Ruhetag.
 - Das Format hat keine Daten: Die Woche gilt als wiederkehrende Vorlage, die Datumszahlen berechnet der Pi.
-- Es fehlen gegenüber dem Design: Uhrzeit und Dauer je Einheit, Wochensumme, Beschreibung, Erholungswerte.
-  Die Anzeige lässt diese Teile weg, bis der Server sie liefert (`time`, `duration`, `recovery` werden schon durchgereicht).
+- Die Wochensumme in der Kopfzeile ist die Summe aller `duration`.
 
 ## Mit 1 GB RAM auskommen
 

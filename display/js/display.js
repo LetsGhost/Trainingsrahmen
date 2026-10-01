@@ -58,7 +58,7 @@ function renderHead(d, dates) {
   return `
     <header class="head">
       <div class="head-left">
-        <div class="kicker">WOCHE ${isoWeek(d)} · ${range} · ${count} EINHEITEN</div>
+        <div class="kicker">WOCHE ${isoWeek(d)} · ${range} · ${count} EINHEITEN${state.plan?.total ? ` · ${esc(state.plan.total.toUpperCase())}` : ""}</div>
         <div class="clock-row">
           <div class="clock">${hhmm(d)}</div>
           <div class="date">
@@ -100,7 +100,7 @@ function renderWeek(d, dates) {
 
 function renderFoot() {
   const r = state.plan?.recovery;
-  const recovery = Array.isArray(r) && r.length
+  const recovery = r?.length
     ? `<div class="recovery">${r.map(x => `
         <div class="recovery-item">
           <div class="recovery-label">${esc(x.label)}</div>
