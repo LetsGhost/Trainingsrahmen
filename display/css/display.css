@@ -1,0 +1,144 @@
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+/* Auf dem Pi ist der Viewport genau 1024 × 600; am PC sitzt der Rahmen mittig. */
+body {
+  display: grid;
+  place-items: center;
+  background: #0d0d0d;
+  font-family: "Archivo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+
+.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.frame {
+  width: 1024px;
+  height: 600px;
+  background: var(--bg);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rule { height: 2px; background: var(--rule); }
+
+/* Kopfzeile */
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 26px 16px;
+}
+.head-left { display: flex; flex-direction: column; gap: 3px; }
+.kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.18em; color: var(--accent-ink); }
+.clock-row { display: flex; align-items: baseline; gap: 14px; }
+.clock { font-size: 76px; font-weight: 800; line-height: 0.88; letter-spacing: -0.045em; }
+.date { display: flex; flex-direction: column; gap: 1px; }
+.date-dow { font-size: 16px; font-weight: 800; letter-spacing: 0.08em; }
+.date-day { font-size: 14px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); }
+
+.weather { display: flex; align-items: center; gap: 18px; }
+.weather-text { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.weather-place { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--label); }
+.weather-line { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); }
+.weather-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 2px solid var(--rule);
+  padding-left: 18px;
+}
+.weather-now .icon { width: 36px; height: 36px; stroke-width: 1.7; color: var(--accent); }
+.weather-temp { font-size: 52px; font-weight: 800; line-height: 0.85; letter-spacing: -0.035em; }
+
+/* Wochenraster */
+.week { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); min-height: 0; }
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 12px;
+  border-right: 1px solid var(--rule-soft);
+  min-width: 0;
+}
+.day-head { display: flex; align-items: baseline; gap: 6px; }
+.day-dow { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; }
+.day-date { font-size: 13px; font-weight: 600; color: var(--muted); }
+.day-bar { height: 3px; width: 26px; background: var(--ink); }
+
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--card);
+  border-left: 3px solid var(--bar);
+  padding: 9px 9px 11px;
+  min-width: 0;
+}
+.session-top { display: flex; align-items: center; gap: 6px; color: var(--bar); }
+.session-top .icon { width: 17px; height: 17px; stroke-width: 1.9; }
+.session-sport { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: var(--muted); white-space: nowrap; }
+.session-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+.session-meta { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--sub); }
+
+.rest {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-left: 3px solid var(--rest-bar);
+  padding: 9px 9px 11px;
+  color: var(--muted);
+}
+.rest .icon { width: 17px; height: 17px; stroke-width: 1.9; }
+.rest-label { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+
+.day.today { background: var(--today-col); }
+.day.today .day-dow { color: var(--accent-ink); }
+.day.today .day-date { color: var(--today-date); }
+.day.today .day-bar { width: 100%; background: var(--accent-ink); }
+.day.today .session { background: var(--card-today); border-left-color: var(--accent); }
+.day.today .session-top { color: var(--accent); }
+
+/* Fußzeile */
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 26px;
+  min-height: 62px;
+}
+.recovery { display: flex; align-items: center; gap: 28px; }
+.recovery-item { display: flex; flex-direction: column; gap: 2px; }
+.recovery-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--muted); }
+.recovery-value { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+.sync {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.sync .icon { width: 16px; height: 16px; stroke-width: 2; }

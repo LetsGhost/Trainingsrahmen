@@ -1,0 +1,9 @@
+{
+  "name": "trainingsrahmen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kiosk-Anzeige für einen Raspberry Pi 3B+ mit 7-Zoll-Display (1024 × 600)",
+  "scripts": {
+    "dev": "node daemon/server.js"
+  }
+}

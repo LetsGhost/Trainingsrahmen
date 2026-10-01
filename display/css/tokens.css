@@ -1,0 +1,45 @@
+/* Design-Tokens aus Trainingsrahmen.dc.html (Layouts 2A dunkel / 2B hell). */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("../assets/fonts/Archivo-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: block;
+}
+
+:root,
+:root[data-theme="dark"] {
+  --bg: #1a1918;
+  --ink: #f3f2f2;
+  --accent: #ff563c;
+  --accent-ink: #ff563c;
+  --rule: rgba(243, 242, 242, 0.32);
+  --rule-soft: rgba(243, 242, 242, 0.16);
+  --muted: #bab6b6;
+  --sub: #d7d3d3;
+  --label: #bab6b6;
+  --today-col: #232120;
+  --today-date: #ff9783;
+  --card: #232120;
+  --card-today: #2b2827;
+  --bar: #7d7979;
+  --rest-bar: #7d7979;
+}
+
+:root[data-theme="light"] {
+  --bg: #f3f2f2;
+  --ink: #201e1d;
+  --accent: #ec3013;
+  --accent-ink: #ae1800;
+  --rule: #201e1d;
+  --rule-soft: #d7d3d3;
+  --muted: #605d5d;
+  --sub: #444141;
+  --label: #444141;
+  --today-col: #ffe0d9;
+  --today-date: #ae1800;
+  --card: #eae9e9;
+  --card-today: #f8f4f4;
+  --bar: #605d5d;
+  --rest-bar: #bab6b6;
+}

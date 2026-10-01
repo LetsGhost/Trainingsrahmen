@@ -1,0 +1,11 @@
+{
+  "place": "Berlin",
+  "label": "Regen",
+  "icon": "cloud-rain",
+  "temp": 19,
+  "feels": 17,
+  "wind": 14,
+  "precip": 4,
+  "low": 12,
+  "sunset": "19:48"
+}

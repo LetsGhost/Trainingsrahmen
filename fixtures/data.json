@@ -1,0 +1,17 @@
+{
+  "trainingsweek": [
+    { "day": "Montag", "training": [{ "type": "running", "title": "Dauerlauf 1" }] },
+    { "day": "Dienstag", "training": [{ "type": "biking", "title": "Longride" }] },
+    { "day": "Mittwoch", "training": [{ "type": "weightLifting", "title": "Plan A - Unterkörper (Hüfte & Runpf)" }] },
+    { "day": "Donnerstag", "training": [{ "type": "biking", "title": "Indoor Grundlage" }] },
+    { "day": "Freitag", "training": [{ "type": "weightLifting", "title": "Plan B - Oberkörper (Schulter)" }] },
+    { "day": "Samstag", "training": [{ "type": "swimming", "title": "Mischung" }] },
+    {
+      "day": "Sonntag",
+      "training": [
+        { "type": "weightLifting", "title": "Ganzkörper" },
+        { "type": "running", "title": "Recoveryrun" }
+      ]
+    }
+  ]
+}
