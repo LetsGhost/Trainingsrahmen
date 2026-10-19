@@ -1,5 +1,5 @@
 // Dev-Leiste: zeigt den Zustand des Daemons live an und schickt Aktionen an /api/debug.
-const SETUP_STATES = ["SETUP_HOTSPOT", "SETUP_ACCOUNT", "READY", "OFFLINE"];
+const SETUP_STATES = ["SETUP_HOTSPOT", "SETUP_ACCOUNT", "SETUP_ADMIN", "READY", "OFFLINE"];
 const REST_STATES = ["AKTIV", "SLIDESHOW", "AUS"];
 
 const $ = sel => document.querySelector(sel);
@@ -41,6 +41,7 @@ function renderStatus({ frame: f, sync, dev }) {
     ["Einrichtung", f.setup ?? "–"],
     ["Ruhe", f.rest],
     ["Verbinde", f.connecting ? "ja" : "nein"],
+    ["Admin-Code", f.adminCode ?? "–"],
     ["Hotspot", sys.hotspot ? `${sys.hotspot.ssid} / ${sys.hotspot.password}` : "aus"],
     ["WLAN", sys.wifi ?? "–"],
     ["Backlight", sys.backlight ? "an" : "aus"],

@@ -48,6 +48,11 @@ module.exports = function createMockAdapter({ sim, port }) {
       return `http://${lanAddress()}:${port}/setup`;
     },
 
+    // Adresse des Admin-Bereichs im Heimnetz.
+    adminUrl() {
+      return `http://${lanAddress()}:${port}/admin`;
+    },
+
     async connectWifi({ ssid }) {
       await delay(800);
       if (sim.wrongPassword) throw new FrameError("WIFI_AUTH", "WLAN-Passwort falsch");
@@ -72,7 +77,7 @@ module.exports = function createMockAdapter({ sim, port }) {
     },
 
     status() {
-      return { adapter: "mock", ...hw };
+      return { adapter: "mock", ...hw, ip: hw.wifi ? lanAddress() : null, signal: hw.wifi ? -52 : null };
     }
   };
 };

@@ -10,6 +10,9 @@ const { createSync } = require("./sync");
 const { createSystemAdapter } = require("./system");
 const { createFrame, validate, SETUP } = require("./state");
 const qr = require("./qr");
+const { FrameError } = require("./errors");
+const { createSlides } = require("./slides");
+const { createAdmin } = require("./admin");
 
 const PORT = process.env.PORT || 8080;
 const DEV = process.env.FRAME_ENV === "dev";
@@ -17,6 +20,7 @@ const ROOT = path.join(__dirname, "..");
 const DISPLAY_DIR = path.join(ROOT, "display");
 const DEBUG_DIR = path.join(ROOT, "debug");
 const PORTAL_DIR = path.join(ROOT, "portal");
+const ADMIN_DIR = path.join(ROOT, "admin");
 const FIXTURE_DIR = path.join(ROOT, "fixtures");
 
 const MIME = {
@@ -25,12 +29,15 @@ const MIME = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
-  ".woff2": "font/woff2"
+  ".woff2": "font/woff2",
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp"
 };
 
 // Fehlerschalter und Entwicklungs-Einstellungen; nur mit FRAME_ENV=dev änderbar.
 // liveServer / liveWeather: echte Abrufe statt Fixtures.
-const sim = { wrongPassword: false, noInternet: false, keyRejected: false, images: false, liveServer: false, liveWeather: false };
+const sim = { wrongPassword: false, noInternet: false, keyRejected: false, liveServer: false, liveWeather: false };
 const dev = { theme: null, clockOffsetMs: 0, plan: "data.json" };
 const DEADLINE_PRESETS = {
   normal: { slideshowAfterMin: configStore.DEFAULTS.slideshowAfterMin, offAfterMin: configStore.DEFAULTS.offAfterMin },
@@ -40,13 +47,13 @@ const DEADLINE_PRESETS = {
 const config = configStore.load();
 const system = createSystemAdapter({ dev: DEV, sim, port: PORT });
 const backend = createBackend({ dev: DEV, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan) });
+const slides = createSlides(configStore.DATA_DIR);
 const frame = createFrame({
   system,
   backend,
   config,
   saveConfig: configStore.save,
-  // Bis Phase 7 Bilder hochladen kann, simuliert die Dev-Leiste vorhandene Bilder.
-  hasImages: () => sim.images
+  hasImages: () => slides.count() > 0
 });
 
 const sync = createSync({
@@ -54,32 +61,43 @@ const sync = createSync({
   weather: createWeather({ dev: DEV, sim, fixture: path.join(FIXTURE_DIR, "weather.json") }),
   config,
   dataDir: configStore.DATA_DIR,
-  isOnline: () => frame.snapshot().setup === SETUP.READY
+  // Auch während des Admin-Schritts, damit der Plan danach sofort da ist.
+  isOnline: () => [SETUP.READY, SETUP.ADMIN].includes(frame.snapshot().setup)
 });
 
 // Sobald der Rahmen online geht (nach Start, Einrichtung oder Ausfall), sofort abgleichen.
 let lastSetup = null;
+const ONLINE = [SETUP.READY, SETUP.ADMIN];
 frame.on("change", f => {
-  if (f.setup === SETUP.READY && lastSetup !== SETUP.READY) sync.syncAll();
+  if (ONLINE.includes(f.setup) && !ONLINE.includes(lastSetup)) sync.syncAll();
   lastSetup = f.setup;
 });
 
 // --- SSE ---
 
-const clients = new Set();
+// Anfragen vom Pi selbst (Display im Kiosk-Browser). Nur sie sehen den Einmal-Code für das Admin-Passwort.
+const LOCAL = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+const isLocal = req => LOCAL.has(req.socket.remoteAddress);
 
-const message = () => JSON.stringify({ frame: frame.snapshot(), sync: sync.status(), dev: DEV ? { ...dev, sim } : null });
+// res → lokal ja/nein
+const clients = new Map();
+
+function message(local) {
+  const f = frame.snapshot();
+  if (!local) f.adminCode = null;
+  return JSON.stringify({ frame: f, sync: sync.status(), dev: DEV ? { ...dev, sim } : null });
+}
 
 function broadcast() {
-  const data = `data: ${message()}\n\n`;
-  for (const res of clients) res.write(data);
+  const data = { true: `data: ${message(true)}\n\n`, false: `data: ${message(false)}\n\n` };
+  for (const [res, local] of clients) res.write(data[local]);
 }
 
 frame.on("change", broadcast);
 sync.on("change", broadcast);
 
 // Kommentarzeile hält die Verbindung offen, falls ein Proxy sie sonst schließt.
-setInterval(() => { for (const res of clients) res.write(": ping\n\n"); }, 25000);
+setInterval(() => { for (const res of clients.keys()) res.write(": ping\n\n"); }, 25000);
 
 function openEvents(req, res) {
   res.writeHead(200, {
@@ -87,8 +105,8 @@ function openEvents(req, res) {
     "Cache-Control": "no-store",
     Connection: "keep-alive"
   });
-  res.write(`retry: 2000\ndata: ${message()}\n\n`);
-  clients.add(res);
+  res.write(`retry: 2000\ndata: ${message(isLocal(req))}\n\n`);
+  clients.set(res, isLocal(req));
   req.on("close", () => clients.delete(res));
 }
 
@@ -132,6 +150,34 @@ function readJson(req) {
     req.on("error", reject);
   });
 }
+
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    // Zu große Uploads werden zu Ende gelesen und verworfen, damit der Browser die Fehlermeldung noch bekommt.
+    req.on("data", chunk => {
+      size += chunk.length;
+      if (size <= limit) chunks.push(chunk);
+    });
+    req.on("end", () => {
+      if (size > limit) reject(new FrameError("TOO_LARGE", "Datei ist zu groß"));
+      else resolve(Buffer.concat(chunks));
+    });
+    req.on("error", reject);
+  });
+}
+
+const admin = createAdmin({
+  config,
+  saveConfig: configStore.save,
+  frame,
+  sync,
+  slides,
+  backend,
+  dataDir: configStore.DATA_DIR,
+  http: { sendJson, sendStatic, readJson, readBody, ADMIN_DIR }
+});
 
 const listFixtures = () => fs.readdirSync(FIXTURE_DIR).filter(f => /^data.*\.json$/.test(f)).sort();
 
@@ -251,6 +297,13 @@ function routeSetup(req, res, pathname) {
     sendSvg(res, qr.toSvg(system.portalUrl()));
     return true;
   }
+  // Admin-QR mit Einmal-Code: nur für das Display auf dem Pi.
+  if (pathname === "/api/setup/qr/admin.svg") {
+    const code = frame.adminCode();
+    if (code && isLocal(req)) sendSvg(res, qr.toSvg(`${system.adminUrl()}?code=${code}`));
+    else sendJson(res, 404, { error: "Kein Admin-Code aktiv" });
+    return true;
+  }
   return false;
 }
 
@@ -260,6 +313,14 @@ http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
 
   if (routeSetup(req, res, pathname)) return;
+  if (admin.route(req, res, pathname)) return;
+  // Slideshow-Bilder: für das Display und angemeldete Admins.
+  if (pathname === "/api/slides" || pathname.startsWith("/api/slides/")) {
+    if (!isLocal(req) && !admin.isAuthed(req)) return sendJson(res, 401, { error: "Nicht angemeldet" });
+    if (pathname === "/api/slides") return sendJson(res, 200, slides.list());
+    const file = slides.file(pathname.slice("/api/slides/".length));
+    return file ? sendFile(res, file) : sendJson(res, 404, { error: "Nicht gefunden" });
+  }
   if (pathname === "/events") return openEvents(req, res);
   if (pathname === "/health") return sendJson(res, 200, { ok: true });
   if (pathname === "/api/activity" && req.method === "POST") {

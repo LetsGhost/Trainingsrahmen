@@ -2,7 +2,7 @@
 // Der QR-Code enthält alles Nötige (WLAN-Passwort bzw. Portal-Adresse), damit auf dem Screen nur eine Zeile steht.
 import { esc, icon } from "./util.js";
 
-const STEPS = ["Hotspot", "Account", "Fertig"];
+const STEPS = ["Hotspot", "WLAN", "Admin"];
 
 function renderSteps(current) {
   return `
@@ -44,10 +44,20 @@ export function renderSetup(f, done) {
   if (f.error && !f.hotspot) {
     return renderScreen({ step: 1, title: "Das hat nicht geklappt.", value: f.error.message, note: "Das WLAN des Rahmens ist gleich wieder da." });
   }
+  if (f.setup === "SETUP_ADMIN") {
+    const url = f.adminUrl?.replace(/^https?:\/\//, "");
+    return renderScreen({
+      step: 2,
+      title: "Öffne den Admin-Bereich und lege ein Passwort fest",
+      value: url,
+      note: f.adminCode ? `Ohne QR-Code: Adresse öffnen und Code ${f.adminCode} eingeben.` : null,
+      side: f.adminCode ? qrImage(`/api/setup/qr/admin.svg?c=${f.adminCode}`) : ""
+    });
+  }
   if (f.setup === "SETUP_ACCOUNT") {
     return renderScreen({
       step: 1,
-      // ⁠ verhindert den Umbruch am Bindestrich („API-“ / „Key“).
+      // Hinter „API-“ steht ein Wortverbinder (U+2060); er verhindert den Umbruch am Bindestrich („API-“ / „Key“).
       title: "Trage im Portal dein WLAN und den API-⁠Key ein",
       value: f.portalUrl ? f.portalUrl.replace(/^https?:\/\//, "") : null,
       note: "Hat sich das Portal nicht geöffnet? QR-Code scannen.",

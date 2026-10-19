@@ -11,15 +11,20 @@ const DEFAULTS = {
   server: null,           // { url, apiKey }
   slideshowAfterMin: 5,
   offAfterMin: 30,
-  // Wetter-Ort; ab Phase 7 im Admin-Bereich einstellbar.
-  location: { name: "Berlin", lat: 52.52, lon: 13.405 }
+  // Wetter-Ort, im Admin-Bereich einstellbar.
+  location: { name: "Berlin", lat: 52.52, lon: 13.405 },
+  // Admin-Passwort als scrypt-Hash: { salt, hash } oder null, solange es nicht gesetzt ist.
+  admin: null,
+  // theme: "auto" (Nachtfenster 22–06) | "light" | "dark"
+  display: { theme: "auto", showWeather: true, showRecovery: true }
 };
 
 function load() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(FILE, "utf8")) };
+    const saved = JSON.parse(fs.readFileSync(FILE, "utf8"));
+    return { ...DEFAULTS, ...saved, display: { ...DEFAULTS.display, ...saved.display } };
   } catch {
-    return { ...DEFAULTS };
+    return { ...DEFAULTS, display: { ...DEFAULTS.display } };
   }
 }
 

@@ -1,6 +1,7 @@
 import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
 import { renderSetup } from "./setup.js";
+import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
 const NIGHT_START = 22, NIGHT_END = 6;
@@ -39,11 +40,17 @@ function isoWeek(d) {
   return 1 + Math.round((t - jan4) / 604800000 - 0.01);
 }
 
-// Die Einrichtung ist laut Vorlage immer dunkel.
+// Einstellungen aus dem Admin-Bereich (über /events); fehlen sie, gilt alles als an.
+const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true };
+const shownWeather = () => (settings().showWeather ? state.weather : null);
+const shownRecovery = () => (settings().showRecovery ? state.plan?.recovery ?? [] : []);
+
+// Die Einrichtung ist laut Vorlage immer dunkel. Vorrang: URL, Dev-Leiste, Admin-Einstellung, Nachtfenster.
 function applyTheme(d, screen) {
   const h = d.getHours();
   const auto = screen === "setup" || h >= NIGHT_START || h < NIGHT_END ? "dark" : "light";
-  const override = urlTheme ?? state.dev?.theme;
+  const admin = settings().theme === "auto" ? null : settings().theme;
+  const override = urlTheme ?? state.dev?.theme ?? admin;
   document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
 }
 
@@ -51,7 +58,7 @@ function renderHead(d, dates) {
   const count = state.plan ? state.plan.days.reduce((n, day) => n + day.sessions.length, 0) : 0;
   const first = dates[0], last = dates[6];
   const range = `${pad(first.getDate())}.–${pad(last.getDate())}.${pad(last.getMonth() + 1)}.`;
-  const w = state.weather;
+  const w = shownWeather();
   const weather = w ? `
     <div class="weather">
       <div class="weather-text">
@@ -106,8 +113,8 @@ function renderWeek(d, dates) {
 }
 
 function renderFoot() {
-  const r = state.plan?.recovery;
-  const recovery = r?.length
+  const r = shownRecovery();
+  const recovery = r.length
     ? `<div class="recovery">${r.map(x => `
         <div class="recovery-item">
           <div class="recovery-label">${esc(x.label)}</div>
@@ -124,16 +131,7 @@ function renderFoot() {
   return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
 }
 
-// Platzhalter, bis Phase 7 Bilder hochladen kann.
-function renderSlideshow(d) {
-  return `
-    <section class="notice">
-      <div class="kicker">SLIDESHOW</div>
-      <div class="clock">${hhmm(d)}</div>
-    </section>`;
-}
-
-const isSetup = f => f?.setup === "SETUP_HOTSPOT" || f?.setup === "SETUP_ACCOUNT";
+const isSetup = f => ["SETUP_HOTSPOT", "SETUP_ACCOUNT", "SETUP_ADMIN"].includes(f?.setup);
 const setupDone = () => Date.now() < state.setupDoneUntil;
 
 function screenFor(f) {
@@ -148,13 +146,14 @@ function render() {
   const screen = screenFor(state.daemon);
   applyTheme(d, screen);
   frame.dataset.screen = screen;
+  if (screen !== "slideshow") stopSlideshow();
   if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
-  else if (screen === "slideshow") frame.innerHTML = renderSlideshow(d);
+  else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
   else if (screen === "day") {
     const index = state.openDay;
     frame.innerHTML = renderDay({
-      d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: state.weather
+      d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: shownWeather(), recovery: shownRecovery()
     });
   } else {
     const dates = weekDates(d);

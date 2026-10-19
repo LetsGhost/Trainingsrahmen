@@ -1,20 +1,28 @@
 // Zwei Zustandsautomaten:
-//   Einrichtung: SETUP_HOTSPOT → SETUP_ACCOUNT → READY ⇄ OFFLINE
+//   Einrichtung: SETUP_HOTSPOT → SETUP_ACCOUNT → SETUP_ADMIN → READY ⇄ OFFLINE
 //   Ruhe:        AKTIV → SLIDESHOW → AUS; Bewegung oder Touch führt zurück zu AKTIV
+// SETUP_ADMIN: Der Rahmen ist im Heimnetz, aber noch ohne Admin-Passwort. Das Display zeigt einen QR-Code
+// mit Einmal-Code zum Admin-Bereich; erst wenn dort das Passwort gesetzt ist, geht es nach READY.
 // Die Ruhe-Fristen laufen nur in READY und OFFLINE; während der Einrichtung bleibt das Display an.
 // Jede Änderung meldet "change" mit der vollständigen Momentaufnahme, der Server reicht sie per SSE weiter.
 const { EventEmitter } = require("events");
+const crypto = require("crypto");
 const { FrameError } = require("./errors");
 
-const SETUP = { HOTSPOT: "SETUP_HOTSPOT", ACCOUNT: "SETUP_ACCOUNT", READY: "READY", OFFLINE: "OFFLINE" };
+const SETUP = {
+  HOTSPOT: "SETUP_HOTSPOT", ACCOUNT: "SETUP_ACCOUNT", ADMIN: "SETUP_ADMIN", READY: "READY", OFFLINE: "OFFLINE"
+};
 const REST = { ACTIVE: "AKTIV", SLIDESHOW: "SLIDESHOW", OFF: "AUS" };
 
 const MIN = 60 * 1000;
 const HOTSPOT_RETRY_MS = 30 * 1000;
 const CHECK_INTERVAL_MS = 30 * 1000;
 const NO_INTERNET = { code: "NO_INTERNET", message: "Kein Internet" };
+// Ohne leicht verwechselbare Zeichen (0/O, 1/I/L), falls jemand den Code abtippt.
+const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 const toError = err => ({ code: err.code ?? "UNKNOWN", message: err.message });
+const newAdminCode = () => Array.from(crypto.randomBytes(6), b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 
 // Eingaben aus dem Portal prüfen und säubern.
 function validate({ wifi, server } = {}) {
@@ -30,19 +38,29 @@ function validate({ wifi, server } = {}) {
 function createFrame({ system, backend, config, saveConfig, hasImages }) {
   const emitter = new EventEmitter();
   // connectingTo: WLAN-Name, solange nach dem Absenden verbunden wird.
-  const s = { setup: null, rest: REST.ACTIVE, connecting: false, connectingTo: null, error: null, hotspot: null, cpuTemp: null };
+  // adminCode: Einmal-Code für das erste Admin-Passwort; der Server gibt ihn nur an das Display (localhost) weiter.
+  const s = {
+    setup: null, rest: REST.ACTIVE, connecting: false, connectingTo: null, error: null, hotspot: null, cpuTemp: null,
+    adminCode: null
+  };
   let restTimers = [];
   let retryTimer = null;
   let checkTimer = null;
   let checking = false;
 
+  // operating: Ruhe-Fristen laufen. connected: WLAN ist eingerichtet, die Verbindung wird überwacht.
   const operating = () => s.setup === SETUP.READY || s.setup === SETUP.OFFLINE;
+  const connected = () => operating() || s.setup === SETUP.ADMIN;
+  // Wohin es geht, sobald Internet da ist.
+  const onlineState = () => (config.admin ? SETUP.READY : SETUP.ADMIN);
 
   function snapshot() {
     return {
       ...s,
-      portalUrl: operating() ? null : system.portalUrl(),
+      portalUrl: connected() ? null : system.portalUrl(),
+      adminUrl: s.setup === SETUP.ADMIN ? system.adminUrl() : null,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin },
+      display: config.display,
       system: system.status()
     };
   }
@@ -90,18 +108,21 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   // --- Einrichtung ---
 
   function setSetup(next, extra = {}) {
-    const was = operating();
+    const wasOperating = operating(), wasConnected = connected();
     Object.assign(s, extra, { setup: next });
-    const is = operating();
-    if (is && !was) {
-      scheduleRest();
-      checkTimer = setInterval(check, CHECK_INTERVAL_MS);
-    }
-    if (!is && was) {
+    if (next === SETUP.ADMIN && !s.adminCode) s.adminCode = newAdminCode();
+    if (next === SETUP.READY || !connected()) s.adminCode = null;
+
+    if (operating() && !wasOperating) scheduleRest();
+    if (!operating() && wasOperating) {
       clearRestTimers();
       setRest(REST.ACTIVE);
-      clearInterval(checkTimer);
     }
+    if (connected() && !wasConnected) {
+      checkTimer = setInterval(check, CHECK_INTERVAL_MS);
+      setTimeout(check, 1000);
+    }
+    if (!connected() && wasConnected) clearInterval(checkTimer);
     changed();
   }
 
@@ -117,14 +138,14 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     setSetup(SETUP.HOTSPOT, { hotspot, error, connecting: false });
   }
 
-  // Das Handy hat das Portal geöffnet (ab Phase 5 meldet das der Captive-Portal-Handler).
+  // Das Handy hat das Portal geöffnet (meldet der Captive-Portal-Handler).
   function portalOpened() {
     if (s.setup === SETUP.HOTSPOT) setSetup(SETUP.ACCOUNT, { error: null });
   }
 
   // Eingaben aus dem Portal. Scheitert etwas, kommt der Hotspot nach 30 s mit der Fehlermeldung zurück.
   async function submit(input) {
-    if (s.connecting || operating()) throw new FrameError("NOT_IN_SETUP", "Keine Einrichtung aktiv");
+    if (s.connecting || connected()) throw new FrameError("NOT_IN_SETUP", "Keine Einrichtung aktiv");
     const { wifi, server } = validate(input);
     clearTimeout(retryTimer);
     Object.assign(s, { connecting: true, connectingTo: wifi.ssid, error: null });
@@ -135,7 +156,7 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
       await connect(wifi, server);
       Object.assign(config, { wifi, server });
       saveConfig(config);
-      setSetup(SETUP.READY, { connecting: false, connectingTo: null });
+      setSetup(onlineState(), { connecting: false, connectingTo: null });
     } catch (err) {
       Object.assign(s, { connecting: false, connectingTo: null, error: toError(err) });
       changed();
@@ -143,9 +164,14 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     }
   }
 
-  // READY ⇄ OFFLINE. Ohne Internet wird das gespeicherte WLAN neu verbunden.
+  // Das Admin-Passwort ist gesetzt: Einrichtung abgeschlossen.
+  function adminCompleted() {
+    if (s.setup === SETUP.ADMIN) setSetup(SETUP.READY, { error: null });
+  }
+
+  // Online ⇄ OFFLINE. Ohne Internet wird das gespeicherte WLAN neu verbunden.
   async function check() {
-    if (checking || !operating()) return;
+    if (checking || !connected()) return;
     checking = true;
     try {
       s.cpuTemp = await system.readCpuTemp();
@@ -156,9 +182,9 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
           online = await system.checkInternet();
         } catch {}
       }
-      const next = online ? SETUP.READY : SETUP.OFFLINE;
-      if (!operating()) return;
-      if (next !== s.setup) setSetup(next, { error: online ? null : NO_INTERNET });
+      if (!connected()) return;
+      if (!online && s.setup !== SETUP.OFFLINE) setSetup(SETUP.OFFLINE, { error: NO_INTERNET });
+      else if (online && s.setup === SETUP.OFFLINE) setSetup(onlineState(), { error: null });
       else changed();
     } finally {
       checking = false;
@@ -171,17 +197,25 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     changed();
     try {
       await connect(config.wifi, config.server);
-      setSetup(SETUP.READY, { connecting: false, error: null });
+      setSetup(onlineState(), { connecting: false, error: null });
     } catch (err) {
       setSetup(SETUP.OFFLINE, { connecting: false, error: toError(err) });
     }
   }
 
-  // Zurück auf Werkseinstellung: WLAN und Server vergessen, Hotspot auf.
-  async function reset() {
+  // Zurück in die Einrichtung: WLAN und Server vergessen, Hotspot auf.
+  // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleibt das Passwort erhalten; Werkseinstellung löscht es.
+  async function reset({ keepAdmin = false } = {}) {
     Object.assign(config, { wifi: null, server: null });
+    if (!keepAdmin) config.admin = null;
     saveConfig(config);
     await openHotspot();
+  }
+
+  function setDeadlines({ slideshowAfterMin, offAfterMin }) {
+    Object.assign(config, { slideshowAfterMin, offAfterMin });
+    scheduleRest();
+    changed();
   }
 
   // --- Nur für die Dev-Leiste ---
@@ -195,16 +229,11 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     }
   }
 
-  function setDeadlines({ slideshowAfterMin, offAfterMin }) {
-    Object.assign(config, { slideshowAfterMin, offAfterMin });
-    scheduleRest();
-    changed();
-  }
-
   system.events.on("motion", activity);
 
   return {
-    boot, snapshot, activity, portalOpened, submit, reset, check, force, setDeadlines, changed,
+    boot, snapshot, activity, portalOpened, submit, adminCompleted, reset, check, force, setDeadlines, changed,
+    adminCode: () => s.adminCode,
     on: emitter.on.bind(emitter)
   };
 }

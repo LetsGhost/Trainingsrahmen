@@ -25,6 +25,9 @@
   --bar: #7d7979;
   --rest-bar: #7d7979;
   --qr-bg: #ffffff;
+  --slide-bg: #000000;
+  --slide-ink: #ffffff;
+  --slide-shadow: rgba(0, 0, 0, 0.6);
 }
 
 :root[data-theme="light"] {
@@ -44,4 +47,7 @@
   --bar: #605d5d;
   --rest-bar: #bab6b6;
   --qr-bg: #ffffff;
+  --slide-bg: #000000;
+  --slide-ink: #ffffff;
+  --slide-shadow: rgba(0, 0, 0, 0.6);
 }

@@ -26,7 +26,8 @@ Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`
 |---|---|
 | `display/js/display.js` | Zustand, Wochenraster, Slideshow-Platzhalter, Touch, SSE, Laden vom Daemon |
 | `display/js/day.js` | Tagesansicht (Layout 1B) |
-| `display/js/setup.js` | Einrichtungs-Screens 3A–3C |
+| `display/js/setup.js` | Einrichtungs-Screens 3A–3C und Admin-Schritt |
+| `display/js/slideshow.js` | Slideshow mit zwei `<img>` und Überblendung |
 | `display/js/adapter.js` | Server-Format → internes Modell |
 | `display/js/util.js` | Formatierung, Icons, Silbentrennung |
 
@@ -40,7 +41,7 @@ Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zähl
 |---|---|
 | Zustand | Beide Automaten, Fehler, Mock-Hardware (Hotspot, WLAN, Backlight, CPU) live |
 | Einrichtung | Werkseinstellung, „Handy öffnet Portal“, Portal absenden, Zustand erzwingen |
-| Ruhe | Bewegung (PIR), Zustand erzwingen, Fristen normal oder kurz (10 s / 30 s), Bilder vorhanden |
+| Ruhe | Bewegung (PIR), Zustand erzwingen, Fristen normal oder kurz (10 s / 30 s) |
 | Fehler simulieren | Falsches WLAN-Passwort, kein Internet, Server lehnt Key ab |
 | Anzeige | Theme, Testplan aus `fixtures/`, Uhr verstellen |
 
@@ -48,7 +49,7 @@ Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zähl
 
 | Automat | Ablauf |
 |---|---|
-| Einrichtung | `SETUP_HOTSPOT` → `SETUP_ACCOUNT` (Handy im Portal) → `READY` ⇄ `OFFLINE`. Scheitert das Absenden, kommt der Hotspot nach 30 s mit Fehler zurück. |
+| Einrichtung | `SETUP_HOTSPOT` → `SETUP_ACCOUNT` (Handy im Portal) → `SETUP_ADMIN` (nur ohne Admin-Passwort) → `READY` ⇄ `OFFLINE`. Scheitert das Absenden, kommt der Hotspot nach 30 s mit Fehler zurück. |
 | Ruhe | `AKTIV` → `SLIDESHOW` → `AUS`, ohne Bilder direkt `AKTIV` → `AUS`. Touch oder Bewegung führt zurück; der erste Tipp außerhalb von `AKTIV` weckt nur. Läuft nur in `READY` und `OFFLINE`. |
 
 Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` (SSE). Display, Portal und Dev-Leiste rendern daraus neu. Die Slideshow zeigt bis Phase 7 nur einen Platzhalter.
@@ -63,11 +64,22 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 - In der Entwicklung kommen Plan und Wetter aus `fixtures/`. In der Dev-Leiste unter „Sync“ schalten „Echter Server“ (URL und Key aus der Einrichtung) und „Echtes Wetter“ auf echte Abrufe um.
 - Die Antwort des Servers muss gültiges JSON mit einem Array `trainingsweek` sein, sonst gilt der Abruf als fehlgeschlagen und der alte Stand bleibt.
 
+## Admin
+
+`/admin` zeigt je nach Zustand „Passwort festlegen“ (nur in `SETUP_ADMIN`, mit Einmal-Code), „Anmelden“ oder das Panel.
+
+- Passwort als scrypt-Hash in `config.json`; nach 5 Fehlversuchen 30 s Sperre.
+- Sitzung per Cookie (`HttpOnly`, `SameSite=Strict`, 12 h, nur im Speicher: Neustart meldet ab). Schreibende Anfragen verlangen JSON.
+- Panel: Server und API-Key (wird vor dem Speichern geprüft), Wetter-Ort (Suche über Open-Meteo), Erscheinungsbild, Module Wetter und Erholung, Ruhe-Fristen, Status, „Jetzt neu laden“, „WLAN ändern“, Passwort ändern.
+- Slideshow: Bilder werden im Browser auf 1024 × 600 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
+- `/api/slides` liefert die Bilder an das Display (localhost) und an angemeldete Admins.
+
 ## Einrichtung testen
 
 1. Dev-Leiste → „Werkseinstellung“: Das Display zeigt 3A mit WLAN-QR.
 2. `http://localhost:8080/setup` öffnen (am besten in den DevTools in Handygröße). Das zählt als „Handy öffnet Portal“, das Display springt auf 3B.
 3. WLAN wählen, Server-URL und API-Key eintragen, „Verbinden“. Fehler vorher in der Dev-Leiste einschalten, um 30 s Wartezeit und Rückkehr zu 3A zu sehen.
+4. Das Display zeigt den Admin-Schritt. Die Dev-Leiste zeigt den Einmal-Code; `http://localhost:8080/admin?code=…` öffnen und ein Passwort festlegen.
 
 Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Ist das Handy im selben WLAN, öffnet es das Portal direkt. Unter Windows muss die Firewall Node für private Netze zulassen.
 
@@ -87,6 +99,7 @@ Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Is
 | `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch leer) |
 | `debug/` | Dev-Leiste, nur mit `FRAME_ENV=dev` erreichbar |
 | `portal/` | Einrichtungsportal fürs Handy unter `/setup` |
+| `admin/` | Admin-Bereich unter `/admin` (Login, Panel, Slideshow) |
 | `fixtures/` | Testdaten statt echter Abrufe |
 | `data/` | Laufzeitdaten wie `config.json`, nicht im Git |
 
@@ -127,7 +140,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Gegen den Mock erledigt, Pi offen: Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
 | 6 Sync | PC, dann Pi | Am PC erledigt, echter Server offen: Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
-| 7 Admin | PC, dann Pi | Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
+| 7 Admin | PC, dann Pi | Am PC bis auf Update-Knopf erledigt: Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
 | 8 Härtung | Pi | Stecker ziehen im Betrieb, Pi startet wieder sauber in das Display |
 
 Am PC wird gegen Mock und Fixtures entwickelt, am Pi nur geprüft, was echte Hardware braucht.

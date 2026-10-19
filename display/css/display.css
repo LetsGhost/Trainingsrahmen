@@ -155,14 +155,27 @@ body {
 }
 .sync .icon { width: 16px; height: 16px; stroke-width: 2; }
 
-/* Slideshow (Platzhalter bis Phase 7) */
-.notice {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 14px;
-  padding: 0 64px;
+/* Slideshow: zwei Bilder übereinander, nur opacity wird animiert. */
+.slideshow { flex: 1; position: relative; background: var(--slide-bg); overflow: hidden; }
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.slide.visible { opacity: 1; }
+.slide-clock {
+  position: absolute;
+  left: 26px;
+  bottom: 20px;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--slide-ink);
+  text-shadow: 0 1px 12px var(--slide-shadow);
 }
 
 /* Einrichtung (Einrichtung.dc.html, 3A–3C) */

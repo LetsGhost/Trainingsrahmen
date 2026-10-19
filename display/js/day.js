@@ -69,7 +69,7 @@ function renderWeather(weather, today) {
 }
 
 // d: jetzt; date und index: der gewählte Tag; today: Index von heute.
-export function renderDay({ d, date, index, today, plan, weather }) {
+export function renderDay({ d, date, index, today, plan, weather, recovery }) {
   const [main, ...more] = plan.days[index].sessions;
   const isToday = index === today;
   const upcoming = plan.days.slice(index + 1).map((day, k) => renderRow(DOW_SHORT[index + 1 + k], day.sessions[0]));
@@ -83,7 +83,7 @@ export function renderDay({ d, date, index, today, plan, weather }) {
         <div class="dv-rule"></div>
         ${renderMain(main, more)}
         <div class="dv-spacer"></div>
-        ${isToday && plan.recovery.length ? renderRecovery(plan.recovery) : ""}
+        ${isToday && recovery.length ? renderRecovery(recovery) : ""}
       </div>
       <div class="dv-divider"></div>
       <div class="dv-side">

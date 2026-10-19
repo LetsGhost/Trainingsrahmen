@@ -12,8 +12,8 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Wetter | Open-Meteo direkt vom Pi, ohne Key; Ort im Admin-Bereich einstellbar (Standard Berlin) |
 | Hauptscreen | Wochenraster 2A (dunkel, 22–06 Uhr) / 2B (hell) |
 | Touch | Tag antippen öffnet die Tagesansicht (1B); Tipp oder 60 s ohne Berührung führt zurück |
-| Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein |
-| Admin | Login und Panel unter `rahmen.local:8080`, nur im Heimnetz |
+| Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt wird |
+| Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h |
 | Updates | Git-Repo, nur per Knopf im Admin-Panel |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | Seeed Grove Mini-PIR an einem GPIO-Pin |
@@ -90,10 +90,14 @@ Pi OS Lite 64-bit (kein Desktop)
 2. dnsmasq leitet alle DNS-Anfragen auf den Pi, das Handy öffnet das Portal von selbst.
 3. Im Portal: Heim-WLAN wählen, Passwort, Server-URL, API-Key.
 4. Hotspot zu, verbinden, Server testen. Scheitert etwas, kommt der Hotspot nach 30 s mit Fehlermeldung zurück.
+5. Im Heimnetz zeigt das Display einen QR-Code zum Admin-Bereich mit Einmal-Code. Dort am PC oder Handy das Admin-Passwort festlegen; man ist sofort angemeldet, die Einrichtung ist abgeschlossen.
+
+„WLAN ändern“ im Admin-Bereich startet wieder bei Schritt 1, behält aber das Passwort; Schritt 5 entfällt dann. Die Werkseinstellung löscht auch das Passwort.
 
 Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, nicht gleichzeitig.
 
-- Screens 3A (Hotspot + WLAN-QR), 3B (Portal + QR zur Portal-Adresse), 3C (fertig, 4 s), dazu „Verbinde …“ und „Das hat nicht geklappt“ während der 30 s.
+- Screens 3A (Hotspot + WLAN-QR), 3B (Portal + QR zur Portal-Adresse), Admin-Schritt (QR mit Einmal-Code), 3C (fertig, 4 s), dazu „Verbinde …“ und „Das hat nicht geklappt“ während der 30 s.
+- Den Einmal-Code bekommt nur das Display (Anfragen von localhost); andere Geräte im Netz sehen ihn weder über `/events` noch als QR-Code.
 - Abweichung von der Vorlage: 3B verweist nicht auf eine externe Website mit Account, sondern auf das Portal auf dem Pi.
 - QR-Codes erzeugt der Daemon selbst (`daemon/qr.js`, ohne Abhängigkeiten).
 - Prüfadressen von Android, iOS und Windows (`/generate_204`, `/hotspot-detect.html` …) und auf dem Pi jeder fremde Host leiten während der Einrichtung auf das Portal um.
@@ -136,7 +140,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - [ ] 4. Touch: Tagesansicht mit Rücksprung (am PC fertig; Touch am Pi steht aus)
 - [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot (gegen den Mock fertig; echter Hotspot braucht den Pi)
 - [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache (fertig mit Fixtures, Test-Server und echtem Open-Meteo; Test gegen den echten Server steht aus)
-- [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf
+- [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf (alles außer Update-Knopf fertig; der braucht ein Git-Remote mit Release-Tags)
 - [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root
 
 ## Starten
