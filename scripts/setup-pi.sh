@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Richtet den Trainingsrahmen auf einem frisch geflashten Raspberry Pi OS Lite (64-bit, Bookworm oder neuer)
-# komplett ein: Pakete, Node, WLAN-Land, Rechte, ruhiger Boot, Dienste. Kann gefahrlos mehrfach laufen.
+# komplett ein: Pakete, Node, WLAN-Land, Display (Waveshare 7" DSI), Rechte, ruhiger Boot, Dienste. Kann gefahrlos mehrfach laufen.
 # Aufgebaut wie deploy/setup-pi.sh der Slotmaschine.
 #
 # Ablauf auf der neuen SD-Karte (im Pi Imager User „admin“ und Hostname „rahmen“ anlegen, SSH an):
@@ -18,6 +18,8 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_USER="$(id -un)"
 NODE_MIN=18
 WIFI_COUNTRY="${FRAME_WIFI_COUNTRY:-DE}"
+# Overlay für das Waveshare 7" DSI (800 × 480); „none“ lässt config.txt in Ruhe.
+DSI_OVERLAY="${FRAME_DSI_OVERLAY:-vc4-kms-dsi-7inch}"
 
 step() { echo; echo "==> $*"; }
 
@@ -37,7 +39,7 @@ sudo apt-get install -y \
   nodejs \
   cage chromium wlr-randr \
   network-manager dnsmasq-base \
-  gpiod \
+  gpiod i2c-tools libinput-tools \
   avahi-daemon \
   fonts-dejavu-core
 
@@ -60,6 +62,21 @@ if [ -z "$(sudo raspi-config nonint get_wifi_country 2>/dev/null || true)" ]; th
 fi
 sudo rfkill unblock wifi || true
 
+step "Display (DSI) und I2C für den Touch"
+CONFIG=/boot/firmware/config.txt
+[ -f "$CONFIG" ] || CONFIG=/boot/config.txt
+[ -f "$CONFIG.orig" ] || sudo cp "$CONFIG" "$CONFIG.orig"
+sudo raspi-config nonint do_i2c 0
+if [ "$DSI_OVERLAY" = "none" ]; then
+  echo "config.txt bleibt unverändert (FRAME_DSI_OVERLAY=none)."
+elif grep -qE '^dtoverlay=vc4-kms-dsi-' "$CONFIG"; then
+  echo "DSI-Overlay ist schon eingetragen: $(grep -E '^dtoverlay=vc4-kms-dsi-' "$CONFIG")"
+else
+  # Unter [all] anhängen, damit ein [pi4]- oder [cm4]-Abschnitt davor es nicht auf andere Modelle beschränkt.
+  printf '\n[all]\n# Trainingsrahmen: Waveshare 7" DSI, 800 x 480\ndtoverlay=%s\n' "$DSI_OVERLAY" | sudo tee -a "$CONFIG" >/dev/null
+  echo "dtoverlay=$DSI_OVERLAY eingetragen (gilt nach dem Neustart)."
+fi
+
 step "Hostname"
 if [ "$(hostname)" = "raspberrypi" ]; then
   sudo raspi-config nonint do_hostname rahmen
@@ -69,7 +86,7 @@ else
 fi
 
 step "Gruppen für GPIO, Display, Touch, Netzwerk"
-for group in gpio video render input netdev; do
+for group in gpio i2c video render input netdev; do
   if getent group "$group" >/dev/null; then
     sudo usermod -aG "$group" "$APP_USER"
   fi

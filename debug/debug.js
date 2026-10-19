@@ -59,11 +59,11 @@ function renderStatus({ frame: f, sync, dev }) {
   $("#plan").value = dev.plan;
 }
 
-// Das Display hat feste 1024 × 600; die Vorschau skaliert es auf die verfügbare Breite.
+// Das Display hat feste 800 × 480; die Vorschau skaliert es auf die verfügbare Breite.
 function fitPreview() {
-  const scale = Math.min(1, $("#preview").clientWidth / 1024);
+  const scale = Math.min(1, $("#preview").clientWidth / 800);
   $("#display").style.transform = `scale(${scale})`;
-  $("#preview").style.height = `${600 * scale}px`;
+  $("#preview").style.height = `${480 * scale}px`;
 }
 
 async function init() {

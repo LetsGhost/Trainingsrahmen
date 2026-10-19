@@ -2,7 +2,7 @@
   "name": "trainingsrahmen",
   "version": "0.1.0",
   "private": true,
-  "description": "Kiosk-Anzeige für einen Raspberry Pi 3B+ mit 7-Zoll-Display (1024 × 600)",
+  "description": "Kiosk-Anzeige für einen Raspberry Pi 3B+ mit Waveshare 7-Zoll-DSI-Display (800 × 480)",
   "scripts": {
     "dev": "node --env-file=.env.dev daemon/server.js",
     "demo": "node --env-file=.env.demo daemon/server.js",

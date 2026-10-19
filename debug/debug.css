@@ -10,7 +10,7 @@ body {
 
 .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
 
-/* Das Display behält 1024 × 600 und wird per Skript auf die Breite skaliert. */
+/* Das Display behält 800 × 480 und wird per Skript auf die Breite skaliert. */
 .preview { flex: 1; min-width: 0; }
 .preview iframe { display: block; border: 0; transform-origin: 0 0; background: #000; }
 

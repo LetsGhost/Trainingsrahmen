@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installiert die systemd-Units (Daemon, Kiosk, Update), die polkit-Regel, das Captive-DNS und die
+# Installiert die systemd-Units (Daemon, Kiosk, Update, Touch-Fix), die polkit-Regel, das Captive-DNS und die
 # Backlight-Regel und startet Daemon und Kiosk neu. Kann gefahrlos mehrfach laufen; nach jeder Änderung an
 # scripts/systemd/ oder scripts/system/ ausführen (deploy.sh macht das selbst).
 #   ./scripts/install-services.sh             installieren und neu starten
@@ -30,7 +30,7 @@ render() {
 
 chmod +x "$DIR"/scripts/*.sh
 
-for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service; do
+for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service trainingsrahmen-touch.service; do
   render "$DIR/scripts/systemd/$unit" "/etc/systemd/system/$unit" 0644
 done
 sudo mkdir -p /etc/polkit-1/rules.d /etc/NetworkManager/dnsmasq-shared.d
@@ -42,7 +42,7 @@ sudo udevadm trigger --subsystem-match=backlight --action=add || true
 
 sudo systemctl daemon-reload
 # Autostart beim Booten (macht nichts, wenn schon aktiviert). Die Update-Unit startet nur per Knopf.
-sudo systemctl enable trainingsrahmen.service trainingsrahmen-kiosk.service
+sudo systemctl enable trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-touch.service
 
 if [ "$START" -eq 0 ]; then
   echo "Installiert. Startet beim nächsten Booten."
@@ -54,6 +54,8 @@ if [ ! -f "$DIR/data/config.json" ] && ! grep -qs '^FRAME_DEMO=1' "$DIR/data/fra
   echo "Hinweis: Noch nicht eingerichtet. Der Pi öffnet gleich den Hotspot, eine SSH-Verbindung über WLAN bricht ab." >&2
   echo "         Einrichten per Handy (QR-Code am Display) oder vorher ./scripts/demo.sh on." >&2
 fi
+# Touch-Fix gleich einmal laufen lassen, falls der Touch gerade fehlt.
+sudo systemctl start trainingsrahmen-touch.service || true
 sudo systemctl restart trainingsrahmen.service
 sudo systemctl restart trainingsrahmen-kiosk.service
 echo "Neu gestartet. Logs: journalctl -u trainingsrahmen -f   bzw.   journalctl -t trainingsrahmen-kiosk -f"

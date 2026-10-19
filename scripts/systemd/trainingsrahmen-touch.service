@@ -1,0 +1,15 @@
+# Touch-Fix: bindet beim Booten den Touch-Treiber des DSI-Displays neu, falls der erste Versuch fehlschlug
+# (scripts/touch-rebind.sh). Übernommen von der Slotmaschine. Chromium/cage erkennen das Touch-Gerät auch,
+# wenn es erst nach dem Kiosk-Start auftaucht – daher keine feste Reihenfolge. @DIR@ setzt install-services.sh ein.
+# Logs: journalctl -u trainingsrahmen-touch
+
+[Unit]
+Description=Trainingsrahmen Touch-Fix (Treiber neu binden)
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash @DIR@/scripts/touch-rebind.sh
+
+[Install]
+WantedBy=multi-user.target

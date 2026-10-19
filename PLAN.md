@@ -1,6 +1,7 @@
 # Trainingsrahmen – Plan
 
-Kiosk-Anzeige für einen Raspberry Pi 3B+ mit 7-Zoll-Touch-Display (DSI, 1024 × 600).
+Kiosk-Anzeige für einen Raspberry Pi 3B+ mit Waveshare 7-Zoll-Touch-Display (DSI, kapazitiv, 5 Punkte, 800 × 480).
+Die Vorlagen sind für 1024 × 600 gezeichnet; alle Maße sind mit Faktor ≈ 0,78 auf 800 × 480 umgerechnet (gleiche Fläche, weniger Pixel, also physisch gleich groß), Schrift nicht unter 9 px.
 Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einrichtung.dc.html` (3A–3C).
 
 ## Entscheidungen
@@ -112,7 +113,7 @@ Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, ni
 - Der erste Tipp im Zustand AUS weckt nur.
 - Ohne Bilder geht das Display nach der ersten Frist direkt aus.
 - Der PIR reicht etwa 2 m, sieht nicht durch Glas und erkennt keine stillstehende Person; er braucht eine Öffnung in der Front.
-- Bilder werden im Browser des Admin-Panels auf 1024 × 600 verkleinert, bevor sie hochgeladen werden.
+- Bilder werden im Browser des Admin-Panels auf 800 × 480 verkleinert, bevor sie hochgeladen werden.
 - Im Display nur zwei `<img>`-Elemente; das nächste Bild wird vorab dekodiert.
 - Bilder liegen auf der Daten-Partition, Obergrenze 200.
 

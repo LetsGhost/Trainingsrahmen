@@ -1,5 +1,5 @@
 // Bilder für die Slideshow auf der Daten-Partition. Das Admin-Panel verkleinert sie vor dem Hochladen
-// im Browser auf 1024 × 600; hier wird nur geprüft, dass es wirklich ein Bild ist, und die Anzahl begrenzt.
+// im Browser auf 800 × 480; hier wird nur geprüft, dass es wirklich ein Bild ist, und die Anzahl begrenzt.
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");

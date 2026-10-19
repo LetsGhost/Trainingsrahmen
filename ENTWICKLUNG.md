@@ -35,7 +35,7 @@ Lange Titel bekommen über `hyphenate()` weiche Trennstriche, weil Chromium auf 
 
 ## Dev-Leiste
 
-Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zählen als Touch.
+Links das Display in 800 × 480, rechts die Steuerung. Klicks ins Display zählen als Touch.
 
 | Bereich | Was geht |
 |---|---|
@@ -71,7 +71,7 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 - Passwort als scrypt-Hash in `config.json`; nach 5 Fehlversuchen 30 s Sperre.
 - Sitzung per Cookie (`HttpOnly`, `SameSite=Strict`, 12 h, nur im Speicher: Neustart meldet ab). Schreibende Anfragen verlangen JSON.
 - Panel: Server und API-Key (wird vor dem Speichern geprüft), Wetter-Ort (Suche über Open-Meteo), Erscheinungsbild, Module Wetter und Erholung, Ruhe-Fristen, Status, „Jetzt neu laden“, „WLAN ändern“, Passwort ändern.
-- Slideshow: Bilder werden im Browser auf 1024 × 600 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
+- Slideshow: Bilder werden im Browser auf 800 × 480 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
 - `/api/slides` liefert die Bilder an das Display (localhost) und an angemeldete Admins.
 
 ## Update per Knopf
@@ -120,7 +120,7 @@ Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Is
 - **Farben nur über Variablen** aus `display/css/tokens.css`, nie fest im Markup.
 - **Server-Format nur in `display/js/adapter.js`.** Der Rest kennt nur das interne Modell.
 - **Hardware nur über den SystemAdapter** (`daemon/system/`). Kein `nmcli`, GPIO oder Backlight direkt im übrigen Code.
-- **Jeder Screen ist 1024 × 600** und muss ohne Scrollen passen.
+- **Jeder Screen ist 800 × 480** (Waveshare 7" DSI) und muss ohne Scrollen passen. Maße aus den Vorlagen (1024 × 600) mit ≈ 0,78 umrechnen, Schrift nicht unter 9 px.
 
 ## Fixtures
 
@@ -171,7 +171,7 @@ Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. 
    ```
 3. Nach dem Neustart zeigt das Display 3A. Ab hier läuft die Einrichtung per Handy. Weil der Hotspot das einzige Funkmodul belegt, ist der Pi bis dahin nicht im Heim-WLAN; SSH geht dann nur per LAN-Kabel.
 
-`setup-pi.sh` installiert Pakete (Node, cage, Chromium, NetworkManager, gpiod), setzt WLAN-Land und Hostname, trägt den User in die Gruppen ein, schaltet Boot-Meldungen auf tty3 und ruft `install-services.sh` auf. Es kann gefahrlos mehrfach laufen.
+`setup-pi.sh` installiert Pakete (Node, cage, Chromium, NetworkManager, gpiod), setzt WLAN-Land und Hostname, schaltet I2C an und trägt das Display-Overlay `dtoverlay=vc4-kms-dsi-7inch` in `config.txt` ein (anderes über `FRAME_DSI_OVERLAY=…`, `none` lässt die Datei in Ruhe), trägt den User in die Gruppen ein, schaltet Boot-Meldungen auf tty3 und ruft `install-services.sh` auf. Es kann gefahrlos mehrfach laufen.
 
 **Dienste**
 
@@ -180,6 +180,7 @@ Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. 
 | `trainingsrahmen.service` | Daemon (`node daemon/server.js`), zusätzlich auf Port 80 fürs Portal |
 | `trainingsrahmen-kiosk.service` | `scripts/kiosk.sh`: Chromium in cage auf tty1 |
 | `trainingsrahmen-update.service` | Update per Knopf (`scripts/self-update.sh`), nur auf Anforderung |
+| `trainingsrahmen-touch.service` | `scripts/touch-rebind.sh` beim Booten: Touch-Treiber neu binden (siehe unten) |
 
 `install-services.sh` setzt User und Pfad in die Vorlagen aus `scripts/systemd/` ein und installiert dazu aus `scripts/system/`: die polkit-Regel (der User darf ohne Passwort WLAN schalten und die drei Units starten), das Captive-DNS für dnsmasq im Hotspot und die Backlight-Regel. Nach Änderungen an diesen Dateien neu ausführen; `deploy.sh` macht das selbst. `scripts/update.sh` läuft ohne sudo und kann das nicht.
 
@@ -208,6 +209,8 @@ Nach einer Änderung: `sudo systemctl restart trainingsrahmen trainingsrahmen-ki
 **Fehlersuche**
 
 - Logs: `journalctl -u trainingsrahmen -f` (Daemon), `journalctl -t trainingsrahmen-kiosk -f` (Kiosk, nicht `-u`, siehe Kommentar in der Unit).
+- Touch reagiert nicht, obwohl das Bild läuft: Der Touch-Chip ist beim Booten oft noch nicht bereit (`dmesg`: `I2C communication failure: -5`). `trainingsrahmen-touch.service` bindet den Treiber dann neu (Goodix an `0x5d`/`0x14` oder FT5x06 an `0x38`, je nach Waveshare-Version). Logs: `journalctl -u trainingsrahmen-touch`; prüfen mit `sudo libinput list-devices`.
+- Das Display ist nativ quer (800 × 480), `FRAME_ROTATION` bleibt also auf `normal`.
 - DevTools des Kiosk-Browsers: `ssh -L 9222:localhost:9222 admin@rahmen.local`, dann am PC `chrome://inspect` → `localhost:9222`.
 - Den Pi nicht per Stecker ausschalten (`sudo poweroff`). Bei der Slotmaschine hat ein Stromausfall schon Chromium-Dateien zerstört; Prüfen mit `sudo dpkg --verify`. Read-only-Root kommt mit Phase 8.
 

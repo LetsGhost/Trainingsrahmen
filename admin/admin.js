@@ -4,7 +4,7 @@ const app = document.getElementById("app");
 const $ = sel => document.querySelector(sel);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-const SLIDE_W = 1024, SLIDE_H = 600;
+const SLIDE_W = 800, SLIDE_H = 480;
 const STATUS_REFRESH_MS = 10000;
 const UPDATE_POLL_MS = 2000;
 const SETUP_LABELS = {
@@ -301,7 +301,7 @@ function renderSettings() {
 
 // --- Slideshow ---
 
-// Auf 1024 × 600 zuschneiden (wie object-fit: cover) und als JPEG verkleinern.
+// Auf 800 × 480 zuschneiden (wie object-fit: cover) und als JPEG verkleinern.
 async function resizeImage(file) {
   const bitmap = await createImageBitmap(file);
   const scale = Math.max(SLIDE_W / bitmap.width, SLIDE_H / bitmap.height);
@@ -324,7 +324,7 @@ function renderSlides() {
       <div class="upload">
         <label class="primary" for="files"><span>Bilder hochladen</span><span>+</span></label>
         <input type="file" id="files" accept="image/jpeg,image/png,image/webp" multiple>
-        <span class="muted">${state.slides.length} von ${state.maxSlides} · werden auf 1024 × 600 zugeschnitten</span>
+        <span class="muted">${state.slides.length} von ${state.maxSlides} · werden auf 800 × 480 zugeschnitten</span>
       </div>
       <div class="msg" id="slides-msg"></div>
     </div>
