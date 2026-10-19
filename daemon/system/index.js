@@ -12,9 +12,12 @@
 //   setBacklight(on)
 //   readCpuTemp()                     → °C | null
 //   status()                          → { hotspot, wifi, backlight, ip, signal (dBm) } für Dev-Leiste und Admin
+//
+// Demo-Modus: Über dem Adapter liegt daemon/demo.js und spielt das Netz. Am PC (nicht Linux) mit dem Mock darunter.
 
-function createSystemAdapter({ dev, sim, port }) {
-  return dev ? require("./mock")({ sim, port }) : require("./pi")();
+function createSystemAdapter({ dev, demo, sim, port }) {
+  const base = dev || (demo && process.platform !== "linux") ? require("./mock")({ sim, port }) : require("./pi")({ port });
+  return demo ? require("../demo").withDemoNetwork(base) : base;
 }
 
 module.exports = { createSystemAdapter };

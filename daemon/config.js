@@ -3,7 +3,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const DATA_DIR = process.env.FRAME_DATA || path.join(__dirname, "..", "data");
+// BASE_DIR: data/ im Projekt; dort liegen auch frame.env (Demo-Schalter) und update.env für die systemd-Units.
+// Im Demo-Modus (FRAME_DEMO=1) liegen Einstellungen, Cache und Bilder getrennt unter data/demo/, die echten bleiben unberührt.
+const DEMO = process.env.FRAME_DEMO === "1";
+const BASE_DIR = path.join(__dirname, "..", "data");
+const DATA_DIR = process.env.FRAME_DATA || (DEMO ? path.join(BASE_DIR, "demo") : BASE_DIR);
 const FILE = path.join(DATA_DIR, "config.json");
 
 const DEFAULTS = {
@@ -42,4 +46,6 @@ function save(config) {
   fs.renameSync(tmp, FILE);
 }
 
-module.exports = { load, save, DEFAULTS, DATA_DIR };
+const exists = () => fs.existsSync(FILE);
+
+module.exports = { load, save, exists, DEFAULTS, DATA_DIR, BASE_DIR, DEMO };

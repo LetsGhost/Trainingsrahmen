@@ -10,7 +10,7 @@ npm run dev
 
 Display: `http://localhost:8080`, Dev-Leiste: `http://localhost:8080/debug`. Es gibt keine Abhängigkeiten und keinen Build-Schritt; nach einer Änderung reicht ein Neuladen im Browser. Änderungen an `daemon/` brauchen einen Neustart.
 
-`npm run dev` setzt `FRAME_ENV=dev` (aus `.env.dev`): Der Daemon nimmt den Mock-Adapter statt echter Hardware und schaltet die Dev-Leiste frei. `npm start` ist der Betrieb auf dem Pi und bricht ab, bis der Pi-Adapter existiert.
+`npm run dev` setzt `FRAME_ENV=dev` (aus `.env.dev`): Der Daemon nimmt den Mock-Adapter statt echter Hardware und schaltet die Dev-Leiste frei. `npm start` ist der Betrieb auf dem Pi mit dem Pi-Adapter (`nmcli`, `gpiomon`, sysfs). `npm run demo` startet den Demo-Modus (siehe unten).
 
 Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`. Ein anderer Ort geht über `FRAME_DATA=…`. Datei löschen oder in der Dev-Leiste „Werkseinstellung“ drücken führt zurück in die Einrichtung.
 
@@ -105,13 +105,13 @@ Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Is
 |---|---|
 | `display/` | Was auf dem 7-Zoll-Display läuft (HTML, CSS, JS, Schrift, Icons) |
 | `daemon/` | Node-Prozess: Server, Zustandsautomaten (`state.js`), Einstellungen, Server-Prüfung |
-| `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch leer) |
+| `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch nicht auf dem Pi geprüft) |
 | `debug/` | Dev-Leiste, nur mit `FRAME_ENV=dev` erreichbar |
 | `portal/` | Einrichtungsportal fürs Handy unter `/setup` |
 | `admin/` | Admin-Bereich unter `/admin` (Login, Panel, Slideshow, Update) |
-| `scripts/` | `self-update.sh` (Update per Knopf), `update.sh` (Schritte nach jedem Pull), systemd-Unit |
+| `scripts/` | Einrichtung (`setup-pi.sh`, `install-services.sh`), `deploy.sh` vom PC, `kiosk.sh`, `demo.sh`, `factory-reset.sh`, Update (`self-update.sh`, `update.sh`), Vorlagen in `systemd/` und `system/` |
 | `fixtures/` | Testdaten statt echter Abrufe |
-| `data/` | Laufzeitdaten wie `config.json`, nicht im Git |
+| `data/` | Laufzeitdaten wie `config.json`, `frame.env`, im Demo-Modus `demo/`; nicht im Git |
 
 ## Regeln
 
@@ -157,7 +157,82 @@ Am PC wird gegen Mock und Fixtures entwickelt, am Pi nur geprüft, was echte Har
 
 ## Auf den Pi bringen
 
-Kommt mit Phase 2: ein Deploy-Skript (Kopieren und Dienst-Neustart) und Remote-Debugging des Kiosk-Browsers über einen SSH-Tunnel. Bis dahin ist hier nichts eingerichtet.
+Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. Der Pi läuft mit Pi OS Lite (64-bit, ab Bookworm), User `admin`, Repo unter `~/trainingsrahmen`.
+
+**Neue SD-Karte**
+
+1. Im Pi Imager Pi OS Lite (64-bit) flashen: User `admin`, Hostname `rahmen`, SSH an, WLAN eintragen (nur für die Installation).
+2. Auf dem Pi:
+   ```
+   sudo apt install -y git
+   git clone https://github.com/LetsGhost/Trainingsrahmen.git ~/trainingsrahmen
+   cd ~/trainingsrahmen && ./scripts/setup-pi.sh
+   sudo reboot
+   ```
+3. Nach dem Neustart zeigt das Display 3A. Ab hier läuft die Einrichtung per Handy. Weil der Hotspot das einzige Funkmodul belegt, ist der Pi bis dahin nicht im Heim-WLAN; SSH geht dann nur per LAN-Kabel.
+
+`setup-pi.sh` installiert Pakete (Node, cage, Chromium, NetworkManager, gpiod), setzt WLAN-Land und Hostname, trägt den User in die Gruppen ein, schaltet Boot-Meldungen auf tty3 und ruft `install-services.sh` auf. Es kann gefahrlos mehrfach laufen.
+
+**Dienste**
+
+| Unit | Inhalt |
+|---|---|
+| `trainingsrahmen.service` | Daemon (`node daemon/server.js`), zusätzlich auf Port 80 fürs Portal |
+| `trainingsrahmen-kiosk.service` | `scripts/kiosk.sh`: Chromium in cage auf tty1 |
+| `trainingsrahmen-update.service` | Update per Knopf (`scripts/self-update.sh`), nur auf Anforderung |
+
+`install-services.sh` setzt User und Pfad in die Vorlagen aus `scripts/systemd/` ein und installiert dazu aus `scripts/system/`: die polkit-Regel (der User darf ohne Passwort WLAN schalten und die drei Units starten), das Captive-DNS für dnsmasq im Hotspot und die Backlight-Regel. Nach Änderungen an diesen Dateien neu ausführen; `deploy.sh` macht das selbst. `scripts/update.sh` läuft ohne sudo und kann das nicht.
+
+**Vom PC aus testen (ohne Commit)**
+
+```
+./scripts/deploy.sh                  # an admin@rahmen.local, oder FRAME_PI=… bzw. Adresse als Argument
+./scripts/deploy.sh --restore        # Pi zurück auf den committeten Stand
+```
+
+`deploy.sh` (Git Bash) kopiert alle Dateien, die git kennt oder nicht ignoriert, mit LF-Zeilenenden auf den Pi, führt `install-services.sh` aus und wartet auf `/health`. `data/` bleibt. Solange Änderungen von `deploy.sh` auf dem Pi liegen, scheitert der Update-Knopf absichtlich (`git pull --ff-only`); `--restore` räumt auf. Mit einem SSH-Key (`ssh-copy-id admin@rahmen.local`) fragt es nicht mehrfach nach dem Passwort.
+
+**Updates**: Commit pushen, dann im Admin-Panel „Nach Updates suchen“ und „Installieren“. Das Display lädt nach dem Neustart des Daemons selbst neu, sobald es einen anderen Commit sieht.
+
+**Kiosk** (`scripts/kiosk.sh`, übernommen aus `start.sh` der Slotmaschine): wartet auf den Daemon und auf das Display, blendet den Mauszeiger aus, setzt das Chromium-Profil nach wiederholten Abstürzen zurück und räumt Sperrdateien nach Stromausfall weg. Hängt das Display nicht binnen 90 s an `/events` oder ist es danach 60 s weg, endet das Skript und systemd startet neu (`/health` meldet `display`). Schalter in `data/frame.env`:
+
+| Schalter | Wirkung |
+|---|---|
+| `FRAME_ROTATION=90` | Bild drehen (`normal`, `90`, `180`, `270`). Touch dreht nicht mit; dafür wie bei der Slotmaschine eine udev-Regel mit `LIBINPUT_CALIBRATION_MATRIX` anlegen |
+| `FRAME_PIR_PIN=17` | GPIO des PIR (Standard 17, `off` schaltet ab); `FRAME_PIR_CHIP` Standard `gpiochip0` |
+| `FRAME_CHROMIUM_FLAGS="--disable-gpu"` | zusätzliche Chromium-Flags |
+| `FRAME_HIDE_CURSOR=0` | Mauszeiger sichtbar |
+
+Nach einer Änderung: `sudo systemctl restart trainingsrahmen trainingsrahmen-kiosk`.
+
+**Fehlersuche**
+
+- Logs: `journalctl -u trainingsrahmen -f` (Daemon), `journalctl -t trainingsrahmen-kiosk -f` (Kiosk, nicht `-u`, siehe Kommentar in der Unit).
+- DevTools des Kiosk-Browsers: `ssh -L 9222:localhost:9222 admin@rahmen.local`, dann am PC `chrome://inspect` → `localhost:9222`.
+- Den Pi nicht per Stecker ausschalten (`sudo poweroff`). Bei der Slotmaschine hat ein Stromausfall schon Chromium-Dateien zerstört; Prüfen mit `sudo dpkg --verify`. Read-only-Root kommt mit Phase 8.
+
+## Demo-Modus
+
+Zum Vorführen ohne WLAN, Server und Einrichtung:
+
+```
+./scripts/demo.sh on [--fresh]    # auf dem Pi; --fresh löscht vorher die Demo-Daten
+./scripts/demo.sh off
+npm run demo                      # am PC
+```
+
+- Startet direkt im Plan mit Testplan und Testwetter aus `fixtures/`, kurze Ruhe-Fristen (1 / 3 min), Fußzeile „Demo · Sync …“.
+- WLAN, Hotspot und Internet werden nur gespielt (`daemon/demo.js`); Backlight, PIR und CPU-Temperatur sind echt. „WLAN ändern“ im Admin-Bereich führt durch die Einrichtung, das Portal liegt dann unter der normalen LAN-Adresse.
+- Admin-Passwort `demo1234`.
+- Einstellungen, Cache und Bilder liegen unter `data/demo/`, die echte Einrichtung bleibt unberührt. Der Schalter steht als `FRAME_DEMO=1` in `data/frame.env`.
+
+## Werkseinstellung
+
+```
+./scripts/factory-reset.sh        # fragt nach; -y ohne Nachfrage
+```
+
+Löscht `data/` komplett (WLAN, Server, Admin-Passwort, Cache, Slideshow-Bilder, Demo-Schalter, Update-Status), die WLAN-Verbindungen `rahmen-wifi` und `rahmen-hotspot` in NetworkManager und das Kiosk-Profil, dann startet der Daemon in der Einrichtung. Code und Pi OS bleiben. Am PC löscht es nur `data/`; der Daemon muss dann von Hand neu starten. Die Werkseinstellung der Dev-Leiste setzt dagegen nur WLAN, Server und Passwort zurück.
 
 ## Messwerte vom Pi
 

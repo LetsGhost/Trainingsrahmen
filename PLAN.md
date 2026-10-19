@@ -18,6 +18,9 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | Seeed Grove Mini-PIR an einem GPIO-Pin |
 | Slideshow | Nur Bilder, Upload über das Admin-Panel |
+| Installation | Pi OS Lite, User `admin`, Repo unter `~/trainingsrahmen`, eingerichtet mit `scripts/setup-pi.sh` |
+| Demo | `scripts/demo.sh on`: ohne Einrichtung im Plan, Testdaten aus `fixtures/`, eigene Daten unter `data/demo/` |
+| Werkseinstellung | `scripts/factory-reset.sh` löscht `data/` und die WLAN-Verbindungen des Rahmens |
 
 ## Architektur
 
@@ -122,7 +125,7 @@ Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, ni
 
 Remote und Branch stehen in `config.json` unter `update`. Der Fortschritt landet in `data/update.json`, das Admin-Panel verfolgt ihn über den Neustart hinweg. Lokale Änderungen auf dem Pi lassen `git pull --ff-only` scheitern; dann bleibt alles, wie es ist.
 
-Abhängigkeiten gibt es keine; auf dem Pi läuft kein `npm install`. Offen für Phase 8: Pfad der Installation und wer die Update-Unit starten darf (polkit oder sudoers).
+Abhängigkeiten gibt es keine; auf dem Pi läuft kein `npm install`. Die Update-Unit läuft als derselbe User wie der Daemon; starten darf er sie über eine polkit-Regel (`scripts/system/trainingsrahmen.rules`).
 
 ## Debug-Modus
 
@@ -132,7 +135,7 @@ Abhängigkeiten gibt es keine; auf dem Pi läuft kein `npm install`. Offen für 
 - Fehler simulieren: falsches WLAN-Passwort, kein Internet, Server lehnt Key ab.
 - Fixtures statt echter Abrufe, damit die Entwicklung offline läuft.
 - `?theme=dark|light`, `?now=2026-09-09T18:42` und `?day=0…6` am Display haben Vorrang vor der Dev-Leiste.
-- Auf dem Pi: Deploy-Skript, Remote-Debugging über SSH-Tunnel, Overlay mit RAM und Temperatur.
+- Auf dem Pi: `scripts/deploy.sh` vom PC, DevTools des Kiosks über SSH-Tunnel (Port 9222). Offen: Overlay mit RAM und Temperatur.
 
 ## Phasen
 
@@ -143,7 +146,7 @@ Abhängigkeiten gibt es keine; auf dem Pi läuft kein `npm install`. Offen für 
 - [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot (gegen den Mock fertig; echter Hotspot braucht den Pi)
 - [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache (fertig mit Fixtures, Test-Server und echtem Open-Meteo; Test gegen den echten Server steht aus)
 - [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf (am PC fertig; auf dem Pi offen)
-- [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root
+- [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root (Autostart, Einrichtungs-, Deploy-, Demo- und Reset-Skripte geschrieben, auf dem Pi ungeprüft)
 
 ## Starten
 

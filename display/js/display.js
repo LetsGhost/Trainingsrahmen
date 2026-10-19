@@ -21,9 +21,10 @@ const urlDay = /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day"
 
 const frame = document.getElementById("frame");
 // daemon und sync: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
+// app: { commit, demo } des laufenden Daemons.
 // openDay: Index des Tages in der Tagesansicht oder null. setupDoneUntil: bis dahin steht 3C.
 const state = {
-  plan: null, weather: null, daemon: null, sync: null, dev: null, openDay: urlDay, setupDoneUntil: 0
+  plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, setupDoneUntil: 0
 };
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
@@ -127,7 +128,7 @@ function renderFoot() {
   let sync;
   if (state.daemon?.setup === "OFFLINE") sync = `${icon("wifi-off")}<span>Offline${stand ? ` · Stand ${stand}` : ""}</span>`;
   else if (s?.planError) sync = `${icon("wifi-off")}<span>${esc(s.planError.message)}${stand ? ` · Stand ${stand}` : ""}</span>`;
-  else sync = `${icon("wifi")}<span>Sync ${stand ?? "…"}</span>`;
+  else sync = `${icon("wifi")}<span>${state.app?.demo ? "Demo · " : ""}Sync ${stand ?? "…"}</span>`;
   return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
 }
 
@@ -189,6 +190,9 @@ function listen() {
   const events = new EventSource("/events");
   events.onmessage = e => {
     const msg = JSON.parse(e.data);
+    // Nach einem Update läuft ein anderer Commit: Seite neu laden, damit auch das Display den neuen Stand hat.
+    if (state.app && msg.app.commit !== state.app.commit) return location.reload();
+    state.app = msg.app;
     const newData = msg.sync.planAt !== state.sync?.planAt || msg.sync.weatherAt !== state.sync?.weatherAt;
     const becameReady = msg.frame.setup === "READY" && state.daemon?.setup !== "READY";
     if (becameReady && isSetup(state.daemon)) {

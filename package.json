@@ -5,6 +5,7 @@
   "description": "Kiosk-Anzeige für einen Raspberry Pi 3B+ mit 7-Zoll-Display (1024 × 600)",
   "scripts": {
     "dev": "node --env-file=.env.dev daemon/server.js",
+    "demo": "node --env-file=.env.demo daemon/server.js",
     "start": "node daemon/server.js"
   }
 }

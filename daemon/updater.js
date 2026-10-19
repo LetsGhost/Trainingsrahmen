@@ -11,7 +11,7 @@ const GIT_TIMEOUT_MS = 60 * 1000;
 // So lange gilt ein Update ohne neue Statusmeldung als laufend.
 const RUNNING_STALE_MS = 3 * 60 * 1000;
 
-function createUpdater({ dev, rootDir, dataDir, config, port }) {
+function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
   const updateDir = process.env.FRAME_UPDATE_DIR;
   const appDir = updateDir ?? rootDir;
   const statusFile = path.join(dataDir, "update.json");
@@ -87,8 +87,8 @@ function createUpdater({ dev, rootDir, dataDir, config, port }) {
           cwd: appDir, env: { ...process.env, ...env }, detached: true, stdio: ["ignore", log, log], windowsHide: true
         }).unref();
       } else {
-        // Die Unit liest Branch und Pfade aus data/update.env.
-        fs.writeFileSync(path.join(dataDir, "update.env"), Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
+        // Die Unit liest Branch und Pfade aus data/update.env (auch im Demo-Modus dort, nicht unter data/demo/).
+        fs.writeFileSync(path.join(baseDir, "update.env"), Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
         spawn("systemctl", ["start", "--no-block", "trainingsrahmen-update.service"], { detached: true, stdio: "ignore" }).unref();
       }
     }

@@ -14,9 +14,14 @@ const { FrameError } = require("./errors");
 const { createSlides } = require("./slides");
 const { createAdmin } = require("./admin");
 const { createUpdater } = require("./updater");
+const demo = require("./demo");
 
 const PORT = process.env.PORT || 8080;
 const DEV = process.env.FRAME_ENV === "dev";
+// Demo-Modus: siehe daemon/demo.js. Plan und Wetter kommen wie in der Entwicklung aus fixtures/.
+const DEMO = configStore.DEMO;
+// Zweiter Port für das Captive Portal (auf dem Pi 80, damit http://10.42.0.1/setup ohne Port reicht).
+const PORTAL_PORT = process.env.FRAME_PORTAL_PORT;
 const ROOT = path.join(__dirname, "..");
 const DISPLAY_DIR = path.join(ROOT, "display");
 const DEBUG_DIR = path.join(ROOT, "debug");
@@ -46,10 +51,14 @@ const DEADLINE_PRESETS = {
 };
 
 const config = configStore.load();
-const system = createSystemAdapter({ dev: DEV, sim, port: PORT });
-const backend = createBackend({ dev: DEV, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan) });
+if (DEMO && !configStore.exists()) {
+  demo.seedConfig(config);
+  configStore.save(config);
+}
+const system = createSystemAdapter({ dev: DEV, demo: DEMO, sim, port: PORT });
+const backend = createBackend({ dev: DEV || DEMO, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan) });
 const slides = createSlides(configStore.DATA_DIR);
-const updater = createUpdater({ dev: DEV, rootDir: ROOT, dataDir: configStore.DATA_DIR, config, port: PORT });
+const updater = createUpdater({ dev: DEV, rootDir: ROOT, baseDir: configStore.BASE_DIR, dataDir: configStore.DATA_DIR, config, port: PORT });
 const frame = createFrame({
   system,
   backend,
@@ -60,7 +69,7 @@ const frame = createFrame({
 
 const sync = createSync({
   backend,
-  weather: createWeather({ dev: DEV, sim, fixture: path.join(FIXTURE_DIR, "weather.json") }),
+  weather: createWeather({ dev: DEV || DEMO, sim, fixture: path.join(FIXTURE_DIR, "weather.json") }),
   config,
   dataDir: configStore.DATA_DIR,
   // Auch während des Admin-Schritts, damit der Plan danach sofort da ist.
@@ -87,7 +96,9 @@ const clients = new Map();
 function message(local) {
   const f = frame.snapshot();
   if (!local) f.adminCode = null;
-  return JSON.stringify({ frame: f, sync: sync.status(), dev: DEV ? { ...dev, sim } : null });
+  // app.commit: Das Display lädt neu, wenn nach einem Update ein anderer Stand läuft.
+  const app = { commit: updater.commit(), demo: DEMO };
+  return JSON.stringify({ frame: f, sync: sync.status(), app, dev: DEV ? { ...dev, sim } : null });
 }
 
 function broadcast() {
@@ -272,7 +283,7 @@ async function handleSetupSubmit(req, res) {
 // Liefert true, wenn die Anfrage zur Einrichtung gehörte.
 function routeSetup(req, res, pathname) {
   // Während der Einrichtung führt jede Prüfadresse (und auf dem Pi jeder fremde Host) zum Portal.
-  const foreignHost = !DEV && req.headers.host && !/^(localhost|127\.0\.0\.1|10\.42\.0\.1|rahmen\.local)(:\d+)?$/.test(req.headers.host);
+  const foreignHost = !DEV && !DEMO && req.headers.host && !/^(localhost|127\.0\.0\.1|10\.42\.0\.1|rahmen\.local)(:\d+)?$/.test(req.headers.host);
   if (inSetup() && (CAPTIVE_PROBES.has(pathname) || foreignHost)) {
     redirect(res, system.portalUrl());
     return true;
@@ -317,7 +328,7 @@ function routeSetup(req, res, pathname) {
 
 // --- Routen ---
 
-http.createServer((req, res) => {
+function handle(req, res) {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
 
   if (routeSetup(req, res, pathname)) return;
@@ -331,7 +342,11 @@ http.createServer((req, res) => {
   }
   if (pathname === "/events") return openEvents(req, res);
   // commit: damit self-update.sh nach dem Neustart prüfen kann, ob der neue Stand läuft.
-  if (pathname === "/health") return sendJson(res, 200, { ok: true, commit: updater.commit() });
+  // display: Der Kiosk-Browser hängt an /events; scripts/kiosk.sh startet ihn neu, wenn das ausbleibt.
+  if (pathname === "/health") {
+    const display = [...clients.values()].some(local => local);
+    return sendJson(res, 200, { ok: true, commit: updater.commit(), demo: DEMO, display });
+  }
   if (pathname === "/api/activity" && req.method === "POST") {
     frame.activity();
     return sendJson(res, 200, { ok: true });
@@ -351,7 +366,11 @@ http.createServer((req, res) => {
 
   const rel = pathname === "/" || pathname === "/display" ? "index.html" : pathname.replace(/^\/+/, "");
   sendStatic(res, DISPLAY_DIR, rel);
-}).listen(PORT, () => {
-  console.log(`Trainingsrahmen läuft auf http://localhost:${PORT}${DEV ? ` (Dev-Leiste: http://localhost:${PORT}/debug)` : ""}`);
+}
+
+http.createServer(handle).listen(PORT, () => {
+  const notes = [DEV && `Dev-Leiste: http://localhost:${PORT}/debug`, DEMO && "Demo-Modus"].filter(Boolean).join(", ");
+  console.log(`Trainingsrahmen läuft auf http://localhost:${PORT}${notes ? ` (${notes})` : ""}`);
   frame.boot();
 });
+if (PORTAL_PORT && PORTAL_PORT !== String(PORT)) http.createServer(handle).listen(PORTAL_PORT);

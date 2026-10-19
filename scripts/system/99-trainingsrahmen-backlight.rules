@@ -1,0 +1,3 @@
+# Erlaubt der Gruppe video, das Backlight des Displays zu schalten (daemon/system/pi.js schreibt bl_power).
+# Installiert scripts/install-services.sh nach /etc/udev/rules.d/.
+SUBSYSTEM=="backlight", ACTION=="add", RUN+="/bin/chgrp video /sys%p/bl_power /sys%p/brightness", RUN+="/bin/chmod g+w /sys%p/bl_power /sys%p/brightness"

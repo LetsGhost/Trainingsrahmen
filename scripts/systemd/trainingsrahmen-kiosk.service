@@ -1,0 +1,41 @@
+# Kiosk: startet scripts/kiosk.sh (Chromium in cage) beim Booten als echte Login-Session auf tty1. So bekommt
+# cage Bildschirm- und Touch-Zugriff und XDG_RUNTIME_DIR, ohne dass jemand angemeldet sein muss.
+# Übernommen von der Slotmaschine. @USER@ und @DIR@ setzt scripts/install-services.sh ein.
+# Logs: journalctl -t trainingsrahmen-kiosk -f
+#   (nicht -u: PAMName=login verschiebt die Prozesse in eine eigene Login-Sitzung,
+#   deren Ausgaben stehen dann nicht mehr unter dem Service-Namen)
+
+[Unit]
+Description=Trainingsrahmen Kiosk (Chromium in cage)
+# Kein network-online.target: Der Browser lädt nur von localhost, Warten aufs WLAN verzögert nur den Start.
+After=systemd-user-sessions.service plymouth-quit-wait.service trainingsrahmen.service
+Wants=trainingsrahmen.service
+# tty1 gehört dem Kiosk statt der normalen Login-Konsole
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+ConditionPathExists=/dev/tty1
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=-@DIR@/data/frame.env
+ExecStart=@DIR@/scripts/kiosk.sh
+Restart=always
+RestartSec=3
+
+# Login-Session auf tty1 (liefert logind-Seat und XDG_RUNTIME_DIR für cage)
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=trainingsrahmen-kiosk
+UtmpIdentifier=tty1
+UtmpMode=user
+
+[Install]
+WantedBy=multi-user.target
