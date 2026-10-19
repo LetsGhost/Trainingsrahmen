@@ -4,6 +4,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const os = require("os");
+const path = require("path");
 const { FrameError } = require("./errors");
 const { SETUP } = require("./state");
 
@@ -38,8 +39,31 @@ function checkNewPassword(password) {
 // „abcd1234efgh“ → „abcd ···· efgh“
 const maskKey = key => (!key ? "nicht gesetzt" : key.length <= 8 ? "····" : `${key.slice(0, 4)} ···· ${key.slice(-4)}`);
 
-function createAdmin({ config, saveConfig, frame, sync, slides, backend, dataDir, http }) {
-  const sessions = new Map();
+// Sitzungen überleben einen Neustart des Daemons (z. B. nach einem Update). Gespeichert wird nur der
+// SHA-256 des Tokens, damit die Datei allein nicht zum Anmelden reicht.
+function createSessionStore(file) {
+  const digest = token => crypto.createHash("sha256").update(token).digest("hex");
+  let entries = {};
+  try {
+    entries = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {}
+  const persist = () => {
+    const now = Date.now();
+    for (const [k, expires] of Object.entries(entries)) if (expires < now) delete entries[k];
+    fs.writeFileSync(file + ".tmp", JSON.stringify(entries));
+    fs.renameSync(file + ".tmp", file);
+  };
+  return {
+    get: token => entries[digest(token)],
+    set: (token, expires) => { entries[digest(token)] = expires; persist(); },
+    delete: token => { if (token) { delete entries[digest(token)]; persist(); } },
+    clear: () => { entries = {}; persist(); }
+  };
+}
+
+function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater, dataDir, http }) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  const sessions = createSessionStore(path.join(dataDir, "sessions.json"));
   let failures = 0;
   let lockedUntil = 0;
 
@@ -290,6 +314,12 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, dataDir
         sessions.clear();
         startSession(res);
       });
+    } else if (action === "update" && method === "GET") {
+      http.sendJson(res, 200, updater.status());
+    } else if (action === "update/check" && method === "POST") {
+      respond(res, () => updater.check());
+    } else if (action === "update/install" && method === "POST") {
+      respond(res, () => { updater.install(); return updater.status(); });
     } else if (action === "wifi-reset" && method === "POST") {
       respond(res, async () => { await frame.reset({ keepAdmin: true }); });
     } else if (action === "slides" && method === "GET") {

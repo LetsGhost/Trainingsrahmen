@@ -1,0 +1,2 @@
+# Shell-Skripte laufen auf dem Pi und in Git Bash nur mit LF-Zeilenenden.
+*.sh text eol=lf

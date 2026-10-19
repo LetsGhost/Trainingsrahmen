@@ -13,6 +13,7 @@ const qr = require("./qr");
 const { FrameError } = require("./errors");
 const { createSlides } = require("./slides");
 const { createAdmin } = require("./admin");
+const { createUpdater } = require("./updater");
 
 const PORT = process.env.PORT || 8080;
 const DEV = process.env.FRAME_ENV === "dev";
@@ -48,6 +49,7 @@ const config = configStore.load();
 const system = createSystemAdapter({ dev: DEV, sim, port: PORT });
 const backend = createBackend({ dev: DEV, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan) });
 const slides = createSlides(configStore.DATA_DIR);
+const updater = createUpdater({ dev: DEV, rootDir: ROOT, dataDir: configStore.DATA_DIR, config, port: PORT });
 const frame = createFrame({
   system,
   backend,
@@ -175,6 +177,7 @@ const admin = createAdmin({
   sync,
   slides,
   backend,
+  updater,
   dataDir: configStore.DATA_DIR,
   http: { sendJson, sendStatic, readJson, readBody, ADMIN_DIR }
 });
@@ -327,7 +330,8 @@ http.createServer((req, res) => {
     return file ? sendFile(res, file) : sendJson(res, 404, { error: "Nicht gefunden" });
   }
   if (pathname === "/events") return openEvents(req, res);
-  if (pathname === "/health") return sendJson(res, 200, { ok: true });
+  // commit: damit self-update.sh nach dem Neustart prüfen kann, ob der neue Stand läuft.
+  if (pathname === "/health") return sendJson(res, 200, { ok: true, commit: updater.commit() });
   if (pathname === "/api/activity" && req.method === "POST") {
     frame.activity();
     return sendJson(res, 200, { ok: true });

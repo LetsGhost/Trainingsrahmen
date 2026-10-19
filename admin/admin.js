@@ -6,6 +6,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 
 const SLIDE_W = 1024, SLIDE_H = 600;
 const STATUS_REFRESH_MS = 10000;
+const UPDATE_POLL_MS = 2000;
 const SETUP_LABELS = {
   READY: "Online", OFFLINE: "Offline", SETUP_ADMIN: "Einrichtung", SETUP_HOTSPOT: "Hotspot", SETUP_ACCOUNT: "Hotspot"
 };
@@ -408,6 +409,11 @@ function renderSide() {
       <div class="msg" id="side-msg"></div>
     </div>
     <div class="section-head">
+      <div class="kicker">UPDATE</div>
+      <div class="section-title">Software</div>
+    </div>
+    <div class="side-actions" id="update"></div>
+    <div class="section-head">
       <div class="kicker">ZUGANG</div>
       <div class="section-title">Passwort ändern</div>
     </div>
@@ -438,6 +444,12 @@ function renderSide() {
     app.innerHTML = authLayout(`<div class="field"><h1>Hotspot ist offen</h1><div class="muted">Folge den Schritten auf dem Display.</div></div>`);
   });
 
+  $("#update").addEventListener("click", e => {
+    if (e.target.closest("#update-check")) checkUpdate();
+    if (e.target.closest("#update-install")) installUpdate();
+  });
+  loadUpdate();
+
   $("#password-form").addEventListener("submit", async e => {
     e.preventDefault();
     const r = await api("password", { method: "POST", body: { current: $("#current").value, next: $("#next").value } });
@@ -445,6 +457,70 @@ function renderSide() {
     $("#current").value = $("#next").value = "";
     setMsg("password-msg", "Geändert. Andere Sitzungen wurden abgemeldet.", true);
   });
+}
+
+// --- Update per Knopf ---
+
+const short = commit => (commit ? commit.slice(0, 7) : "–");
+const UPDATE_DONE = { done: "ok", current: "ok", failed: "error" };
+
+function renderUpdate(info, { changes = null, message = null, ok = true } = {}) {
+  const last = info.lastRun;
+  const lastText = last && last.state !== "running"
+    ? `Letztes Update ${new Date(last.at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}: ${last.message}`
+    : "";
+  $("#update").innerHTML = `
+    <dl class="status-list" style="margin:0">
+      <div class="status-row"><dt>Version</dt><dd>${esc(short(info.commit))}</dd></div>
+      <div class="status-row"><dt>Branch</dt><dd>${esc(`${info.remote}/${info.branch}`)}</dd></div>
+    </dl>
+    ${changes?.length ? `
+      <div class="field">
+        <div class="label">${changes.length} NEUE ÄNDERUNG${changes.length === 1 ? "" : "EN"}</div>
+        <div class="muted" style="font-size:13px;line-height:1.5">${changes.map(esc).join("<br>")}</div>
+      </div>
+      <button class="primary" id="update-install"><span>Installieren</span><span>↓</span></button>` : ""}
+    <button class="secondary" id="update-check"${info.running ? " disabled" : ""}>Nach Updates suchen</button>
+    <div class="msg ${ok ? "ok" : "error"}" id="update-msg">${esc(message ?? lastText)}</div>`;
+}
+
+async function loadUpdate(opts) {
+  const r = await api("update");
+  if (r.ok) renderUpdate(r.data, opts);
+  return r.ok ? r.data : null;
+}
+
+async function checkUpdate() {
+  setMsg("update-msg", "Suche …", true);
+  const r = await api("update/check", { method: "POST", body: {} });
+  if (!r.ok) return setMsg("update-msg", r.error);
+  if (r.data.ahead) return loadUpdate({ message: "Lokale Änderungen auf dem Rahmen, Update per Knopf nicht möglich", ok: false });
+  loadUpdate({ changes: r.data.changes, message: r.data.changes.length ? "" : "Bereits aktuell" });
+}
+
+// Während des Updates startet der Daemon neu; Fehler beim Abfragen heißen dann nur „startet neu“.
+async function installUpdate() {
+  if (!confirm("Update installieren? Der Rahmen startet dabei kurz neu.")) return;
+  const r = await api("update/install", { method: "POST", body: {} });
+  if (!r.ok) return setMsg("update-msg", r.error);
+  const started = r.data.lastRun?.at ?? Date.now();
+  renderUpdate(r.data, { message: "Update läuft …" });
+  const poll = async () => {
+    let info = null;
+    try {
+      const res = await fetch("/api/admin/update");
+      if (res.ok) info = await res.json();
+    } catch {}
+    if (!info) return setMsg("update-msg", "Rahmen startet neu …", true), setTimeout(poll, UPDATE_POLL_MS);
+    const last = info.lastRun;
+    if (last && last.at >= started && UPDATE_DONE[last.state]) {
+      renderUpdate(info, { message: last.message, ok: UPDATE_DONE[last.state] === "ok" });
+      return;
+    }
+    setMsg("update-msg", last?.message ? `${last.message} …` : "Update läuft …", true);
+    setTimeout(poll, UPDATE_POLL_MS);
+  };
+  setTimeout(poll, UPDATE_POLL_MS);
 }
 
 async function start() {

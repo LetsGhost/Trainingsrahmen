@@ -16,15 +16,22 @@ const DEFAULTS = {
   // Admin-Passwort als scrypt-Hash: { salt, hash } oder null, solange es nicht gesetzt ist.
   admin: null,
   // theme: "auto" (Nachtfenster 22–06) | "light" | "dark"
-  display: { theme: "auto", showWeather: true, showRecovery: true }
+  display: { theme: "auto", showWeather: true, showRecovery: true },
+  // Update-Knopf: von diesem Remote und Branch wird gezogen.
+  update: { remote: "origin", branch: "master" }
 };
 
 function load() {
   try {
     const saved = JSON.parse(fs.readFileSync(FILE, "utf8"));
-    return { ...DEFAULTS, ...saved, display: { ...DEFAULTS.display, ...saved.display } };
+    return {
+      ...DEFAULTS,
+      ...saved,
+      display: { ...DEFAULTS.display, ...saved.display },
+      update: { ...DEFAULTS.update, ...saved.update }
+    };
   } catch {
-    return { ...DEFAULTS, display: { ...DEFAULTS.display } };
+    return { ...DEFAULTS, display: { ...DEFAULTS.display }, update: { ...DEFAULTS.update } };
   }
 }
 

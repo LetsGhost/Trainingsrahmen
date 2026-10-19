@@ -1,0 +1,11 @@
+# Startet scripts/self-update.sh unabhängig vom Daemon, damit dessen Neustart das Update nicht abbricht.
+# Der Daemon startet die Unit mit „systemctl start --no-block trainingsrahmen-update.service“.
+# Pfade und Rechte (wer die Unit starten darf) werden mit Phase 8 beim Einrichten des Pi festgelegt.
+[Unit]
+Description=Trainingsrahmen Update per Knopf
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/trainingsrahmen
+EnvironmentFile=-/opt/trainingsrahmen/data/update.env
+ExecStart=/opt/trainingsrahmen/scripts/self-update.sh
