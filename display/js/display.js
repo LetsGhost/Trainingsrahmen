@@ -1,30 +1,27 @@
 import { adaptPlan } from "./adapter.js";
+import { renderDay } from "./day.js";
+import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
-const DOW_SHORT = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"];
-const DOW_LONG = ["MONTAG", "DIENSTAG", "MITTWOCH", "DONNERSTAG", "FREITAG", "SAMSTAG", "SONNTAG"];
-const MONTHS = ["JANUAR", "FEBRUAR", "MÄRZ", "APRIL", "MAI", "JUNI", "JULI", "AUGUST", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DEZEMBER"];
 const NIGHT_START = 22, NIGHT_END = 6;
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const ACTIVITY_THROTTLE_MS = 2000;
+const DAY_VIEW_MS = 60 * 1000;
+// Ab so vielen Einheiten an einem Tag wird die Spalte kompakter, damit alles ohne Scrollen passt.
+const DENSE_SESSIONS = 3;
 
-// Entwicklungs-Parameter: ?theme=dark|light und ?now=2026-09-09T18:42 (verstellte Uhr).
-// Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
+// Entwicklungs-Parameter: ?theme=dark|light, ?now=2026-09-09T18:42 (verstellte Uhr) und
+// ?day=0…6 (Tagesansicht offen, ohne Rücksprung). Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
 const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
+const urlDay = /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
 const frame = document.getElementById("frame");
 // daemon: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
-const state = { plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null };
+// openDay: Index des Tages in der Tagesansicht oder null.
+const state = { plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null, openDay: urlDay };
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
-const pad = n => String(n).padStart(2, "0");
-const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const icon = name => `<svg class="icon" viewBox="0 0 24 24"><use href="assets/icons.svg#i-${name}"></use></svg>`;
-
-// Montag = 0 … Sonntag = 6
-const dowIndex = d => (d.getDay() + 6) % 7;
 
 function weekDates(d) {
   const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dowIndex(d));
@@ -80,7 +77,7 @@ function renderSession(s) {
   return `
     <div class="session">
       <div class="session-top">${icon(s.icon)}<span class="session-sport">${esc(s.sport)}</span></div>
-      <div class="session-title">${esc(s.title)}</div>
+      <div class="session-title">${esc(hyphenate(s.title))}</div>
       ${meta ? `<div class="session-meta">${esc(meta)}</div>` : ""}
     </div>`;
 }
@@ -93,8 +90,9 @@ function renderWeek(d, dates) {
     const body = sessions.length
       ? sessions.map(renderSession).join("")
       : `<div class="rest">${icon("moon")}<div class="rest-label">RUHETAG</div></div>`;
+    const cls = (i === today ? " today" : "") + (sessions.length >= DENSE_SESSIONS ? " dense" : "");
     return `
-      <div class="day${i === today ? " today" : ""}">
+      <div class="day${cls}" data-day="${i}">
         <div class="day-head"><span class="day-dow">${DOW_SHORT[i]}</span><span class="day-date">${pad(date.getDate())}</span></div>
         <div class="day-bar"></div>
         ${state.plan ? body : ""}
@@ -149,7 +147,7 @@ function screenFor(f) {
   if (f?.setup === "SETUP_HOTSPOT" || f?.setup === "SETUP_ACCOUNT") return "setup";
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
-  return "plan";
+  return state.openDay !== null && state.plan ? "day" : "plan";
 }
 
 function render() {
@@ -160,7 +158,12 @@ function render() {
   if (screen === "setup") frame.innerHTML = renderSetup(state.daemon);
   else if (screen === "slideshow") frame.innerHTML = renderSlideshow(d);
   else if (screen === "off") frame.innerHTML = "";
-  else {
+  else if (screen === "day") {
+    const index = state.openDay;
+    frame.innerHTML = renderDay({
+      d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: state.weather
+    });
+  } else {
     const dates = weekDates(d);
     frame.innerHTML = renderHead(d, dates) + `<div class="rule"></div>` + renderWeek(d, dates) + `<div class="rule"></div>` + renderFoot();
   }
@@ -200,6 +203,7 @@ function listen() {
     const becameReady = msg.frame.setup === "READY" && state.daemon?.setup !== "READY";
     state.daemon = msg.frame;
     state.dev = msg.dev;
+    if (msg.frame.rest !== "AKTIV") closeDay(false);
     if (planChanged || becameReady) sync();
     else render();
   };
@@ -226,6 +230,29 @@ document.addEventListener("click", e => {
   e.preventDefault();
   e.stopPropagation();
 }, true);
+
+// Tagesansicht: Tipp auf einen Tag öffnet ihn; ein weiterer Tipp oder 60 s führen zurück zur Woche.
+let dayTimer = null;
+
+function openDay(index) {
+  state.openDay = index;
+  clearTimeout(dayTimer);
+  dayTimer = setTimeout(closeDay, DAY_VIEW_MS);
+  render();
+}
+
+function closeDay(rerender = true) {
+  clearTimeout(dayTimer);
+  if (state.openDay === null) return;
+  state.openDay = null;
+  if (rerender) render();
+}
+
+frame.addEventListener("click", e => {
+  if (frame.dataset.screen === "day") return closeDay();
+  const day = e.target.closest("[data-day]");
+  if (frame.dataset.screen === "plan" && day && state.plan) openDay(Number(day.dataset.day));
+});
 
 render();
 listen();

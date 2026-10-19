@@ -119,7 +119,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - Dev-Leiste unter `/debug`: Zustand erzwingen, Bewegung auslösen, Uhr verstellen, Theme, Testpläne.
 - Fehler simulieren: falsches WLAN-Passwort, kein Internet, Server lehnt Key ab.
 - Fixtures statt echter Abrufe, damit die Entwicklung offline läuft.
-- `?theme=dark|light` und `?now=2026-09-09T18:42` am Display haben Vorrang vor der Dev-Leiste.
+- `?theme=dark|light`, `?now=2026-09-09T18:42` und `?day=0…6` am Display haben Vorrang vor der Dev-Leiste.
 - Auf dem Pi: Deploy-Skript, Remote-Debugging über SSH-Tunnel, Overlay mit RAM und Temperatur.
 
 ## Phasen
@@ -127,7 +127,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - [x] 1. Wochenraster 2A/2B aus Fixtures, Tokens, Schrift und Icons lokal
 - [ ] 2. Auf dem Pi messen (RAM, Startzeit), Browser festlegen, PIR und Backlight testen (verschoben, bis der Pi da ist)
 - [x] 3. Daemon: Zustandsautomaten, SSE, Mock-Adapter, Dev-Leiste
-- [ ] 4. Touch: Tagesansicht mit Rücksprung
+- [ ] 4. Touch: Tagesansicht mit Rücksprung (am PC fertig; Touch am Pi steht aus)
 - [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot
 - [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache
 - [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf

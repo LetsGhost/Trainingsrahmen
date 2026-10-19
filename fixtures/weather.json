@@ -7,5 +7,14 @@
   "wind": 14,
   "precip": 4,
   "low": 12,
-  "sunset": "19:48"
+  "sunset": "19:48",
+  "forecast": [
+    { "icon": "cloud-rain", "hi": 19, "lo": 12 },
+    { "icon": "cloud", "hi": 18, "lo": 11 },
+    { "icon": "sun", "hi": 22, "lo": 12 },
+    { "icon": "sun", "hi": 24, "lo": 15 },
+    { "icon": "cloud-sun", "hi": 20, "lo": 14 },
+    { "icon": "cloud-drizzle", "hi": 17, "lo": 11 },
+    { "icon": "cloud-sun", "hi": 21, "lo": 13 }
+  ]
 }

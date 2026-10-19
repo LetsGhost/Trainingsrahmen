@@ -64,7 +64,8 @@ body {
 .weather-temp { font-size: 52px; font-weight: 800; line-height: 0.85; letter-spacing: -0.035em; }
 
 /* Wochenraster */
-.week { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); min-height: 0; }
+/* Die Zeile darf nicht mit dem Inhalt wachsen, sonst läuft eine volle Spalte über die Fußzeile. */
+.week { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: minmax(0, 1fr); min-height: 0; }
 .day {
   display: flex;
   flex-direction: column;
@@ -72,6 +73,7 @@ body {
   padding: 14px 12px;
   border-right: 1px solid var(--rule-soft);
   min-width: 0;
+  overflow: hidden;
 }
 .day-head { display: flex; align-items: baseline; gap: 6px; }
 .day-dow { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; }
@@ -95,10 +97,20 @@ body {
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.015em;
-  hyphens: auto;
+  /* Trennstellen setzt hyphenate() als weiche Trennstriche; anywhere ist nur der Notfall. */
+  hyphens: manual;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
 }
 .session-meta { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--sub); }
+
+.day.dense { gap: 6px; }
+.day.dense .session { gap: 2px; padding: 6px 8px 7px; }
+.day.dense .session-title { font-size: 13px; -webkit-line-clamp: 3; }
+.day.dense .session-meta { font-size: 11px; }
 
 .rest {
   display: flex;
@@ -157,3 +169,72 @@ body {
 
 /* AUS: Backlight ist aus; am PC bleibt der Rahmen schwarz. */
 .frame[data-screen="off"] { background: #000; }
+
+/* Tagesansicht (Layout 1B) */
+.dayview { flex: 1; display: grid; grid-template-columns: 600px 2px 1fr; min-height: 0; }
+.dv-main { display: flex; flex-direction: column; padding: 26px; min-width: 0; min-height: 0; overflow: hidden; }
+.dv-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.dv-clock { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.dv-rule { height: 2px; background: var(--rule); margin: 14px 0 20px; flex-shrink: 0; }
+.dv-sport { display: flex; align-items: center; gap: 14px; }
+.dv-sport .icon { width: 40px; height: 40px; stroke-width: 1.75; color: var(--accent); }
+.dv-sport-label { font-size: 15px; font-weight: 800; letter-spacing: 0.12em; color: var(--muted); }
+.dv-title {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  margin-top: 14px;
+  hyphens: manual;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.dv-title.long { font-size: 42px; }
+.dv-title.longer { font-size: 32px; line-height: 1.05; }
+
+.dv-facts { display: flex; margin-top: 26px; border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule); }
+.dv-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 20px 14px 0;
+  margin-right: 20px;
+  border-right: 1px solid var(--rule-soft);
+  min-width: 120px;
+}
+.dv-fact:last-child { border-right: 0; }
+.dv-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--muted); }
+.dv-fact-value { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.dv-desc {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--sub);
+  margin-top: 18px;
+  max-width: 480px;
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.dv-more { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.dv-spacer { flex: 1; }
+.dv-recovery { display: flex; align-items: center; gap: 24px; padding-top: 16px; border-top: 2px solid var(--rule); }
+.dv-recovery-value { font-size: 19px; font-weight: 800; }
+
+.dv-divider { background: var(--rule); }
+.dv-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.dv-heading { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; color: var(--accent-ink); }
+.dv-weather { display: flex; flex-direction: column; gap: 10px; padding: 22px 24px; }
+.dv-week { flex: 1; display: flex; flex-direction: column; gap: 9px; padding: 20px 24px; min-height: 0; overflow: hidden; }
+
+.dv-row { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.dv-row .icon { width: 17px; height: 17px; stroke-width: 1.9; color: var(--sub); }
+.dv-row-dow { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; width: 30px; flex-shrink: 0; color: var(--muted); }
+.dv-more .dv-row-dow { display: none; }
+.dv-row-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-row-title.muted { color: var(--muted); }
+.dv-row-meta { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.dv-row-line { flex: 1; height: 1px; background: var(--rule-soft); }
+.dv-hi { font-size: 14px; font-weight: 800; letter-spacing: -0.01em; }
+.dv-lo { font-size: 13px; font-weight: 600; color: var(--muted); width: 34px; text-align: right; }

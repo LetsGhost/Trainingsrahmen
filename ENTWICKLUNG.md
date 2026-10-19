@@ -18,6 +18,18 @@ Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`
 |---|---|
 | `?theme=dark` / `?theme=light` | Farbschema erzwingen (Vorrang vor der Dev-Leiste) |
 | `?now=2026-09-09T18:42` | Uhr verstellen (Wochentag, Nachtmodus; Vorrang vor der Dev-Leiste) |
+| `?day=0` … `?day=6` | Tagesansicht für Montag … Sonntag offen halten, ohne Rücksprung nach 60 s |
+
+## Display
+
+| Datei | Inhalt |
+|---|---|
+| `display/js/display.js` | Zustand, Wochenraster, Platzhalter-Screens, Touch, SSE, Sync |
+| `display/js/day.js` | Tagesansicht (Layout 1B) |
+| `display/js/adapter.js` | Server-Format → internes Modell |
+| `display/js/util.js` | Formatierung, Icons, Silbentrennung |
+
+Lange Titel bekommen über `hyphenate()` weiche Trennstriche, weil Chromium auf dem Pi offline kein deutsches Trenn-Wörterbuch hat. Ab drei Einheiten an einem Tag wird die Spalte kompakt; Titel werden nach drei bzw. vier Zeilen abgeschnitten.
 
 ## Dev-Leiste
 
@@ -66,7 +78,7 @@ Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` 
 - `fixtures/data.minimal.json`: heutiger Serverstand (nur `type` und `title`).
 - `fixtures/data.empty.json`: leere Woche.
 - `fixtures/data.full.json`: drei Einheiten an einem Tag, lange Titel, unbekannter Sport, 5 h am Stück.
-- `fixtures/weather.json`: Wetter.
+- `fixtures/weather.json`: Wetter, `forecast` sind sieben Tage ab heute (für die Tagesansicht).
 
 Neue `data*.json`-Dateien erscheinen ohne Neustart in der Dev-Leiste unter „Testplan“.
 
@@ -85,7 +97,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 1 Wochenraster | PC | Erledigt: 2A/2B rendern aus Fixtures wie im Mockup |
 | 2 Messen | Pi (verschoben) | Display läuft im Kiosk; RAM, Startzeit und CPU-Temperatur notiert; Browser entschieden; PIR liefert ein Signal, Backlight schaltet |
 | 3 Daemon | PC | Erledigt: Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
-| 4 Tagesansicht | PC, dann Pi | Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
+| 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
 | 6 Sync | PC, dann Pi | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
 | 7 Admin | PC, dann Pi | Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
