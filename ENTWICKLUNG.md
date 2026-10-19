@@ -26,6 +26,7 @@ Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`
 |---|---|
 | `display/js/display.js` | Zustand, Wochenraster, Platzhalter-Screens, Touch, SSE, Sync |
 | `display/js/day.js` | Tagesansicht (Layout 1B) |
+| `display/js/setup.js` | Einrichtungs-Screens 3A–3C |
 | `display/js/adapter.js` | Server-Format → internes Modell |
 | `display/js/util.js` | Formatierung, Icons, Silbentrennung |
 
@@ -50,7 +51,22 @@ Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zähl
 | Einrichtung | `SETUP_HOTSPOT` → `SETUP_ACCOUNT` (Handy im Portal) → `READY` ⇄ `OFFLINE`. Scheitert das Absenden, kommt der Hotspot nach 30 s mit Fehler zurück. |
 | Ruhe | `AKTIV` → `SLIDESHOW` → `AUS`, ohne Bilder direkt `AKTIV` → `AUS`. Touch oder Bewegung führt zurück; der erste Tipp außerhalb von `AKTIV` weckt nur. Läuft nur in `READY` und `OFFLINE`. |
 
-Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` (SSE). Display und Dev-Leiste rendern daraus neu. Einrichtung und Slideshow zeigen bis Phase 5 bzw. 7 nur Platzhalter.
+Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` (SSE). Display, Portal und Dev-Leiste rendern daraus neu. Die Slideshow zeigt bis Phase 7 nur einen Platzhalter.
+
+## Einrichtung testen
+
+1. Dev-Leiste → „Werkseinstellung“: Das Display zeigt 3A mit WLAN-QR.
+2. `http://localhost:8080/setup` öffnen (am besten in den DevTools in Handygröße). Das zählt als „Handy öffnet Portal“, das Display springt auf 3B.
+3. WLAN wählen, Server-URL und API-Key eintragen, „Verbinden“. Fehler vorher in der Dev-Leiste einschalten, um 30 s Wartezeit und Rückkehr zu 3A zu sehen.
+
+Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Ist das Handy im selben WLAN, öffnet es das Portal direkt. Unter Windows muss die Firewall Node für private Netze zulassen.
+
+| Route | Zweck |
+|---|---|
+| `GET /setup` | Portal; meldet dem Daemon „Portal geöffnet“ |
+| `GET /api/setup/networks` | WLAN-Liste vom Adapter |
+| `POST /api/setup` | `{ wifi: { ssid, password }, server: { url, apiKey } }`; antwortet sofort mit 202, verbindet danach |
+| `GET /api/setup/qr/wifi.svg`, `…/portal.svg` | QR-Codes für 3A und 3B |
 
 ## Ordner
 
@@ -60,6 +76,7 @@ Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` 
 | `daemon/` | Node-Prozess: Server, Zustandsautomaten (`state.js`), Einstellungen, Server-Prüfung |
 | `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch leer) |
 | `debug/` | Dev-Leiste, nur mit `FRAME_ENV=dev` erreichbar |
+| `portal/` | Einrichtungsportal fürs Handy unter `/setup` |
 | `fixtures/` | Testdaten statt echter Abrufe |
 | `data/` | Laufzeitdaten wie `config.json`, nicht im Git |
 
@@ -98,7 +115,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 2 Messen | Pi (verschoben) | Display läuft im Kiosk; RAM, Startzeit und CPU-Temperatur notiert; Browser entschieden; PIR liefert ein Signal, Backlight schaltet |
 | 3 Daemon | PC | Erledigt: Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
 | 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
-| 5 Einrichtung | PC, dann Pi | Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
+| 5 Einrichtung | PC, dann Pi | Gegen den Mock erledigt, Pi offen: Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
 | 6 Sync | PC, dann Pi | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
 | 7 Admin | PC, dann Pi | Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
 | 8 Härtung | Pi | Stecker ziehen im Betrieb, Pi startet wieder sauber in das Display |

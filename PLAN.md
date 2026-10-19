@@ -93,6 +93,12 @@ Pi OS Lite 64-bit (kein Desktop)
 
 Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, nicht gleichzeitig.
 
+- Screens 3A (Hotspot + WLAN-QR), 3B (Portal + QR zur Portal-Adresse), 3C (fertig, 4 s), dazu „Verbinde …“ und „Das hat nicht geklappt“ während der 30 s.
+- Abweichung von der Vorlage: 3B verweist nicht auf eine externe Website mit Account, sondern auf das Portal auf dem Pi.
+- QR-Codes erzeugt der Daemon selbst (`daemon/qr.js`, ohne Abhängigkeiten).
+- Prüfadressen von Android, iOS und Windows (`/generate_204`, `/hotspot-detect.html` …) und auf dem Pi jeder fremde Host leiten während der Einrichtung auf das Portal um.
+- Offen für den Pi: Hotspot, WLAN-Suche und Verbinden per `nmcli` im Pi-Adapter; Portal auf Port 80 (Weiterleitung auf 8080); Hotspot-Adresse `10.42.0.1`.
+
 ## Ruhe und Slideshow
 
 - Fristen (Start 5 und 30 Minuten) im Admin-Panel einstellbar.
@@ -128,7 +134,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - [ ] 2. Auf dem Pi messen (RAM, Startzeit), Browser festlegen, PIR und Backlight testen (verschoben, bis der Pi da ist)
 - [x] 3. Daemon: Zustandsautomaten, SSE, Mock-Adapter, Dev-Leiste
 - [ ] 4. Touch: Tagesansicht mit Rücksprung (am PC fertig; Touch am Pi steht aus)
-- [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot
+- [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot (gegen den Mock fertig; echter Hotspot braucht den Pi)
 - [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache
 - [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf
 - [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root

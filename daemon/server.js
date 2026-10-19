@@ -6,13 +6,15 @@ const path = require("path");
 const configStore = require("./config");
 const createBackend = require("./backend");
 const { createSystemAdapter } = require("./system");
-const { createFrame } = require("./state");
+const { createFrame, validate, SETUP } = require("./state");
+const qr = require("./qr");
 
 const PORT = process.env.PORT || 8080;
 const DEV = process.env.FRAME_ENV === "dev";
 const ROOT = path.join(__dirname, "..");
 const DISPLAY_DIR = path.join(ROOT, "display");
 const DEBUG_DIR = path.join(ROOT, "debug");
+const PORTAL_DIR = path.join(ROOT, "portal");
 const FIXTURE_DIR = path.join(ROOT, "fixtures");
 
 const MIME = {
@@ -32,7 +34,7 @@ const DEADLINE_PRESETS = {
   short: { slideshowAfterMin: 10 / 60, offAfterMin: 30 / 60 }
 };
 
-const system = createSystemAdapter({ dev: DEV, sim });
+const system = createSystemAdapter({ dev: DEV, sim, port: PORT });
 const frame = createFrame({
   system,
   backend: createBackend({ dev: DEV, sim }),
@@ -149,11 +151,87 @@ async function handleDebug(req, res) {
   sendJson(res, 200, { ok: true });
 }
 
+// --- Einrichtung (Captive Portal) ---
+
+const inSetup = () => {
+  const f = frame.snapshot();
+  return (f.setup === SETUP.HOTSPOT || f.setup === SETUP.ACCOUNT) && !f.connecting;
+};
+
+// Prüfadressen, mit denen Android, iOS und Windows nach einem Captive Portal suchen.
+const CAPTIVE_PROBES = new Set([
+  "/generate_204", "/gen_204", "/hotspot-detect.html", "/library/test/success.html",
+  "/connecttest.txt", "/ncsi.txt", "/redirect", "/success.txt", "/canonical.html"
+]);
+
+function redirect(res, location) {
+  res.writeHead(302, { Location: location, "Cache-Control": "no-store" });
+  res.end();
+}
+
+function sendSvg(res, svg) {
+  res.writeHead(200, { "Content-Type": MIME[".svg"], "Cache-Control": "no-store" });
+  res.end(svg);
+}
+
+async function handleSetupSubmit(req, res) {
+  let input;
+  try {
+    input = validate(await readJson(req));
+  } catch (err) {
+    return sendJson(res, 400, { error: err.code === "INVALID" ? err.message : "Ungültige Eingabe" });
+  }
+  if (!inSetup()) return sendJson(res, 409, { error: "Keine Einrichtung aktiv" });
+  // Erst antworten, dann verbinden: Sobald der Hotspot schließt, verliert das Handy die Verbindung.
+  sendJson(res, 202, { ok: true });
+  frame.submit(input).catch(err => console.error(err));
+}
+
+// Liefert true, wenn die Anfrage zur Einrichtung gehörte.
+function routeSetup(req, res, pathname) {
+  // Während der Einrichtung führt jede Prüfadresse (und auf dem Pi jeder fremde Host) zum Portal.
+  const foreignHost = !DEV && req.headers.host && !/^(localhost|127\.0\.0\.1|10\.42\.0\.1|rahmen\.local)(:\d+)?$/.test(req.headers.host);
+  if (inSetup() && (CAPTIVE_PROBES.has(pathname) || foreignHost)) {
+    redirect(res, system.portalUrl());
+    return true;
+  }
+  if (pathname === "/setup") {
+    frame.portalOpened();
+    sendStatic(res, PORTAL_DIR, "index.html");
+    return true;
+  }
+  if (pathname.startsWith("/setup/")) {
+    sendStatic(res, PORTAL_DIR, pathname.slice("/setup/".length));
+    return true;
+  }
+  if (pathname === "/api/setup" && req.method === "POST") {
+    handleSetupSubmit(req, res);
+    return true;
+  }
+  if (pathname === "/api/setup/networks") {
+    if (!inSetup()) sendJson(res, 409, { error: "Keine Einrichtung aktiv" });
+    else system.scanWifi().then(list => sendJson(res, 200, list), err => sendJson(res, 500, { error: err.message }));
+    return true;
+  }
+  if (pathname === "/api/setup/qr/wifi.svg") {
+    const { hotspot } = frame.snapshot();
+    if (hotspot) sendSvg(res, qr.toSvg(qr.wifiPayload(hotspot)));
+    else sendJson(res, 404, { error: "Kein Hotspot aktiv" });
+    return true;
+  }
+  if (pathname === "/api/setup/qr/portal.svg") {
+    sendSvg(res, qr.toSvg(system.portalUrl()));
+    return true;
+  }
+  return false;
+}
+
 // --- Routen ---
 
 http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
 
+  if (routeSetup(req, res, pathname)) return;
   if (pathname === "/events") return openEvents(req, res);
   if (pathname === "/health") return sendJson(res, 200, { ok: true });
   if (pathname === "/api/activity" && req.method === "POST") {

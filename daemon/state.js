@@ -16,9 +16,21 @@ const NO_INTERNET = { code: "NO_INTERNET", message: "Kein Internet" };
 
 const toError = err => ({ code: err.code ?? "UNKNOWN", message: err.message });
 
+// Eingaben aus dem Portal prüfen und säubern.
+function validate({ wifi, server } = {}) {
+  const ssid = String(wifi?.ssid ?? "").trim();
+  const url = String(server?.url ?? "").trim();
+  const apiKey = String(server?.apiKey ?? "").trim();
+  if (!ssid) throw new FrameError("INVALID", "WLAN fehlt");
+  if (!/^https?:\/\/\S+$/i.test(url)) throw new FrameError("INVALID", "Server-URL muss mit http:// oder https:// beginnen");
+  if (!apiKey) throw new FrameError("INVALID", "API-Key fehlt");
+  return { wifi: { ssid, password: String(wifi.password ?? "") }, server: { url, apiKey } };
+}
+
 function createFrame({ system, backend, config, saveConfig, hasImages }) {
   const emitter = new EventEmitter();
-  const s = { setup: null, rest: REST.ACTIVE, connecting: false, error: null, hotspot: null, cpuTemp: null };
+  // connectingTo: WLAN-Name, solange nach dem Absenden verbunden wird.
+  const s = { setup: null, rest: REST.ACTIVE, connecting: false, connectingTo: null, error: null, hotspot: null, cpuTemp: null };
   let restTimers = [];
   let retryTimer = null;
   let checkTimer = null;
@@ -29,6 +41,7 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   function snapshot() {
     return {
       ...s,
+      portalUrl: operating() ? null : system.portalUrl(),
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin },
       system: system.status()
     };
@@ -110,10 +123,11 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   }
 
   // Eingaben aus dem Portal. Scheitert etwas, kommt der Hotspot nach 30 s mit der Fehlermeldung zurück.
-  async function submit({ wifi, server }) {
+  async function submit(input) {
     if (s.connecting || operating()) throw new FrameError("NOT_IN_SETUP", "Keine Einrichtung aktiv");
+    const { wifi, server } = validate(input);
     clearTimeout(retryTimer);
-    Object.assign(s, { connecting: true, error: null });
+    Object.assign(s, { connecting: true, connectingTo: wifi.ssid, error: null });
     changed();
     await system.stopHotspot();
     s.hotspot = null;
@@ -121,9 +135,9 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
       await connect(wifi, server);
       Object.assign(config, { wifi, server });
       saveConfig(config);
-      setSetup(SETUP.READY, { connecting: false });
+      setSetup(SETUP.READY, { connecting: false, connectingTo: null });
     } catch (err) {
-      Object.assign(s, { connecting: false, error: toError(err) });
+      Object.assign(s, { connecting: false, connectingTo: null, error: toError(err) });
       changed();
       retryTimer = setTimeout(() => openHotspot(s.error), HOTSPOT_RETRY_MS);
     }
@@ -195,4 +209,4 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   };
 }
 
-module.exports = { createFrame, SETUP, REST };
+module.exports = { createFrame, validate, SETUP, REST };

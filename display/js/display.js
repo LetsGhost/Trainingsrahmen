@@ -1,5 +1,6 @@
 import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
+import { renderSetup } from "./setup.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
 const NIGHT_START = 22, NIGHT_END = 6;
@@ -8,6 +9,8 @@ const ACTIVITY_THROTTLE_MS = 2000;
 const DAY_VIEW_MS = 60 * 1000;
 // Ab so vielen Einheiten an einem Tag wird die Spalte kompakter, damit alles ohne Scrollen passt.
 const DENSE_SESSIONS = 3;
+// So lange steht 3C („Alles bereit“) nach der Einrichtung, bevor der Plan erscheint.
+const SETUP_DONE_MS = 4000;
 
 // Entwicklungs-Parameter: ?theme=dark|light, ?now=2026-09-09T18:42 (verstellte Uhr) und
 // ?day=0…6 (Tagesansicht offen, ohne Rücksprung). Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
@@ -18,8 +21,10 @@ const urlDay = /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day"
 
 const frame = document.getElementById("frame");
 // daemon: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
-// openDay: Index des Tages in der Tagesansicht oder null.
-const state = { plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null, openDay: urlDay };
+// openDay: Index des Tages in der Tagesansicht oder null. setupDoneUntil: bis dahin steht 3C.
+const state = {
+  plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null, openDay: urlDay, setupDoneUntil: 0
+};
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
 
@@ -35,9 +40,10 @@ function isoWeek(d) {
   return 1 + Math.round((t - jan4) / 604800000 - 0.01);
 }
 
-function applyTheme(d) {
+// Die Einrichtung ist laut Vorlage immer dunkel.
+function applyTheme(d, screen) {
   const h = d.getHours();
-  const auto = h >= NIGHT_START || h < NIGHT_END ? "dark" : "light";
+  const auto = screen === "setup" || h >= NIGHT_START || h < NIGHT_END ? "dark" : "light";
   const override = urlTheme ?? state.dev?.theme;
   document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
 }
@@ -116,24 +122,6 @@ function renderFoot() {
   return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
 }
 
-// Platzhalter, bis Phase 5 die Screens 3A–3C bringt.
-function renderSetup(f) {
-  let line;
-  if (f.connecting) line = "Verbinde …";
-  else if (f.error) line = `Fehler: ${esc(f.error.message)}`;
-  else if (f.setup === "SETUP_ACCOUNT") line = "Handy verbunden · Daten im Portal eintragen";
-  else line = "Handy mit dem WLAN des Rahmens verbinden";
-  const hotspot = f.hotspot
-    ? `<div class="notice-line">WLAN ${esc(f.hotspot.ssid)} · Passwort ${esc(f.hotspot.password)}</div>`
-    : "";
-  return `
-    <section class="notice">
-      <div class="kicker">EINRICHTUNG</div>
-      <div class="notice-title">${line}</div>
-      ${hotspot}
-    </section>`;
-}
-
 // Platzhalter, bis Phase 7 Bilder hochladen kann.
 function renderSlideshow(d) {
   return `
@@ -143,8 +131,11 @@ function renderSlideshow(d) {
     </section>`;
 }
 
+const isSetup = f => f?.setup === "SETUP_HOTSPOT" || f?.setup === "SETUP_ACCOUNT";
+const setupDone = () => Date.now() < state.setupDoneUntil;
+
 function screenFor(f) {
-  if (f?.setup === "SETUP_HOTSPOT" || f?.setup === "SETUP_ACCOUNT") return "setup";
+  if (isSetup(f) || setupDone()) return "setup";
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
   return state.openDay !== null && state.plan ? "day" : "plan";
@@ -152,10 +143,10 @@ function screenFor(f) {
 
 function render() {
   const d = now();
-  applyTheme(d);
   const screen = screenFor(state.daemon);
+  applyTheme(d, screen);
   frame.dataset.screen = screen;
-  if (screen === "setup") frame.innerHTML = renderSetup(state.daemon);
+  if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
   else if (screen === "slideshow") frame.innerHTML = renderSlideshow(d);
   else if (screen === "off") frame.innerHTML = "";
   else if (screen === "day") {
@@ -201,6 +192,10 @@ function listen() {
     const msg = JSON.parse(e.data);
     const planChanged = state.dev && msg.dev && msg.dev.plan !== state.dev.plan;
     const becameReady = msg.frame.setup === "READY" && state.daemon?.setup !== "READY";
+    if (becameReady && isSetup(state.daemon)) {
+      state.setupDoneUntil = Date.now() + SETUP_DONE_MS;
+      setTimeout(render, SETUP_DONE_MS + 50);
+    }
     state.daemon = msg.frame;
     state.dev = msg.dev;
     if (msg.frame.rest !== "AKTIV") closeDay(false);

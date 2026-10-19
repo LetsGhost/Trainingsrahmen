@@ -24,6 +24,7 @@
   --card-today: #2b2827;
   --bar: #7d7979;
   --rest-bar: #7d7979;
+  --qr-bg: #ffffff;
 }
 
 :root[data-theme="light"] {
@@ -42,4 +43,5 @@
   --card-today: #f8f4f4;
   --bar: #605d5d;
   --rest-bar: #bab6b6;
+  --qr-bg: #ffffff;
 }
