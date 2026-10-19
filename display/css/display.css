@@ -142,3 +142,18 @@ body {
   color: var(--muted);
 }
 .sync .icon { width: 16px; height: 16px; stroke-width: 2; }
+
+/* Einrichtung und Slideshow (Platzhalter bis Phase 5 und 7) */
+.notice {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 64px;
+}
+.notice-title { font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.notice-line { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); }
+
+/* AUS: Backlight ist aus; am PC bleibt der Rahmen schwarz. */
+.frame[data-screen="off"] { background: #000; }

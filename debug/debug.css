@@ -1,0 +1,49 @@
+/* Dev-Leiste: nur am PC, nicht auf dem 7-Zoll-Display. */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #111;
+  color: #e8e6e6;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+
+.layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
+
+/* Das Display behält 1024 × 600 und wird per Skript auf die Breite skaliert. */
+.preview { flex: 1; min-width: 0; }
+.preview iframe { display: block; border: 0; transform-origin: 0 0; background: #000; }
+
+.panel { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+section { background: #1c1b1b; border: 1px solid #2c2a2a; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+h2 { margin: 0; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #ff563c; }
+
+.status { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; }
+.status dt { color: #9a9696; }
+.status dd { margin: 0; font-weight: 600; }
+.error { margin: 0; color: #ff8a75; }
+
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fields button { grid-column: span 2; }
+label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+label.check { justify-content: flex-start; }
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+  background: #2a2828;
+  border: 1px solid #3a3737;
+  border-radius: 6px;
+  padding: 5px 9px;
+  min-width: 0;
+}
+button { cursor: pointer; }
+button:hover { background: #353232; }
+button.on { background: #ff563c; border-color: #ff563c; color: #111; }
+input[type="checkbox"] { padding: 0; }
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .panel { width: 100%; }
+}

@@ -8,20 +8,48 @@ Kurzanleitung zum Arbeiten am Trainingsrahmen. Was gebaut wird und warum, steht 
 npm run dev
 ```
 
-Display: `http://localhost:8080`. Es gibt keine Abhängigkeiten und keinen Build-Schritt; nach einer Änderung reicht ein Neuladen im Browser. Änderungen an `daemon/` brauchen einen Neustart.
+Display: `http://localhost:8080`, Dev-Leiste: `http://localhost:8080/debug`. Es gibt keine Abhängigkeiten und keinen Build-Schritt; nach einer Änderung reicht ein Neuladen im Browser. Änderungen an `daemon/` brauchen einen Neustart.
+
+`npm run dev` setzt `FRAME_ENV=dev` (aus `.env.dev`): Der Daemon nimmt den Mock-Adapter statt echter Hardware und schaltet die Dev-Leiste frei. `npm start` ist der Betrieb auf dem Pi und bricht ab, bis der Pi-Adapter existiert.
+
+Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`. Ein anderer Ort geht über `FRAME_DATA=…`. Datei löschen oder in der Dev-Leiste „Werkseinstellung“ drücken führt zurück in die Einrichtung.
 
 | Parameter | Wirkung |
 |---|---|
-| `?theme=dark` / `?theme=light` | Farbschema erzwingen |
-| `?now=2026-09-09T18:42` | Uhr verstellen (Wochentag, Nachtmodus) |
+| `?theme=dark` / `?theme=light` | Farbschema erzwingen (Vorrang vor der Dev-Leiste) |
+| `?now=2026-09-09T18:42` | Uhr verstellen (Wochentag, Nachtmodus; Vorrang vor der Dev-Leiste) |
+
+## Dev-Leiste
+
+Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zählen als Touch.
+
+| Bereich | Was geht |
+|---|---|
+| Zustand | Beide Automaten, Fehler, Mock-Hardware (Hotspot, WLAN, Backlight, CPU) live |
+| Einrichtung | Werkseinstellung, „Handy öffnet Portal“, Portal absenden, Zustand erzwingen |
+| Ruhe | Bewegung (PIR), Zustand erzwingen, Fristen normal oder kurz (10 s / 30 s), Bilder vorhanden |
+| Fehler simulieren | Falsches WLAN-Passwort, kein Internet, Server lehnt Key ab |
+| Anzeige | Theme, Testplan aus `fixtures/`, Uhr verstellen |
+
+## Zustände
+
+| Automat | Ablauf |
+|---|---|
+| Einrichtung | `SETUP_HOTSPOT` → `SETUP_ACCOUNT` (Handy im Portal) → `READY` ⇄ `OFFLINE`. Scheitert das Absenden, kommt der Hotspot nach 30 s mit Fehler zurück. |
+| Ruhe | `AKTIV` → `SLIDESHOW` → `AUS`, ohne Bilder direkt `AKTIV` → `AUS`. Touch oder Bewegung führt zurück; der erste Tipp außerhalb von `AKTIV` weckt nur. Läuft nur in `READY` und `OFFLINE`. |
+
+Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` (SSE). Display und Dev-Leiste rendern daraus neu. Einrichtung und Slideshow zeigen bis Phase 5 bzw. 7 nur Platzhalter.
 
 ## Ordner
 
 | Ordner | Inhalt |
 |---|---|
 | `display/` | Was auf dem 7-Zoll-Display läuft (HTML, CSS, JS, Schrift, Icons) |
-| `daemon/` | Node-Prozess: liefert Display und API aus, später Zustände, Sync, Hardware |
+| `daemon/` | Node-Prozess: Server, Zustandsautomaten (`state.js`), Einstellungen, Server-Prüfung |
+| `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch leer) |
+| `debug/` | Dev-Leiste, nur mit `FRAME_ENV=dev` erreichbar |
 | `fixtures/` | Testdaten statt echter Abrufe |
+| `data/` | Laufzeitdaten wie `config.json`, nicht im Git |
 
 ## Regeln
 
@@ -29,14 +57,18 @@ Display: `http://localhost:8080`. Es gibt keine Abhängigkeiten und keinen Build
 - **Nichts aus dem Internet laden.** Schrift, Icons und Skripte liegen lokal.
 - **Farben nur über Variablen** aus `display/css/tokens.css`, nie fest im Markup.
 - **Server-Format nur in `display/js/adapter.js`.** Der Rest kennt nur das interne Modell.
-- **Hardware nur über den SystemAdapter** (ab Phase 3). Kein `nmcli`, GPIO oder Backlight direkt im übrigen Code.
+- **Hardware nur über den SystemAdapter** (`daemon/system/`). Kein `nmcli`, GPIO oder Backlight direkt im übrigen Code.
 - **Jeder Screen ist 1024 × 600** und muss ohne Scrollen passen.
 
 ## Fixtures
 
 - `fixtures/data.json`: Plan mit allen Feldern.
 - `fixtures/data.minimal.json`: heutiger Serverstand (nur `type` und `title`).
+- `fixtures/data.empty.json`: leere Woche.
+- `fixtures/data.full.json`: drei Einheiten an einem Tag, lange Titel, unbekannter Sport, 5 h am Stück.
 - `fixtures/weather.json`: Wetter.
+
+Neue `data*.json`-Dateien erscheinen ohne Neustart in der Dev-Leiste unter „Testplan“.
 
 Für Randfälle (leere Woche, drei Einheiten an einem Tag, sehr lange Titel) eine weitere Datei anlegen statt die vorhandenen zu ändern.
 
@@ -51,8 +83,8 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | Phase | Wo | Prüfpunkt |
 |---|---|---|
 | 1 Wochenraster | PC | Erledigt: 2A/2B rendern aus Fixtures wie im Mockup |
-| 2 Messen | Pi | Display läuft im Kiosk; RAM, Startzeit und CPU-Temperatur notiert; Browser entschieden; PIR liefert ein Signal, Backlight schaltet |
-| 3 Daemon | PC | Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
+| 2 Messen | Pi (verschoben) | Display läuft im Kiosk; RAM, Startzeit und CPU-Temperatur notiert; Browser entschieden; PIR liefert ein Signal, Backlight schaltet |
+| 3 Daemon | PC | Erledigt: Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
 | 4 Tagesansicht | PC, dann Pi | Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
 | 6 Sync | PC, dann Pi | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |

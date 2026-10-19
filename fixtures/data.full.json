@@ -1,0 +1,25 @@
+{
+  "trainingsweek": [
+    {
+      "day": "Montag",
+      "training": [
+        { "type": "running", "title": "Einlaufen mit Steigerungsläufen und Lauf-ABC", "time": "06:30", "duration": 40 },
+        { "type": "weightLifting", "title": "Plan A - Unterkörper (Hüfte & Rumpf) mit Stabilisationsübungen", "time": "12:15", "duration": 45 },
+        { "type": "swimming", "title": "Technik", "time": "19:00", "duration": 60 }
+      ]
+    },
+    {
+      "day": "Mittwoch",
+      "training": [
+        { "type": "biking", "title": "Intervalle 5 × 8 Minuten an der Schwelle", "time": "17:30", "duration": 90 },
+        { "type": "yoga", "title": "Mobilität", "duration": 20 }
+      ]
+    },
+    {
+      "day": "Samstag",
+      "training": [
+        { "type": "biking", "title": "Longride", "time": "08:00", "duration": 300 }
+      ]
+    }
+  ]
+}

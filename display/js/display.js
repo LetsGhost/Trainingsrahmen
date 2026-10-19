@@ -5,16 +5,19 @@ const DOW_LONG = ["MONTAG", "DIENSTAG", "MITTWOCH", "DONNERSTAG", "FREITAG", "SA
 const MONTHS = ["JANUAR", "FEBRUAR", "MÄRZ", "APRIL", "MAI", "JUNI", "JULI", "AUGUST", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DEZEMBER"];
 const NIGHT_START = 22, NIGHT_END = 6;
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
+const ACTIVITY_THROTTLE_MS = 2000;
 
 // Entwicklungs-Parameter: ?theme=dark|light und ?now=2026-09-09T18:42 (verstellte Uhr).
+// Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
-const themeOverride = params.get("theme");
-const clockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : 0;
+const urlTheme = params.get("theme");
+const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
 
 const frame = document.getElementById("frame");
-const state = { plan: null, weather: null, lastSync: null, online: true };
+// daemon: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
+const state = { plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null };
 
-const now = () => new Date(Date.now() + clockOffset);
+const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
 const pad = n => String(n).padStart(2, "0");
 const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -38,7 +41,8 @@ function isoWeek(d) {
 function applyTheme(d) {
   const h = d.getHours();
   const auto = h >= NIGHT_START || h < NIGHT_END ? "dark" : "light";
-  document.documentElement.dataset.theme = themeOverride === "dark" || themeOverride === "light" ? themeOverride : auto;
+  const override = urlTheme ?? state.dev?.theme;
+  document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
 }
 
 function renderHead(d, dates) {
@@ -107,17 +111,59 @@ function renderFoot() {
           <div class="recovery-value">${esc(x.value)}</div>
         </div>`).join("")}</div>`
     : "";
-  const sync = state.online
+  const online = state.online && state.daemon?.setup !== "OFFLINE";
+  const sync = online
     ? `${icon("wifi")}<span>Sync ${state.lastSync ? hhmm(state.lastSync) : "…"}</span>`
     : `${icon("wifi-off")}<span>Offline${state.lastSync ? ` · Stand ${hhmm(state.lastSync)}` : ""}</span>`;
   return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
 }
 
+// Platzhalter, bis Phase 5 die Screens 3A–3C bringt.
+function renderSetup(f) {
+  let line;
+  if (f.connecting) line = "Verbinde …";
+  else if (f.error) line = `Fehler: ${esc(f.error.message)}`;
+  else if (f.setup === "SETUP_ACCOUNT") line = "Handy verbunden · Daten im Portal eintragen";
+  else line = "Handy mit dem WLAN des Rahmens verbinden";
+  const hotspot = f.hotspot
+    ? `<div class="notice-line">WLAN ${esc(f.hotspot.ssid)} · Passwort ${esc(f.hotspot.password)}</div>`
+    : "";
+  return `
+    <section class="notice">
+      <div class="kicker">EINRICHTUNG</div>
+      <div class="notice-title">${line}</div>
+      ${hotspot}
+    </section>`;
+}
+
+// Platzhalter, bis Phase 7 Bilder hochladen kann.
+function renderSlideshow(d) {
+  return `
+    <section class="notice">
+      <div class="kicker">SLIDESHOW</div>
+      <div class="clock">${hhmm(d)}</div>
+    </section>`;
+}
+
+function screenFor(f) {
+  if (f?.setup === "SETUP_HOTSPOT" || f?.setup === "SETUP_ACCOUNT") return "setup";
+  if (f?.rest === "SLIDESHOW") return "slideshow";
+  if (f?.rest === "AUS") return "off";
+  return "plan";
+}
+
 function render() {
   const d = now();
-  const dates = weekDates(d);
   applyTheme(d);
-  frame.innerHTML = renderHead(d, dates) + `<div class="rule"></div>` + renderWeek(d, dates) + `<div class="rule"></div>` + renderFoot();
+  const screen = screenFor(state.daemon);
+  frame.dataset.screen = screen;
+  if (screen === "setup") frame.innerHTML = renderSetup(state.daemon);
+  else if (screen === "slideshow") frame.innerHTML = renderSlideshow(d);
+  else if (screen === "off") frame.innerHTML = "";
+  else {
+    const dates = weekDates(d);
+    frame.innerHTML = renderHead(d, dates) + `<div class="rule"></div>` + renderWeek(d, dates) + `<div class="rule"></div>` + renderFoot();
+  }
 }
 
 async function getJson(url) {
@@ -145,7 +191,44 @@ function scheduleTick() {
   setTimeout(() => { render(); scheduleTick(); }, 60000 - (now().getTime() % 60000) + 50);
 }
 
+// Zustand vom Daemon. EventSource verbindet sich nach einem Abbruch selbst neu.
+function listen() {
+  const events = new EventSource("/events");
+  events.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    const planChanged = state.dev && msg.dev && msg.dev.plan !== state.dev.plan;
+    const becameReady = msg.frame.setup === "READY" && state.daemon?.setup !== "READY";
+    state.daemon = msg.frame;
+    state.dev = msg.dev;
+    if (planChanged || becameReady) sync();
+    else render();
+  };
+}
+
+// Touch meldet Aktivität an den Daemon. Außerhalb von AKTIV weckt der erste Tipp nur und löst nichts aus.
+let lastActivity = 0;
+let swallowClick = false;
+document.addEventListener("pointerdown", e => {
+  const resting = state.daemon && state.daemon.rest !== "AKTIV";
+  if (resting) {
+    e.preventDefault();
+    e.stopPropagation();
+    swallowClick = true;
+  }
+  if (resting || Date.now() - lastActivity > ACTIVITY_THROTTLE_MS) {
+    lastActivity = Date.now();
+    fetch("/api/activity", { method: "POST" }).catch(() => {});
+  }
+}, true);
+document.addEventListener("click", e => {
+  if (!swallowClick) return;
+  swallowClick = false;
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
+
 render();
+listen();
 sync();
 setInterval(sync, SYNC_INTERVAL_MS);
 scheduleTick();

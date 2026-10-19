@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev-Leiste</title>
+<link rel="stylesheet" href="/debug/debug.css">
+</head>
+<body>
+<div class="layout">
+  <div class="preview" id="preview">
+    <iframe id="display" src="/display" width="1024" height="600" title="Display"></iframe>
+  </div>
+
+  <aside class="panel">
+    <section>
+      <h2>Zustand</h2>
+      <dl class="status" id="status"></dl>
+      <p class="error" id="error" hidden></p>
+    </section>
+
+    <section>
+      <h2>Einrichtung</h2>
+      <div class="row">
+        <button data-action="reset">Werkseinstellung</button>
+        <button data-action="portal">Handy öffnet Portal</button>
+      </div>
+      <form id="submit" class="fields">
+        <input name="ssid" value="Heimnetz" placeholder="WLAN">
+        <input name="password" value="geheim123" placeholder="WLAN-Passwort">
+        <input name="url" value="https://example.org/api" placeholder="Server-URL">
+        <input name="apiKey" value="dev-key" placeholder="API-Key">
+        <button>Portal absenden</button>
+      </form>
+      <div class="row" id="force-setup"></div>
+    </section>
+
+    <section>
+      <h2>Ruhe</h2>
+      <div class="row">
+        <button data-action="motion">Bewegung</button>
+      </div>
+      <div class="row" id="force-rest"></div>
+      <label>Fristen
+        <select id="deadlines">
+          <option value="normal">normal (5 / 30 min)</option>
+          <option value="short">kurz (10 / 30 s)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" data-sim="images"> Bilder vorhanden</label>
+    </section>
+
+    <section>
+      <h2>Fehler simulieren</h2>
+      <label class="check"><input type="checkbox" data-sim="wrongPassword"> Falsches WLAN-Passwort</label>
+      <label class="check"><input type="checkbox" data-sim="noInternet"> Kein Internet</label>
+      <label class="check"><input type="checkbox" data-sim="keyRejected"> Server lehnt Key ab</label>
+    </section>
+
+    <section>
+      <h2>Anzeige</h2>
+      <label>Theme
+        <select id="theme">
+          <option value="">automatisch</option>
+          <option value="dark">dunkel</option>
+          <option value="light">hell</option>
+        </select>
+      </label>
+      <label>Testplan <select id="plan"></select></label>
+      <form id="clock" class="row">
+        <input type="datetime-local" name="now">
+        <button>Uhr setzen</button>
+        <button type="button" id="clock-reset">Echtzeit</button>
+      </form>
+    </section>
+  </aside>
+</div>
+<script type="module" src="/debug/debug.js"></script>
+</body>
+</html>
