@@ -220,7 +220,14 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
 
   // --- Nur für die Dev-Leiste ---
 
-  function force({ setup, rest }) {
+  // Ein erzwungener verbundener Zustand verbindet auch das (Mock-)WLAN, sonst stellt die
+  // Verbindungsprüfung ihn nach spätestens 30 s wieder auf OFFLINE zurück.
+  async function force({ setup, rest }) {
+    if ([SETUP.READY, SETUP.OFFLINE, SETUP.ADMIN].includes(setup) && !system.status().wifi) {
+      await system.stopHotspot();
+      s.hotspot = null;
+      await system.connectWifi(config.wifi ?? { ssid: "Dev-WLAN", password: "" });
+    }
     if (setup && Object.values(SETUP).includes(setup)) setSetup(setup);
     if (rest && Object.values(REST).includes(rest) && operating()) {
       setRest(rest);

@@ -185,7 +185,12 @@ const listFixtures = () => fs.readdirSync(FIXTURE_DIR).filter(f => /^data.*\.jso
 
 const DEBUG_ACTIONS = {
   motion: () => system.triggerMotion(),
-  force: body => frame.force(body),
+  // OFFLINE und READY erzwingen setzt „Kein Internet“ passend, damit die Verbindungsprüfung den Zustand hält.
+  force: body => {
+    if (body.setup === "OFFLINE") sim.noInternet = true;
+    if (body.setup === "READY" || body.setup === "SETUP_ADMIN") sim.noInternet = false;
+    return frame.force(body);
+  },
   reset: () => frame.reset(),
   portal: () => frame.portalOpened(),
   submit: body => frame.submit(body),
