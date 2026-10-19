@@ -5,6 +5,8 @@ const fs = require("fs");
 const path = require("path");
 const configStore = require("./config");
 const createBackend = require("./backend");
+const createWeather = require("./weather");
+const { createSync } = require("./sync");
 const { createSystemAdapter } = require("./system");
 const { createFrame, validate, SETUP } = require("./state");
 const qr = require("./qr");
@@ -27,28 +29,46 @@ const MIME = {
 };
 
 // Fehlerschalter und Entwicklungs-Einstellungen; nur mit FRAME_ENV=dev änderbar.
-const sim = { wrongPassword: false, noInternet: false, keyRejected: false, images: false };
+// liveServer / liveWeather: echte Abrufe statt Fixtures.
+const sim = { wrongPassword: false, noInternet: false, keyRejected: false, images: false, liveServer: false, liveWeather: false };
 const dev = { theme: null, clockOffsetMs: 0, plan: "data.json" };
 const DEADLINE_PRESETS = {
   normal: { slideshowAfterMin: configStore.DEFAULTS.slideshowAfterMin, offAfterMin: configStore.DEFAULTS.offAfterMin },
   short: { slideshowAfterMin: 10 / 60, offAfterMin: 30 / 60 }
 };
 
+const config = configStore.load();
 const system = createSystemAdapter({ dev: DEV, sim, port: PORT });
+const backend = createBackend({ dev: DEV, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan) });
 const frame = createFrame({
   system,
-  backend: createBackend({ dev: DEV, sim }),
-  config: configStore.load(),
+  backend,
+  config,
   saveConfig: configStore.save,
   // Bis Phase 7 Bilder hochladen kann, simuliert die Dev-Leiste vorhandene Bilder.
   hasImages: () => sim.images
+});
+
+const sync = createSync({
+  backend,
+  weather: createWeather({ dev: DEV, sim, fixture: path.join(FIXTURE_DIR, "weather.json") }),
+  config,
+  dataDir: configStore.DATA_DIR,
+  isOnline: () => frame.snapshot().setup === SETUP.READY
+});
+
+// Sobald der Rahmen online geht (nach Start, Einrichtung oder Ausfall), sofort abgleichen.
+let lastSetup = null;
+frame.on("change", f => {
+  if (f.setup === SETUP.READY && lastSetup !== SETUP.READY) sync.syncAll();
+  lastSetup = f.setup;
 });
 
 // --- SSE ---
 
 const clients = new Set();
 
-const message = () => JSON.stringify({ frame: frame.snapshot(), dev: DEV ? { ...dev, sim } : null });
+const message = () => JSON.stringify({ frame: frame.snapshot(), sync: sync.status(), dev: DEV ? { ...dev, sim } : null });
 
 function broadcast() {
   const data = `data: ${message()}\n\n`;
@@ -56,6 +76,7 @@ function broadcast() {
 }
 
 frame.on("change", broadcast);
+sync.on("change", broadcast);
 
 // Kommentarzeile hält die Verbindung offen, falls ein Proxy sie sonst schließt.
 setInterval(() => { for (const res of clients) res.write(": ping\n\n"); }, 25000);
@@ -127,10 +148,17 @@ const DEBUG_ACTIONS = {
     if (!(key in sim)) return;
     sim[key] = Boolean(value);
     if (key === "noInternet") frame.check();
+    if (key === "liveServer" || key === "keyRejected") sync.syncPlan();
+    if (key === "liveWeather") sync.syncWeather();
   },
+  sync: () => sync.syncAll(),
   clock: ({ now }) => { dev.clockOffsetMs = now ? Date.parse(now) - Date.now() : 0; },
   theme: ({ theme }) => { dev.theme = theme === "dark" || theme === "light" ? theme : null; },
-  plan: ({ file }) => { if (listFixtures().includes(file)) dev.plan = file; }
+  plan: ({ file }) => {
+    if (!listFixtures().includes(file)) return;
+    dev.plan = file;
+    return sync.syncPlan();
+  }
 };
 
 async function handleDebug(req, res) {
@@ -238,9 +266,11 @@ http.createServer((req, res) => {
     frame.activity();
     return sendJson(res, 200, { ok: true });
   }
-  // Bis Phase 6 kommen Plan und Wetter aus den Fixtures.
-  if (pathname === "/api/plan") return sendFile(res, path.join(FIXTURE_DIR, dev.plan));
-  if (pathname === "/api/weather") return sendFile(res, path.join(FIXTURE_DIR, "weather.json"));
+  // Letzter Stand aus dem Sync; Plan im Server-Format (übersetzt wird im Display), Wetter schon übersetzt.
+  if (pathname === "/api/plan" || pathname === "/api/weather") {
+    const data = pathname === "/api/plan" ? sync.plan() : sync.weather();
+    return data ? sendJson(res, 200, data) : sendJson(res, 404, { error: "Noch kein Stand" });
+  }
 
   if (DEV) {
     if (pathname === "/api/debug" && req.method === "POST") return handleDebug(req, res);

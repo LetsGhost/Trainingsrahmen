@@ -24,7 +24,7 @@ Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`
 
 | Datei | Inhalt |
 |---|---|
-| `display/js/display.js` | Zustand, Wochenraster, Platzhalter-Screens, Touch, SSE, Sync |
+| `display/js/display.js` | Zustand, Wochenraster, Slideshow-Platzhalter, Touch, SSE, Laden vom Daemon |
 | `display/js/day.js` | Tagesansicht (Layout 1B) |
 | `display/js/setup.js` | Einrichtungs-Screens 3A–3C |
 | `display/js/adapter.js` | Server-Format → internes Modell |
@@ -52,6 +52,16 @@ Links das Display in 1024 × 600, rechts die Steuerung. Klicks ins Display zähl
 | Ruhe | `AKTIV` → `SLIDESHOW` → `AUS`, ohne Bilder direkt `AKTIV` → `AUS`. Touch oder Bewegung führt zurück; der erste Tipp außerhalb von `AKTIV` weckt nur. Läuft nur in `READY` und `OFFLINE`. |
 
 Der Daemon schickt bei jeder Änderung die ganze Momentaufnahme über `/events` (SSE). Display, Portal und Dev-Leiste rendern daraus neu. Die Slideshow zeigt bis Phase 7 nur einen Platzhalter.
+
+## Sync
+
+Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das Wetter alle 30 min von Open-Meteo, aber nur in `READY`. Beim Wechsel nach `READY` gleicht er sofort ab. Beides landet in `data/cache/`; nach einem Neustart ohne Netz zeigt das Display den letzten Stand.
+
+- `/api/plan` liefert den Plan im Server-Format (übersetzt wird weiter nur in `display/js/adapter.js`), `/api/weather` das fertige Wetter-Modell. Ohne Stand: 404.
+- Das Display lädt beides neu, sobald sich `planAt` oder `weatherAt` in `/events` ändern; ein eigenes Intervall hat es nicht mehr.
+- Fußzeile: „Sync HH:MM“, bei Fehler die Meldung mit „Stand HH:MM“, ohne Netz „Offline · Stand HH:MM“.
+- In der Entwicklung kommen Plan und Wetter aus `fixtures/`. In der Dev-Leiste unter „Sync“ schalten „Echter Server“ (URL und Key aus der Einrichtung) und „Echtes Wetter“ auf echte Abrufe um.
+- Die Antwort des Servers muss gültiges JSON mit einem Array `trainingsweek` sein, sonst gilt der Abruf als fehlgeschlagen und der alte Stand bleibt.
 
 ## Einrichtung testen
 
@@ -116,7 +126,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 3 Daemon | PC | Erledigt: Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
 | 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Gegen den Mock erledigt, Pi offen: Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
-| 6 Sync | PC, dann Pi | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
+| 6 Sync | PC, dann Pi | Am PC erledigt, echter Server offen: | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
 | 7 Admin | PC, dann Pi | Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
 | 8 Härtung | Pi | Stecker ziehen im Betrieb, Pi startet wieder sauber in das Display |
 

@@ -4,7 +4,6 @@ import { renderSetup } from "./setup.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
 const NIGHT_START = 22, NIGHT_END = 6;
-const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const ACTIVITY_THROTTLE_MS = 2000;
 const DAY_VIEW_MS = 60 * 1000;
 // Ab so vielen Einheiten an einem Tag wird die Spalte kompakter, damit alles ohne Scrollen passt.
@@ -20,10 +19,10 @@ const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime()
 const urlDay = /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
 const frame = document.getElementById("frame");
-// daemon: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
+// daemon und sync: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
 // openDay: Index des Tages in der Tagesansicht oder null. setupDoneUntil: bis dahin steht 3C.
 const state = {
-  plan: null, weather: null, lastSync: null, online: true, daemon: null, dev: null, openDay: urlDay, setupDoneUntil: 0
+  plan: null, weather: null, daemon: null, sync: null, dev: null, openDay: urlDay, setupDoneUntil: 0
 };
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
@@ -115,10 +114,13 @@ function renderFoot() {
           <div class="recovery-value">${esc(x.value)}</div>
         </div>`).join("")}</div>`
     : "";
-  const online = state.online && state.daemon?.setup !== "OFFLINE";
-  const sync = online
-    ? `${icon("wifi")}<span>Sync ${state.lastSync ? hhmm(state.lastSync) : "…"}</span>`
-    : `${icon("wifi-off")}<span>Offline${state.lastSync ? ` · Stand ${hhmm(state.lastSync)}` : ""}</span>`;
+  // Stand = letzter erfolgreicher Abruf des Plans durch den Daemon.
+  const s = state.sync;
+  const stand = s?.planAt ? hhmm(new Date(s.planAt)) : null;
+  let sync;
+  if (state.daemon?.setup === "OFFLINE") sync = `${icon("wifi-off")}<span>Offline${stand ? ` · Stand ${stand}` : ""}</span>`;
+  else if (s?.planError) sync = `${icon("wifi-off")}<span>${esc(s.planError.message)}${stand ? ` · Stand ${stand}` : ""}</span>`;
+  else sync = `${icon("wifi")}<span>Sync ${stand ?? "…"}</span>`;
   return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
 }
 
@@ -160,23 +162,21 @@ function render() {
   }
 }
 
+// null, solange der Daemon noch keinen Stand hat (404).
 async function getJson(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
 }
 
-async function sync() {
-  try {
-    const [plan, weather] = await Promise.all([getJson("/api/plan"), getJson("/api/weather").catch(() => null)]);
-    state.plan = adaptPlan(plan);
-    state.weather = weather;
-    state.lastSync = now();
-    state.online = true;
-  } catch (err) {
-    console.error(err);
-    state.online = false;
-  }
+// Plan und Wetter vom Daemon laden; abgerufen und gecacht werden sie dort.
+async function load() {
+  const [plan, weather] = await Promise.all([getJson("/api/plan"), getJson("/api/weather")]);
+  state.plan = plan ? adaptPlan(plan) : null;
+  state.weather = weather;
   render();
 }
 
@@ -190,16 +190,17 @@ function listen() {
   const events = new EventSource("/events");
   events.onmessage = e => {
     const msg = JSON.parse(e.data);
-    const planChanged = state.dev && msg.dev && msg.dev.plan !== state.dev.plan;
+    const newData = msg.sync.planAt !== state.sync?.planAt || msg.sync.weatherAt !== state.sync?.weatherAt;
     const becameReady = msg.frame.setup === "READY" && state.daemon?.setup !== "READY";
     if (becameReady && isSetup(state.daemon)) {
       state.setupDoneUntil = Date.now() + SETUP_DONE_MS;
       setTimeout(render, SETUP_DONE_MS + 50);
     }
     state.daemon = msg.frame;
+    state.sync = msg.sync;
     state.dev = msg.dev;
     if (msg.frame.rest !== "AKTIV") closeDay(false);
-    if (planChanged || becameReady) sync();
+    if (newData) load();
     else render();
   };
 }
@@ -251,6 +252,4 @@ frame.addEventListener("click", e => {
 
 render();
 listen();
-sync();
-setInterval(sync, SYNC_INTERVAL_MS);
 scheduleTick();

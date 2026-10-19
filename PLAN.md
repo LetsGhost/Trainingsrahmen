@@ -9,7 +9,7 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 |---|---|
 | Gerät | Ein Pi 3B+ für eine Person |
 | Daten | `GET /data` mit Header `x-api-key` vom Sport-Analytics-Backend; Server bleibt unverändert |
-| Wetter | Open-Meteo direkt vom Pi, ohne Key |
+| Wetter | Open-Meteo direkt vom Pi, ohne Key; Ort im Admin-Bereich einstellbar (Standard Berlin) |
 | Hauptscreen | Wochenraster 2A (dunkel, 22–06 Uhr) / 2B (hell) |
 | Touch | Tag antippen öffnet die Tagesansicht (1B); Tipp oder 60 s ohne Berührung führt zurück |
 | Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein |
@@ -135,7 +135,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - [x] 3. Daemon: Zustandsautomaten, SSE, Mock-Adapter, Dev-Leiste
 - [ ] 4. Touch: Tagesansicht mit Rücksprung (am PC fertig; Touch am Pi steht aus)
 - [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot (gegen den Mock fertig; echter Hotspot braucht den Pi)
-- [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache
+- [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache (fertig mit Fixtures, Test-Server und echtem Open-Meteo; Test gegen den echten Server steht aus)
 - [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf
 - [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root
 

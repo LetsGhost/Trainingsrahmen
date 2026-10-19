@@ -22,7 +22,20 @@ function makeButtons(container, states, key) {
   });
 }
 
-function renderStatus({ frame: f, dev }) {
+const time = ts => (ts ? new Date(ts).toLocaleTimeString("de-DE") : "–");
+
+function renderSync(s) {
+  const rows = [
+    ["Plan", time(s.planAt)],
+    ["Plan-Fehler", s.planError ? `${s.planError.code}: ${s.planError.message}` : "–"],
+    ["Wetter", time(s.weatherAt)],
+    ["Wetter-Fehler", s.weatherError ? `${s.weatherError.code}: ${s.weatherError.message}` : "–"]
+  ];
+  $("#sync-status").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+}
+
+function renderStatus({ frame: f, sync, dev }) {
+  renderSync(sync);
   const sys = f.system;
   const rows = [
     ["Einrichtung", f.setup ?? "–"],

@@ -10,7 +10,9 @@ const DEFAULTS = {
   wifi: null,             // { ssid, password }
   server: null,           // { url, apiKey }
   slideshowAfterMin: 5,
-  offAfterMin: 30
+  offAfterMin: 30,
+  // Wetter-Ort; ab Phase 7 im Admin-Bereich einstellbar.
+  location: { name: "Berlin", lat: 52.52, lon: 13.405 }
 };
 
 function load() {
@@ -28,4 +30,4 @@ function save(config) {
   fs.renameSync(tmp, FILE);
 }
 
-module.exports = { load, save, DEFAULTS };
+module.exports = { load, save, DEFAULTS, DATA_DIR };
