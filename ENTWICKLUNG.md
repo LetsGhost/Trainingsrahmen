@@ -126,7 +126,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 3 Daemon | PC | Erledigt: Zustände wechseln über die Dev-Leiste; Display reagiert per SSE ohne Neuladen |
 | 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Gegen den Mock erledigt, Pi offen: Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
-| 6 Sync | PC, dann Pi | Am PC erledigt, echter Server offen: | Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
+| 6 Sync | PC, dann Pi | Am PC erledigt, echter Server offen: Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
 | 7 Admin | PC, dann Pi | Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
 | 8 Härtung | Pi | Stecker ziehen im Betrieb, Pi startet wieder sauber in das Display |
 
