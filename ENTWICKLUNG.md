@@ -74,6 +74,15 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 - Slideshow: Bilder werden im Browser auf 1024 × 600 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
 - `/api/slides` liefert die Bilder an das Display (localhost) und an angemeldete Admins.
 
+## Update per Knopf
+
+Admin-Panel → „Software“: „Nach Updates suchen“ macht `git fetch` von `config.update` (Standard `origin/master`) und listet neue Commits; „Installieren“ startet `scripts/self-update.sh`. Das zieht, führt `scripts/update.sh` aus, startet den Daemon neu und wartet, bis `/health` den neuen Commit meldet. Sonst geht es zurück auf den vorherigen Commit.
+
+- Schritte, die ein Update braucht, gehören in `scripts/update.sh`. Endet es mit Fehler, wird zurückgerollt.
+- In der Entwicklung verweigert der Daemon „Installieren“, solange `FRAME_UPDATE_DIR` nicht auf einen Test-Klon zeigt. So zieht ein Klick nie in dieses Arbeitsverzeichnis.
+- Zum Testen: Bare-Repo als Remote anlegen, davon einen Klon als App starten (`FRAME_UPDATE_DIR` = Klon, `FRAME_RESTART_CMD` = Skript, das den Daemon neu startet), in einem zweiten Klon Commits pushen.
+- Shell-Skripte müssen LF-Zeilenenden haben (`.gitattributes`) und ausführbar sein (`git update-index --chmod=+x`).
+
 ## Einrichtung testen
 
 1. Dev-Leiste → „Werkseinstellung“: Das Display zeigt 3A mit WLAN-QR.
@@ -99,7 +108,8 @@ Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Is
 | `daemon/system/` | SystemAdapter: `mock.js` für den PC, `pi.js` für echte Hardware (noch leer) |
 | `debug/` | Dev-Leiste, nur mit `FRAME_ENV=dev` erreichbar |
 | `portal/` | Einrichtungsportal fürs Handy unter `/setup` |
-| `admin/` | Admin-Bereich unter `/admin` (Login, Panel, Slideshow) |
+| `admin/` | Admin-Bereich unter `/admin` (Login, Panel, Slideshow, Update) |
+| `scripts/` | `self-update.sh` (Update per Knopf), `update.sh` (Schritte nach jedem Pull), systemd-Unit |
 | `fixtures/` | Testdaten statt echter Abrufe |
 | `data/` | Laufzeitdaten wie `config.json`, nicht im Git |
 
@@ -140,7 +150,7 @@ Eine Phase gilt als fertig, wenn ihr Prüfpunkt erfüllt ist. Danach in `PLAN.md
 | 4 Tagesansicht | PC, dann Pi | Am PC erledigt, Touch am Pi offen: Tipp auf einen Tag öffnet ihn groß; Rücksprung nach Tipp oder 60 s; Touch am Pi geprüft |
 | 5 Einrichtung | PC, dann Pi | Gegen den Mock erledigt, Pi offen: Ablauf 3A–3C läuft gegen den Mock; am Pi verbindet sich ein Handy per QR und trägt WLAN und Key ein |
 | 6 Sync | PC, dann Pi | Am PC erledigt, echter Server offen: Echter Plan und Open-Meteo werden angezeigt; ohne Netz bleibt der letzte Stand mit „Offline" |
-| 7 Admin | PC, dann Pi | Am PC bis auf Update-Knopf erledigt: Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
+| 7 Admin | PC, dann Pi | Am PC erledigt, Pi offen: Login, Einstellungen, Slideshow-Upload und Update-Knopf funktionieren; fehlgeschlagenes Update rollt zurück |
 | 8 Härtung | Pi | Stecker ziehen im Betrieb, Pi startet wieder sauber in das Display |
 
 Am PC wird gegen Mock und Fixtures entwickelt, am Pi nur geprüft, was echte Hardware braucht.

@@ -14,7 +14,7 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Touch | Tag antippen öffnet die Tagesansicht (1B); Tipp oder 60 s ohne Berührung führt zurück |
 | Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt wird |
 | Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h |
-| Updates | Git-Repo, nur per Knopf im Admin-Panel |
+| Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (Standard `origin/master`), bei Neuem `git pull` und `scripts/update.sh` |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | Seeed Grove Mini-PIR an einem GPIO-Pin |
 | Slideshow | Nur Bilder, Upload über das Admin-Panel |
@@ -115,12 +115,14 @@ Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, ni
 
 ## Update per Knopf
 
-1. Der Knopf startet eine eigene systemd-Unit.
-2. Commit merken, `git fetch`, auf das neueste Release-Tag wechseln.
-3. `scripts/update.sh` ausführen, Daemon neu starten.
-4. Antwortet `/health` nicht binnen 30 s, zurück auf den gemerkten Commit.
+1. „Nach Updates suchen“ macht `git fetch` des eingestellten Branches und listet die neuen Commits.
+2. „Installieren“ startet die systemd-Unit `trainingsrahmen-update.service`, die `scripts/self-update.sh` ausführt.
+3. Commit merken, `git pull --ff-only`, `scripts/update.sh` aus dem neuen Stand ausführen, Daemon neu starten.
+4. Meldet `/health` nicht binnen 30 s den neuen Commit oder scheitert `update.sh`, zurück auf den gemerkten Commit.
 
-Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm install`.
+Remote und Branch stehen in `config.json` unter `update`. Der Fortschritt landet in `data/update.json`, das Admin-Panel verfolgt ihn über den Neustart hinweg. Lokale Änderungen auf dem Pi lassen `git pull --ff-only` scheitern; dann bleibt alles, wie es ist.
+
+Abhängigkeiten gibt es keine; auf dem Pi läuft kein `npm install`. Offen für Phase 8: Pfad der Installation und wer die Update-Unit starten darf (polkit oder sudoers).
 
 ## Debug-Modus
 
@@ -140,7 +142,7 @@ Abhängigkeiten liegen fertig im Release-Branch; auf dem Pi läuft kein `npm ins
 - [ ] 4. Touch: Tagesansicht mit Rücksprung (am PC fertig; Touch am Pi steht aus)
 - [ ] 5. Einrichtungs-Screens und Portal gegen den Mock, danach echter Hotspot (gegen den Mock fertig; echter Hotspot braucht den Pi)
 - [ ] 6. Sync mit Server und Open-Meteo, Offline-Cache (fertig mit Fixtures, Test-Server und echtem Open-Meteo; Test gegen den echten Server steht aus)
-- [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf (alles außer Update-Knopf fertig; der braucht ein Git-Remote mit Release-Tags)
+- [ ] 7. Admin-Login, Panel, Slideshow-Upload, Update-Knopf (am PC fertig; auf dem Pi offen)
 - [ ] 8. Kiosk-Autostart, Logs ins RAM, Read-only-Root
 
 ## Starten
