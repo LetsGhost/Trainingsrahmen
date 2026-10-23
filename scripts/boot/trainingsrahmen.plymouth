@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Trainingsrahmen
+Description=Boot-Splash 4A (dunkel) mit laufendem Balken
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/trainingsrahmen
+ScriptFile=/usr/share/plymouth/themes/trainingsrahmen/trainingsrahmen.script

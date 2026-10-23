@@ -1,0 +1,32 @@
+# Plymouth-Theme des Trainingsrahmens: splash.png (4A) bildschirmfüllend, darüber unten der Balken wie
+# @keyframes bootfill der Vorlage: 4 s pro Durchlauf, in den ersten 70 % von 0 auf voll, dann kurz stehen.
+
+Window.SetBackgroundTopColor(0.102, 0.098, 0.094);
+Window.SetBackgroundBottomColor(0.102, 0.098, 0.094);
+
+screen_w = Window.GetWidth();
+screen_h = Window.GetHeight();
+
+# Gezeichnet für 800 × 480 (Waveshare 7"); andere Auflösungen werden gestreckt.
+background = Sprite(Image("splash.png").Scale(screen_w, screen_h));
+background.SetZ(-10);
+
+bar_image = Image("bar.png");
+bar_h = Math.Int(5 * screen_h / 480);
+if (bar_h < 1) bar_h = 1;
+bar = Sprite();
+bar.SetPosition(0, screen_h - bar_h, 10);
+
+frame = 0;
+fun refresh_callback() {
+  # Plymouth ruft das 50-mal pro Sekunde auf: 200 Aufrufe = 4 s, gefüllt nach 140.
+  frame = frame + 1;
+  if (frame >= 200) frame = 0;
+  phase = frame / 140;
+  if (phase > 1) phase = 1;
+  eased = phase * phase * (3 - 2 * phase);
+  width = Math.Int(screen_w * eased);
+  if (width < 1) width = 1;
+  bar.SetImage(bar_image.Scale(width, bar_h));
+}
+Plymouth.SetRefreshFunction(refresh_callback);

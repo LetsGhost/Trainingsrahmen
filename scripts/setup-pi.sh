@@ -92,18 +92,9 @@ for group in gpio i2c video render input netdev; do
   fi
 done
 
-step "Ruhiger Boot (cmdline.txt)"
-CMDLINE=/boot/firmware/cmdline.txt
-[ -f "$CMDLINE" ] || CMDLINE=/boot/cmdline.txt
-[ -f "$CMDLINE.orig" ] || sudo cp "$CMDLINE" "$CMDLINE.orig"
-# Kernel-Meldungen von tty1 weg, damit der Kiosk dort sauber startet
-sudo sed -i 's/\bconsole=tty1\b/console=tty3/' "$CMDLINE"
-for param in quiet loglevel=3 logo.nologo vt.global_cursor_default=0; do
-  if ! grep -qE "(^| )$param( |$)" "$CMDLINE"; then
-    # cmdline.txt muss eine einzige Zeile bleiben
-    sudo sed -i "1 s/\$/ $param/" "$CMDLINE"
-  fi
-done
+step "Ruhiger Boot mit Boot-Bildschirm"
+# Kernel-Meldungen von tty1 weg (Kiosk startet dort sauber), Plymouth-Splash statt Regenbogen.
+"$DIR/scripts/setup-bootscreen.sh"
 
 step "Daten-Ordner"
 mkdir -p "$DIR/data"
