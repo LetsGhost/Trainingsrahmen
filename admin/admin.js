@@ -212,6 +212,25 @@ function renderSettings() {
     </form>
 
     <div class="section-head">
+      <div class="kicker">ZUSÄTZLICHE QUELLE</div>
+      <div class="section-title">AthletePT</div>
+      <div class="setting-hint">Optional. Die Trainings aus AthletePT erscheinen zusätzlich im Plan. URL leeren und speichern entfernt die Quelle.</div>
+    </div>
+    <form class="block" id="athletept-form" novalidate>
+      <div class="grid2">
+        <div class="field">
+          <label class="label" for="athleteptUrl">ATHLETEPT-URL</label>
+          <input type="url" id="athleteptUrl" value="${esc(s.athletept.url)}" placeholder="https://…">
+        </div>
+        <div class="field">
+          <label class="label" for="athleteptKey">API-KEY</label>
+          <input type="text" id="athleteptKey" placeholder="${esc(s.athletept.apiKey)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="row"><button class="secondary">Prüfen & speichern</button><div class="msg" id="athletept-msg"></div></div>
+    </form>
+
+    <div class="section-head">
       <div class="kicker">ANZEIGE</div>
       <div class="section-title">Ort, Erscheinungsbild & Module</div>
     </div>
@@ -282,6 +301,16 @@ function renderSettings() {
     const g = state.geo[e.target.closest("[data-geo]")?.dataset.geo];
     if (!g) return;
     if (await save({ location: { name: g.name, lat: g.lat, lon: g.lon } }, "geo-msg", `Ort: ${g.name}`)) renderSettings();
+  });
+
+  $("#athletept-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const url = $("#athleteptUrl").value.trim();
+    setMsg("athletept-msg", url ? "Prüfe AthletePT …" : "Entferne AthletePT …", true);
+    if (await save({ athletept: { url, apiKey: $("#athleteptKey").value } }, "athletept-msg", url ? "AthletePT erreichbar, gespeichert" : "AthletePT entfernt")) {
+      $("#athleteptKey").value = "";
+      $("#athleteptKey").placeholder = `${state.settings.athletept.apiKey} · leer lassen zum Behalten`;
+    }
   });
 
   document.querySelectorAll("[data-toggle]").forEach(t => t.addEventListener("click", async e => {
@@ -406,6 +435,8 @@ function renderSide() {
     <div class="side-actions">
       <button class="primary" id="sync"><span>Jetzt neu laden</span><span>↻</span></button>
       <button class="secondary" id="wifi-reset">WLAN ändern</button>
+      <button class="secondary" id="reboot">Neu starten</button>
+      <button class="secondary" id="poweroff">Herunterfahren</button>
       <div class="msg" id="side-msg"></div>
     </div>
     <div class="section-head">
@@ -443,6 +474,20 @@ function renderSide() {
     clearInterval(statusTimer);
     app.innerHTML = authLayout(`<div class="field"><h1>Hotspot ist offen</h1><div class="muted">Folge den Schritten auf dem Display.</div></div>`);
   });
+
+  const power = (action, question, title, text) => async () => {
+    if (!confirm(question)) return;
+    const r = await api(action, { method: "POST", body: {} });
+    if (!r.ok) return setMsg("side-msg", r.error);
+    clearInterval(statusTimer);
+    app.innerHTML = authLayout(`<div class="field"><h1>${title}</h1><div class="muted">${text}</div></div>`);
+  };
+  $("#reboot").addEventListener("click", power("reboot",
+    "Rahmen wirklich neu starten? Das dauert etwa eine Minute.",
+    "Rahmen startet neu", "Lade diese Seite in etwa einer Minute neu."));
+  $("#poweroff").addEventListener("click", power("poweroff",
+    "Rahmen wirklich herunterfahren? Einschalten geht danach nur, indem du den Strom kurz trennst.",
+    "Rahmen fährt herunter", "Den Strom erst trennen, wenn die grüne LED am Pi nicht mehr blinkt."));
 
   $("#update").addEventListener("click", e => {
     if (e.target.closest("#update-check")) checkUpdate();

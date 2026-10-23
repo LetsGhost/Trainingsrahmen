@@ -83,7 +83,8 @@ async function init() {
   $("#submit").addEventListener("submit", e => {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(e.target));
-    send("submit", { wifi: { ssid: v.ssid, password: v.password }, server: { url: v.url, apiKey: v.apiKey } });
+    send("submit", { wifi: { ssid: v.ssid, password: v.password }, server: { url: v.url, apiKey: v.apiKey },
+      athletept: { url: v.athleteptUrl, apiKey: v.athleteptKey } });
   });
   $("#clock").addEventListener("submit", e => {
     e.preventDefault();

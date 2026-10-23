@@ -12,7 +12,8 @@ const FILE = path.join(DATA_DIR, "config.json");
 
 const DEFAULTS = {
   wifi: null,             // { ssid, password }
-  server: null,           // { url, apiKey }
+  server: null,           // { url, apiKey }: Sport-Analytics
+  athletept: null,        // { url, apiKey } oder null: AthletePT 3.0, optional, ergänzt den Plan
   slideshowAfterMin: 5,
   offAfterMin: 30,
   // Wetter-Ort, im Admin-Bereich einstellbar.

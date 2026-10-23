@@ -67,6 +67,10 @@ module.exports = function createMockAdapter({ sim, port }) {
       hw.backlight = on;
     },
 
+    async power(action) {
+      console.log(`Mock: ${action} (am Pi: systemctl ${action})`);
+    },
+
     async readCpuTemp() {
       return Math.round((46 + Math.random() * 4) * 10) / 10;
     },

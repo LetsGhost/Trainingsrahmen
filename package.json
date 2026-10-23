@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --env-file=.env.dev daemon/server.js",
     "demo": "node --env-file=.env.demo daemon/server.js",
-    "start": "node daemon/server.js"
+    "start": "node daemon/server.js",
+    "test": "node --test daemon/"
   }
 }

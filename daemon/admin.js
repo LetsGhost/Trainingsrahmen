@@ -6,7 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { FrameError } = require("./errors");
-const { SETUP } = require("./state");
+const { SETUP, validateAthletept } = require("./state");
 
 const COOKIE = "rahmen_session";
 const SESSION_MS = 12 * 60 * 60 * 1000;
@@ -61,7 +61,7 @@ function createSessionStore(file) {
   };
 }
 
-function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater, dataDir, http }) {
+function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater, system, dataDir, http }) {
   fs.mkdirSync(dataDir, { recursive: true });
   const sessions = createSessionStore(path.join(dataDir, "sessions.json"));
   let failures = 0;
@@ -121,6 +121,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     return {
       wifi: config.wifi?.ssid ?? null,
       server: { url: config.server?.url ?? "", apiKey: maskKey(config.server?.apiKey) },
+      athletept: { url: config.athletept?.url ?? "", apiKey: maskKey(config.athletept?.apiKey) },
       location: config.location,
       display: config.display,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin }
@@ -137,6 +138,12 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       if (!apiKey) throw new FrameError("INVALID", "API-Key fehlt");
       await backend.check({ url, apiKey });
       next.server = { url, apiKey };
+    }
+    // Leere URL entfernt AthletePT; ein leerer Key behält den bisherigen.
+    if (input.athletept) {
+      const url = String(input.athletept.url ?? "").trim();
+      next.athletept = url ? validateAthletept({ url, apiKey: String(input.athletept.apiKey ?? "").trim() || config.athletept?.apiKey }) : null;
+      if (next.athletept) await backend.checkAthletept(next.athletept);
     }
     if (input.location) {
       const { name, lat, lon } = input.location;
@@ -161,11 +168,12 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
 
     if (next.server) config.server = next.server;
+    if ("athletept" in next) config.athletept = next.athletept;
     if (next.location) config.location = next.location;
     if (next.display) config.display = next.display;
     if (next.deadlines) frame.setDeadlines(next.deadlines);
     saveConfig(config);
-    if (next.server) sync.syncPlan();
+    if (next.server || "athletept" in next) sync.syncPlan();
     if (next.location) sync.syncWeather();
     frame.changed();
     return settings();
@@ -320,6 +328,8 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       respond(res, () => updater.check());
     } else if (action === "update/install" && method === "POST") {
       respond(res, () => { updater.install(); return updater.status(); });
+    } else if ((action === "reboot" || action === "poweroff") && method === "POST") {
+      respond(res, () => system.power(action));
     } else if (action === "wifi-reset" && method === "POST") {
       respond(res, async () => { await frame.reset({ keepAdmin: true }); });
     } else if (action === "slides" && method === "GET") {

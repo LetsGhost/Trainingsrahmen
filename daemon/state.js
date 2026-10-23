@@ -24,15 +24,25 @@ const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const toError = err => ({ code: err.code ?? "UNKNOWN", message: err.message });
 const newAdminCode = () => Array.from(crypto.randomBytes(6), b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 
+// AthletePT ist optional: beide Felder leer heißt „nicht verwenden“.
+function validateAthletept(input) {
+  const url = String(input?.url ?? "").trim();
+  const apiKey = String(input?.apiKey ?? "").trim();
+  if (!url && !apiKey) return null;
+  if (!/^https?://S+$/i.test(url)) throw new FrameError("INVALID", "AthletePT-URL muss mit http:// oder https:// beginnen");
+  if (!apiKey) throw new FrameError("INVALID", "AthletePT-Key fehlt");
+  return { url, apiKey };
+}
+
 // Eingaben aus dem Portal prüfen und säubern.
-function validate({ wifi, server } = {}) {
+function validate({ wifi, server, athletept } = {}) {
   const ssid = String(wifi?.ssid ?? "").trim();
   const url = String(server?.url ?? "").trim();
   const apiKey = String(server?.apiKey ?? "").trim();
   if (!ssid) throw new FrameError("INVALID", "WLAN fehlt");
   if (!/^https?:\/\/\S+$/i.test(url)) throw new FrameError("INVALID", "Server-URL muss mit http:// oder https:// beginnen");
   if (!apiKey) throw new FrameError("INVALID", "API-Key fehlt");
-  return { wifi: { ssid, password: String(wifi.password ?? "") }, server: { url, apiKey } };
+  return { wifi: { ssid, password: String(wifi.password ?? "") }, server: { url, apiKey }, athletept: validateAthletept(athletept) };
 }
 
 function createFrame({ system, backend, config, saveConfig, hasImages }) {
@@ -126,10 +136,11 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     changed();
   }
 
-  async function connect(wifi, server) {
+  async function connect(wifi, server, athletept) {
     await system.connectWifi(wifi);
     if (!(await system.checkInternet())) throw new FrameError(NO_INTERNET.code, NO_INTERNET.message);
     await backend.check(server);
+    if (athletept) await backend.checkAthletept(athletept);
   }
 
   async function openHotspot(error = null) {
@@ -146,15 +157,15 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   // Eingaben aus dem Portal. Scheitert etwas, kommt der Hotspot nach 30 s mit der Fehlermeldung zurück.
   async function submit(input) {
     if (s.connecting || connected()) throw new FrameError("NOT_IN_SETUP", "Keine Einrichtung aktiv");
-    const { wifi, server } = validate(input);
+    const { wifi, server, athletept } = validate(input);
     clearTimeout(retryTimer);
     Object.assign(s, { connecting: true, connectingTo: wifi.ssid, error: null });
     changed();
     await system.stopHotspot();
     s.hotspot = null;
     try {
-      await connect(wifi, server);
-      Object.assign(config, { wifi, server });
+      await connect(wifi, server, athletept);
+      Object.assign(config, { wifi, server, athletept });
       saveConfig(config);
       setSetup(onlineState(), { connecting: false, connectingTo: null });
     } catch (err) {
@@ -206,7 +217,7 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   // Zurück in die Einrichtung: WLAN und Server vergessen, Hotspot auf.
   // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleibt das Passwort erhalten; Werkseinstellung löscht es.
   async function reset({ keepAdmin = false } = {}) {
-    Object.assign(config, { wifi: null, server: null });
+    Object.assign(config, { wifi: null, server: null, athletept: null });
     if (!keepAdmin) config.admin = null;
     saveConfig(config);
     await openHotspot();
@@ -245,4 +256,4 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   };
 }
 
-module.exports = { createFrame, validate, SETUP, REST };
+module.exports = { createFrame, validate, validateAthletept, SETUP, REST };

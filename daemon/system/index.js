@@ -11,6 +11,7 @@
 //   checkInternet()                   → true | false
 //   setBacklight(on)
 //   readCpuTemp()                     → °C | null
+//   power("reboot" | "poweroff")      Pi neu starten oder herunterfahren (Admin-Bereich)
 //   status()                          → { hotspot, wifi, backlight, ip, signal (dBm) } für Dev-Leiste und Admin
 //
 // Demo-Modus: Über dem Adapter liegt daemon/demo.js und spielt das Netz. Am PC (nicht Linux) mit dem Mock darunter.

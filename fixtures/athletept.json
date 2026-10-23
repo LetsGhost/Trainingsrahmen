@@ -1,0 +1,39 @@
+{
+  "week": {
+    "days": [
+      { "dayId": "d1", "name": "Plan A – Unterkörper", "type": "LOWER", "weekday": 1, "status": "completed" },
+      { "dayId": "d2", "name": "Plan B – Oberkörper", "type": "UPPER", "weekday": 4, "status": "open" }
+    ],
+    "activities": [null, "Laufen", null, null, null, "Fußball", null]
+  },
+  "plan": {
+    "plan": {
+      "days": [
+        {
+          "id": "d1",
+          "exercises": [
+            { "exerciseName": "Kniebeuge", "sets": [
+              { "kind": "warmup", "repsMin": 10, "repsMax": null, "durationSeconds": null },
+              { "kind": "working", "repsMin": 6, "repsMax": 8, "durationSeconds": null },
+              { "kind": "working", "repsMin": 6, "repsMax": 8, "durationSeconds": null },
+              { "kind": "working", "repsMin": 6, "repsMax": 8, "durationSeconds": null }
+            ] },
+            { "exerciseName": "Plank", "sets": [
+              { "kind": "working", "repsMin": null, "repsMax": null, "durationSeconds": 60 },
+              { "kind": "working", "repsMin": null, "repsMax": null, "durationSeconds": 60 }
+            ] }
+          ]
+        },
+        {
+          "id": "d2",
+          "exercises": [
+            { "exerciseName": "Bankdrücken", "sets": [
+              { "kind": "working", "repsMin": 5, "repsMax": 5, "durationSeconds": null },
+              { "kind": "working", "repsMin": 5, "repsMax": 5, "durationSeconds": null }
+            ] }
+          ]
+        }
+      ]
+    }
+  }
+}

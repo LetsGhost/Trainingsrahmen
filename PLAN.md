@@ -9,12 +9,12 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Thema | Entscheidung |
 |---|---|
 | Gerät | Ein Pi 3B+ für eine Person |
-| Daten | `GET /data` mit Header `x-api-key` vom Sport-Analytics-Backend; Server bleibt unverändert |
+| Daten | `GET /data` mit Header `x-api-key` vom Sport-Analytics-Backend; Server bleibt unverändert. Optional zusätzlich AthletePT 3.0 (Portal und Admin): `GET /api/v1/me/week` und `/me/plan` mit `Authorization: Bearer apt_…` (Bereiche `workouts:read`, `plans:read`); `daemon/athletept.js` baut daraus das Sport-Analytics-Format, der Sync hängt die Einheiten an den Plan an. Beide Quellen haben einen eigenen Cache; fällt eine aus, bleibt ihr letzter Stand. Einheiten, die Sport-Analytics am selben Tag schon hat (Titel ist Anfang des anderen, oder gleiche Sportart bei den AthletePT-Freitexten Laufen/Rad/Schwimmen), werden nicht doppelt gezeigt; fehlende Felder der Sport-Analytics-Einheit (z. B. die Übungen in `description`) kommen dann von AthletePT |
 | Wetter | Open-Meteo direkt vom Pi, ohne Key; Ort im Admin-Bereich einstellbar (Standard Berlin) |
 | Hauptscreen | Wochenraster 2A (dunkel, 22–06 Uhr) / 2B (hell) |
 | Touch | Tag antippen öffnet die Tagesansicht (1B); Tipp oder 60 s ohne Berührung führt zurück |
 | Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt wird |
-| Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h |
+| Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h; Knöpfe für Neustart und Herunterfahren des Pi (`systemctl reboot`/`poweroff`, erlaubt per polkit) |
 | Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (Standard `origin/master`), bei Neuem `git pull` und `scripts/update.sh` |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | Seeed Grove Mini-PIR an einem GPIO-Pin |

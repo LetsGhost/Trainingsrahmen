@@ -255,6 +255,15 @@ module.exports = function createPiAdapter({ port }) {
       }
     },
 
+    // Darf der Rahmen-User laut polkit-Regel (scripts/system/trainingsrahmen.rules).
+    async power(action) {
+      try {
+        await systemctl(action === "reboot" ? "reboot" : "poweroff");
+      } catch (err) {
+        throw new FrameError("POWER_FAILED", `${action === "reboot" ? "Neustart" : "Herunterfahren"} gescheitert: ${err.stderr?.trim() || err.message}`);
+      }
+    },
+
     async readCpuTemp() {
       const milli = Number(readFile("/sys/class/thermal/thermal_zone0/temp"));
       return Number.isFinite(milli) && milli > 0 ? Math.round(milli / 100) / 10 : null;

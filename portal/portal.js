@@ -7,7 +7,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 
 const state = { daemon: null, networks: null, sent: null, formError: null };
 // Eingaben überleben ein Neuzeichnen (z. B. wenn per SSE ein neuer Zustand kommt).
-const draft = { ssid: null, other: "", password: "", url: "", apiKey: "" };
+const draft = { ssid: null, other: "", password: "", url: "", apiKey: "", athleteptUrl: "", athleteptKey: "" };
 
 function message(title, text) {
   return `
@@ -66,6 +66,15 @@ function renderForm() {
         <label class="p-label" for="apiKey">API-KEY</label>
         <input type="text" id="apiKey" name="apiKey" value="${esc(draft.apiKey)}" autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
+      <div class="p-field">
+        <label class="p-label" for="athleteptUrl">ATHLETEPT-URL</label>
+        <input type="url" id="athleteptUrl" name="athleteptUrl" placeholder="optional · https://…" value="${esc(draft.athleteptUrl)}" autocapitalize="off" autocorrect="off">
+        <span class="p-hint">Optional. Die Trainings aus AthletePT erscheinen zusätzlich im Plan.</span>
+      </div>
+      <div class="p-field">
+        <label class="p-label" for="athleteptKey">ATHLETEPT-KEY</label>
+        <input type="text" id="athleteptKey" name="athleteptKey" placeholder="apt_…" value="${esc(draft.athleteptKey)}" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
       <button class="p-primary" id="submit">Verbinden</button>
     </form>`;
 }
@@ -112,7 +121,9 @@ view.addEventListener("submit", async e => {
     const res = await fetch("/api/setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wifi: { ssid, password: draft.password }, server: { url: draft.url, apiKey: draft.apiKey } })
+      body: JSON.stringify({ wifi: { ssid, password: draft.password }, server: { url: draft.url, apiKey: draft.apiKey },
+        athletept: { url: draft.athleteptUrl, apiKey: draft.athleteptKey }
+      })
     });
     if (!res.ok) {
       state.formError = (await res.json()).error;
