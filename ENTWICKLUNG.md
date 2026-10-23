@@ -181,8 +181,9 @@ Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. 
 | `trainingsrahmen-kiosk.service` | `scripts/kiosk.sh`: Chromium in cage auf tty1 |
 | `trainingsrahmen-update.service` | Update per Knopf (`scripts/self-update.sh`), nur auf Anforderung |
 | `trainingsrahmen-touch.service` | `scripts/touch-rebind.sh` beim Booten: Touch-Treiber neu binden (siehe unten) |
+| `trainingsrahmen-hotspot.service` | Hotspot der Einrichtung: hostapd + dnsmasq auf wlan0, startet nur der Daemon. Nicht über NetworkManager: Dessen AP-Modus kündigt auch WPA-PSK-SHA256 an, daran scheitert der BCM43430 (Handy: „Passwort falsch“). |
 
-`install-services.sh` setzt User und Pfad in die Vorlagen aus `scripts/systemd/` ein und installiert dazu aus `scripts/system/`: die polkit-Regel (der User darf ohne Passwort WLAN schalten und die drei Units starten), das Captive-DNS für dnsmasq im Hotspot und die Backlight-Regel. Nach Änderungen an diesen Dateien neu ausführen; `deploy.sh` macht das selbst. `scripts/update.sh` läuft ohne sudo und kann das nicht.
+`install-services.sh` setzt User und Pfad in die Vorlagen aus `scripts/systemd/` ein und installiert dazu aus `scripts/system/`: die polkit-Regel (der User darf ohne Passwort WLAN schalten und seine Units starten) und die Backlight-Regel. Nach Änderungen an diesen Dateien neu ausführen; `deploy.sh` macht das selbst. `scripts/update.sh` läuft ohne sudo und kann das nicht.
 
 **Vom PC aus testen (ohne Commit)**
 

@@ -105,7 +105,7 @@ Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, ni
 - Abweichung von der Vorlage: 3B verweist nicht auf eine externe Website mit Account, sondern auf das Portal auf dem Pi.
 - QR-Codes erzeugt der Daemon selbst (`daemon/qr.js`, ohne Abhängigkeiten).
 - Prüfadressen von Android, iOS und Windows (`/generate_204`, `/hotspot-detect.html` …) und auf dem Pi jeder fremde Host leiten während der Einrichtung auf das Portal um.
-- Offen für den Pi: Hotspot, WLAN-Suche und Verbinden per `nmcli` im Pi-Adapter; Portal auf Port 80 (Weiterleitung auf 8080); Hotspot-Adresse `10.42.0.1`.
+- Offen für den Pi: WLAN-Suche und Verbinden per `nmcli` im Pi-Adapter, Hotspot per hostapd (`trainingsrahmen-hotspot.service`); Portal auf Port 80 (Weiterleitung auf 8080); Hotspot-Adresse `10.42.0.1`.
 
 ## Ruhe und Slideshow
 

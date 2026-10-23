@@ -1,4 +1,5 @@
-// Echter Adapter für den Pi: WLAN und Hotspot über NetworkManager (nmcli), PIR über gpiomon (libgpiod),
+// Echter Adapter für den Pi: WLAN über NetworkManager (nmcli), Hotspot über hostapd + dnsmasq
+// (scripts/systemd/trainingsrahmen-hotspot.service), PIR über gpiomon (libgpiod),
 // Backlight über /sys/class/backlight, CPU-Temperatur aus /sys/class/thermal.
 // Die Rechte dafür (nmcli ohne root, Backlight schreiben, GPIO lesen) richtet scripts/setup-pi.sh ein.
 // Noch nicht auf echter Hardware geprüft (Phase 2 und 5).
@@ -9,15 +10,20 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { FrameError } = require("../errors");
+const { BASE_DIR } = require("../config");
 
 const IFACE = process.env.FRAME_WIFI_IFACE || "wlan0";
 // FRAME_PIR_PIN=off schaltet den Sensor ab.
 const PIR_CHIP = process.env.FRAME_PIR_CHIP || "gpiochip0";
 const PIR_PIN = process.env.FRAME_PIR_PIN || "17";
-const HOTSPOT_CON = "rahmen-hotspot";
+// Nicht über NetworkManager: Der kündigt im AP-Modus immer auch WPA-PSK-SHA256 an, daran scheitert der
+// Broadcom-Chip (BCM43430) beim Handshake, Handys melden „Passwort falsch“. hostapd mit reinem WPA-PSK geht.
+const HOTSPOT_UNIT = "trainingsrahmen-hotspot.service";
+const HOTSPOT_CONF = path.join(BASE_DIR, "hostapd.conf");
 const WIFI_CON = "rahmen-wifi";
-// Adresse, die NetworkManager im Modus „shared“ vergibt; dnsmasq leitet dort alle Namen hin (setup-pi.sh).
+// Fest in der Hotspot-Unit; dnsmasq dort leitet alle Namen hierhin.
 const HOTSPOT_IP = "10.42.0.1";
+const WIFI_COUNTRY = process.env.FRAME_WIFI_COUNTRY || "DE";
 const CONNECT_TIMEOUT_S = 30;
 const STATUS_INTERVAL_MS = 15 * 1000;
 const CONNECTIVITY_URL = "http://connectivitycheck.gstatic.com/generate_204";
@@ -36,7 +42,9 @@ function run(cmd, args, timeout = (CONNECT_TIMEOUT_S + 15) * 1000) {
 }
 
 const nmcli = (...args) => run("nmcli", args);
+const systemctl = (...args) => run("systemctl", args);
 const quiet = promise => promise.catch(() => {});
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // nmcli -t trennt Felder mit „:“ und maskiert „:“ und „\“ im Inhalt mit „\“.
 function splitTerse(line) {
@@ -140,6 +148,18 @@ module.exports = function createPiAdapter({ port }) {
   }
   watchPir();
 
+  // Hotspot aus und wlan0 zurück an NetworkManager. Auch nach einem Daemon-Neustart, wenn die Unit noch läuft.
+  async function stationMode() {
+    await quiet(systemctl("stop", HOTSPOT_UNIT));
+    await quiet(nmcli("device", "set", IFACE, "managed", "yes"));
+    // Erst wenn wlan0 nicht mehr „unmanaged“/„unavailable“ ist, klappt „connection up“.
+    for (let i = 0; i < 20; i++) {
+      const state = await nmcli("-g", "GENERAL.STATE", "device", "show", IFACE).catch(() => "");
+      if (state && !/unmanaged|unavailable/.test(state)) return;
+      await sleep(500);
+    }
+  }
+
   return {
     name: "pi",
     events,
@@ -148,23 +168,24 @@ module.exports = function createPiAdapter({ port }) {
       try {
         networks = await scan(true);
       } catch {}
-      await quiet(nmcli("connection", "delete", HOTSPOT_CON));
       const hotspot = { ssid: hotspotSsid(), password: newPassword() };
-      await nmcli(
-        "connection", "add", "type", "wifi", "ifname", IFACE, "con-name", HOTSPOT_CON, "autoconnect", "no",
-        "ssid", hotspot.ssid, "802-11-wireless.mode", "ap", "802-11-wireless.band", "bg",
-        "ipv4.method", "shared", "ipv4.addresses", `${HOTSPOT_IP}/24`, "ipv6.method", "disabled",
-        // Nur WPA2 mit CCMP und ohne PMF: Damit kommen der Broadcom-Chip des 3B+ und ältere Handys zurecht.
-        "wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", hotspot.password,
-        "wifi-sec.proto", "rsn", "wifi-sec.pairwise", "ccmp", "wifi-sec.group", "ccmp", "wifi-sec.pmf", "disable"
-      );
-      await nmcli("connection", "up", HOTSPOT_CON);
+      // SSID und Passwort enthalten nur Buchstaben, Ziffern und „-“, brauchen also kein Escaping.
+      const conf = [
+        `interface=${IFACE}`, "driver=nl80211", `ssid=${hotspot.ssid}`, "hw_mode=g", "channel=6",
+        `country_code=${WIFI_COUNTRY}`, "wpa=2", "wpa_key_mgmt=WPA-PSK", "rsn_pairwise=CCMP",
+        `wpa_passphrase=${hotspot.password}`
+      ].join("\n") + "\n";
+      fs.mkdirSync(BASE_DIR, { recursive: true });
+      fs.writeFileSync(HOTSPOT_CONF, conf, { mode: 0o600 });
+      // NetworkManager muss wlan0 freigeben, sonst kommen sich wpa_supplicant und hostapd in die Quere.
+      await nmcli("device", "set", IFACE, "managed", "no");
+      await systemctl("restart", HOTSPOT_UNIT);
       Object.assign(hw, { hotspot, wifi: null, signal: null });
       return hotspot;
     },
 
     async stopHotspot() {
-      await quiet(nmcli("connection", "down", HOTSPOT_CON));
+      await stationMode();
       hw.hotspot = null;
     },
 
@@ -189,6 +210,7 @@ module.exports = function createPiAdapter({ port }) {
       // Bei Internetausfall ruft state.js das alle 30 s auf; steht das WLAN selbst, nicht neu verbinden.
       await refresh();
       if (same && hw.wifi === ssid) return;
+      await stationMode();
       if (!same) {
         await quiet(nmcli("connection", "delete", WIFI_CON));
         const security = password ? ["wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", password] : [];

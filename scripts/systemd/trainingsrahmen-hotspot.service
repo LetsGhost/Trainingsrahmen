@@ -1,0 +1,20 @@
+# Hotspot für die Einrichtung: hostapd (WLAN, WPA2-PSK) und dnsmasq (DHCP, Captive-DNS) auf wlan0.
+# Startet und stoppt nur der Daemon (daemon/system/pi.js), der vorher data/hostapd.conf schreibt und wlan0
+# in NetworkManager auf „unmanaged“ setzt. Das darf der User laut scripts/system/trainingsrahmen.rules (polkit).
+# @DIR@ setzt scripts/install-services.sh ein. Logs: journalctl -u trainingsrahmen-hotspot
+# Interface und Adresse sind fest (wlan0, 10.42.0.1); sie müssen zu FRAME_WIFI_IFACE und HOTSPOT_IP in pi.js passen.
+
+[Unit]
+Description=Trainingsrahmen Hotspot (hostapd + dnsmasq)
+After=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/sbin/ip addr flush dev wlan0
+ExecStartPre=/usr/sbin/ip addr add 10.42.0.1/24 dev wlan0
+ExecStart=/usr/sbin/hostapd @DIR@/data/hostapd.conf
+# Alle Namen zeigen auf den Pi, damit Handys das Einrichtungsportal von selbst öffnen.
+# dnsmasq läuft im Hintergrund in derselben cgroup und endet mit der Unit.
+ExecStartPost=/usr/sbin/dnsmasq --conf-file=/dev/null --interface=wlan0 --bind-interfaces --no-resolv --no-hosts \
+  --dhcp-range=10.42.0.10,10.42.0.254,1h --address=/#/10.42.0.1 --pid-file=/run/trainingsrahmen-dnsmasq.pid
+ExecStopPost=/usr/sbin/ip addr flush dev wlan0

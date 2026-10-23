@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installiert die systemd-Units (Daemon, Kiosk, Update, Touch-Fix), die polkit-Regel, das Captive-DNS und die
+# Installiert die systemd-Units (Daemon, Kiosk, Update, Touch-Fix, Hotspot), die polkit-Regel und die
 # Backlight-Regel und startet Daemon und Kiosk neu. Kann gefahrlos mehrfach laufen; nach jeder Änderung an
 # scripts/systemd/ oder scripts/system/ ausführen (deploy.sh macht das selbst).
 #   ./scripts/install-services.sh             installieren und neu starten
@@ -30,12 +30,13 @@ render() {
 
 chmod +x "$DIR"/scripts/*.sh
 
-for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service trainingsrahmen-touch.service; do
+for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service trainingsrahmen-touch.service trainingsrahmen-hotspot.service; do
   render "$DIR/scripts/systemd/$unit" "/etc/systemd/system/$unit" 0644
 done
-sudo mkdir -p /etc/polkit-1/rules.d /etc/NetworkManager/dnsmasq-shared.d
+sudo mkdir -p /etc/polkit-1/rules.d
 render "$DIR/scripts/system/trainingsrahmen.rules" /etc/polkit-1/rules.d/50-trainingsrahmen.rules 0644
-sudo install -m 0644 "$DIR/scripts/system/captive-dns.conf" /etc/NetworkManager/dnsmasq-shared.d/trainingsrahmen.conf
+# Captive-DNS der früheren NetworkManager-Hotspots; das macht jetzt die Hotspot-Unit.
+sudo rm -f /etc/NetworkManager/dnsmasq-shared.d/trainingsrahmen.conf
 sudo install -m 0644 "$DIR/scripts/system/99-trainingsrahmen-backlight.rules" /etc/udev/rules.d/99-trainingsrahmen-backlight.rules
 sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=backlight --action=add || true

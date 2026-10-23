@@ -38,7 +38,7 @@ sudo apt-get install -y \
   git curl \
   nodejs \
   cage chromium wlr-randr \
-  network-manager dnsmasq-base \
+  network-manager dnsmasq-base hostapd \
   gpiod i2c-tools libinput-tools \
   avahi-daemon \
   fonts-dejavu-core
