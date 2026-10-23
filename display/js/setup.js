@@ -69,6 +69,7 @@ export function renderSetup(f, done) {
     title: "Verbinde dein Handy mit dem WLAN",
     value: f.hotspot?.ssid,
     note: f.error ? `Letzter Versuch: ${f.error.message}` : null,
-    side: f.hotspot ? qrImage(`/api/setup/qr/wifi.svg?ssid=${encodeURIComponent(f.hotspot.ssid)}`) : ""
+    // Passwort in der URL: Sonst zeigt Chromium nach einem neuen Hotspot (gleiche SSID) das alte Bild weiter.
+    side: f.hotspot ? qrImage(`/api/setup/qr/wifi.svg?ssid=${encodeURIComponent(f.hotspot.ssid)}&p=${encodeURIComponent(f.hotspot.password)}`) : ""
   });
 }
