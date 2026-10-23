@@ -11,7 +11,8 @@ const KEY_REJECTED = () => new FrameError("KEY_REJECTED", "Server lehnt den API-
 async function request({ url, apiKey }) {
   let res;
   try {
-    res = await fetch(url.replace(/\/+$/, "") + "/data", {
+    // Wer die volle Adresse mit „/data“ einträgt, soll nicht bei …/data/data landen.
+    res = await fetch(url.replace(/\/+$/, "").replace(/\/data$/, "") + "/data", {
       headers: { "x-api-key": apiKey, Accept: "application/json" },
       signal: AbortSignal.timeout(TIMEOUT_MS)
     });
