@@ -71,7 +71,7 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 `/admin` zeigt je nach Zustand „Passwort festlegen“ (nur in `SETUP_ADMIN`, mit Einmal-Code), „Anmelden“ oder das Panel.
 
 - Passwort als scrypt-Hash in `config.json`; nach 5 Fehlversuchen 30 s Sperre.
-- Sitzung per Cookie (`HttpOnly`, `SameSite=Strict`, 12 h, nur im Speicher: Neustart meldet ab). Schreibende Anfragen verlangen JSON.
+- Sitzung per Cookie (`HttpOnly`, `SameSite=Strict`, 12 h; in `data/sessions.json` liegt nur der SHA-256 des Tokens, ein Neustart meldet nicht ab). Schreibende Anfragen verlangen JSON.
 - Panel: Server und API-Key (wird vor dem Speichern geprüft), Wetter-Ort (Suche über Open-Meteo), Erscheinungsbild, Module Wetter und Erholung, Ruhe-Fristen, Status, „Jetzt neu laden“, „WLAN ändern“, Passwort ändern.
 - Slideshow: Bilder werden im Browser auf 800 × 480 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
 - `/api/slides` liefert die Bilder an das Display (localhost) und an angemeldete Admins.

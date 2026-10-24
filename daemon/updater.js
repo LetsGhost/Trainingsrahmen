@@ -6,6 +6,7 @@ const { execFile, execFileSync, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { FrameError } = require("./errors");
+const { writeAtomic } = require("./config");
 
 const GIT_TIMEOUT_MS = 60 * 1000;
 // So lange gilt ein Update ohne neue Statusmeldung als laufend.
@@ -45,10 +46,7 @@ function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
   };
 
   function writeStatus(state, message) {
-    fs.mkdirSync(dataDir, { recursive: true });
-    const body = JSON.stringify({ state, message, at: Date.now(), from: commit ?? "", to: "" });
-    fs.writeFileSync(statusFile + ".tmp", body);
-    fs.renameSync(statusFile + ".tmp", statusFile);
+    writeAtomic(statusFile, JSON.stringify({ state, message, at: Date.now(), from: commit ?? "", to: "" }));
   }
 
   return {

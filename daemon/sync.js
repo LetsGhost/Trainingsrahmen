@@ -1,8 +1,9 @@
 // Holt Plan und Wetter regelmäßig und legt beides auf der Daten-Partition ab, damit nach einem Neustart
-// ohne Netz der letzte Stand angezeigt wird. Abgerufen wird nur, solange der Rahmen online ist (READY).
+// ohne Netz der letzte Stand angezeigt wird. Abgerufen wird nur, solange der Rahmen online ist (READY oder SETUP_ADMIN).
 const { EventEmitter } = require("events");
 const fs = require("fs");
 const path = require("path");
+const { writeAtomic } = require("./config");
 const { mergePlans } = require("./athletept");
 const { withRecovery, withActivities } = require("./garmin");
 
@@ -20,11 +21,7 @@ function createCache(dir) {
     read(name) {
       try { return JSON.parse(fs.readFileSync(file(name), "utf8")); } catch { return null; }
     },
-    write(name, entry) {
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file(name) + ".tmp", JSON.stringify(entry));
-      fs.renameSync(file(name) + ".tmp", file(name));
-    }
+    write: (name, entry) => writeAtomic(file(name), JSON.stringify(entry))
   };
 }
 

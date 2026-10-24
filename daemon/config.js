@@ -41,13 +41,15 @@ function load() {
   }
 }
 
-function save(config) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  const tmp = FILE + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(config, null, 2));
-  fs.renameSync(tmp, FILE);
+// Für alle Dateien des Daemons (Konfiguration, Cache, Sitzungen, Update-Status).
+function writeAtomic(file, text) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file + ".tmp", text);
+  fs.renameSync(file + ".tmp", file);
 }
+
+const save = config => writeAtomic(FILE, JSON.stringify(config, null, 2));
 
 const exists = () => fs.existsSync(FILE);
 
-module.exports = { load, save, exists, DEFAULTS, DATA_DIR, BASE_DIR, DEMO };
+module.exports = { load, save, exists, writeAtomic, DEFAULTS, DATA_DIR, BASE_DIR, DEMO };

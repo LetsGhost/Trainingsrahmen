@@ -69,18 +69,18 @@ const frame = createFrame({
   hasImages: () => slides.count() > 0
 });
 
+// Auch während des Admin-Schritts, damit der Plan danach sofort da ist.
+const ONLINE = [SETUP.READY, SETUP.ADMIN];
 const sync = createSync({
   backend,
   weather: createWeather({ dev: DEV || DEMO, sim, fixture: path.join(FIXTURE_DIR, "weather.json") }),
   config,
   dataDir: configStore.DATA_DIR,
-  // Auch während des Admin-Schritts, damit der Plan danach sofort da ist.
-  isOnline: () => [SETUP.READY, SETUP.ADMIN].includes(frame.snapshot().setup)
+  isOnline: () => ONLINE.includes(frame.snapshot().setup)
 });
 
 // Sobald der Rahmen online geht (nach Start, Einrichtung oder Ausfall), sofort abgleichen.
 let lastSetup = null;
-const ONLINE = [SETUP.READY, SETUP.ADMIN];
 frame.on("change", f => {
   if (ONLINE.includes(f.setup) && !ONLINE.includes(lastSetup)) sync.syncAll();
   lastSetup = f.setup;
@@ -340,7 +340,14 @@ function routeSetup(req, res, pathname) {
 // --- Routen ---
 
 function handle(req, res) {
-  const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  } catch {
+    // Kaputtes %-Escape: sonst würde der Wurf den ganzen Daemon beenden.
+    res.writeHead(400);
+    return res.end();
+  }
 
   if (routeSetup(req, res, pathname)) return;
   if (admin.route(req, res, pathname)) return;

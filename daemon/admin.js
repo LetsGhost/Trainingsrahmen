@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { FrameError } = require("./errors");
+const { writeAtomic } = require("./config");
 const { SETUP, validateAthletept } = require("./state");
 
 const COOKIE = "rahmen_session";
@@ -50,8 +51,7 @@ function createSessionStore(file) {
   const persist = () => {
     const now = Date.now();
     for (const [k, expires] of Object.entries(entries)) if (expires < now) delete entries[k];
-    fs.writeFileSync(file + ".tmp", JSON.stringify(entries));
-    fs.renameSync(file + ".tmp", file);
+    writeAtomic(file, JSON.stringify(entries));
   };
   return {
     get: token => entries[digest(token)],

@@ -29,7 +29,7 @@ function validateAthletept(input) {
   const url = String(input?.url ?? "").trim();
   const apiKey = String(input?.apiKey ?? "").trim();
   if (!url && !apiKey) return null;
-  if (!/^https?://S+$/i.test(url)) throw new FrameError("INVALID", "AthletePT-URL muss mit http:// oder https:// beginnen");
+  if (!/^https?:\/\/\S+$/i.test(url)) throw new FrameError("INVALID", "AthletePT-URL muss mit http:// oder https:// beginnen");
   if (!apiKey) throw new FrameError("INVALID", "AthletePT-Key fehlt");
   return { url, apiKey };
 }
@@ -145,7 +145,15 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
 
   async function openHotspot(error = null) {
     clearTimeout(retryTimer);
-    const hotspot = await system.startHotspot();
+    let hotspot;
+    try {
+      hotspot = await system.startHotspot();
+    } catch (err) {
+      // Sonst bliebe der Rahmen ohne Hotspot stehen, bis jemand den Strom zieht.
+      console.error(err);
+      retryTimer = setTimeout(() => openHotspot(error), HOTSPOT_RETRY_MS);
+      return;
+    }
     setSetup(SETUP.HOTSPOT, { hotspot, error, connecting: false });
   }
 
