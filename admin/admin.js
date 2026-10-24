@@ -12,7 +12,7 @@ const SETUP_LABELS = {
 };
 const REST_LABELS = { AKTIV: "Display aktiv", SLIDESHOW: "Slideshow", AUS: "Display aus" };
 
-const state = { tab: "settings", settings: null, status: null, slides: [], maxSlides: 200, geo: [] };
+const state = { tab: "home", open: null, settings: null, status: null, slides: [], maxSlides: 200, geo: [] };
 let statusTimer = null;
 
 async function api(path, { method = "GET", body, blob } = {}) {
@@ -27,6 +27,7 @@ async function api(path, { method = "GET", body, blob } = {}) {
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && path !== "login") {
+    clearInterval(statusTimer);
     start();
     return { ok: false, error: "Sitzung abgelaufen" };
   }
@@ -126,27 +127,55 @@ function showUnavailable() {
     </div>`);
 }
 
-// --- Panel (1E) ---
+// --- Panel (nach Admin.dc.html) ---
+
+// Lucide-Icons (ISC), inline, damit der Admin ohne Internet funktioniert.
+const ICONS = {
+  "layout-grid": '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+  monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  "key-round": '<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  cpu: '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>',
+  "log-out": '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+  "refresh-cw": '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  power: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+  "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>'
+};
+const icon = (name, size = 16) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+
+const TABS = [
+  { id: "home", label: "Übersicht", icon: "layout-grid", sub: "Zustand des Rahmens auf einen Blick." },
+  { id: "display", label: "Anzeige", icon: "monitor", sub: "Was der Rahmen zeigt und wie." },
+  { id: "services", label: "Dienste", icon: "key-round", sub: "Zugänge für Trainingsplan, AthletePT und Garmin." },
+  { id: "slides", label: "Slideshow", icon: "image", sub: "Bilder, die der Rahmen in Ruhe zeigt." },
+  { id: "system", label: "System", icon: "cpu", sub: "Technische Werte des Raspberry Pi." }
+];
 
 async function showPanel() {
   app.innerHTML = `
-    <header class="top">
-      <div class="top-left">
+    <div class="shell">
+      <header class="top">
         <div class="brand">TRAININGSRAHMEN <span>ADMIN</span></div>
-        <nav class="tabs">
-          <button class="tab" data-tab="settings">Einstellungen</button>
-          <button class="tab" data-tab="slides">Slideshow</button>
+        <div class="top-right">
+          <div class="state" id="state"></div>
+          <button class="secondary icon-btn" id="logout">${icon("log-out", 15)}<span>Abmelden</span></button>
+        </div>
+      </header>
+      <div class="panel">
+        <nav class="nav">${TABS.map(t =>
+          `<button class="nav-item" data-tab="${t.id}">${icon(t.icon, 17)}<span>${t.label}</span></button>`).join("")}
         </nav>
+        <main class="main">
+          <div class="page-head">
+            <div class="page-title" id="title"></div>
+            <div class="page-sub" id="subtitle"></div>
+          </div>
+          <div id="main"></div>
+        </main>
       </div>
-      <div class="top-right">
-        <div class="state" id="state"></div>
-        <button class="secondary" id="logout">Abmelden</button>
-      </div>
-    </header>
-    <div class="panel">
-      <main class="main" id="main"></main>
-      <div class="panel-divider"></div>
-      <aside class="side" id="side"></aside>
     </div>`;
   document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => {
     state.tab = b.dataset.tab;
@@ -157,22 +186,28 @@ async function showPanel() {
     clearInterval(statusTimer);
     start();
   });
+  $("#main").addEventListener("click", e => {
+    const action = e.target.closest("[data-action]")?.dataset.action;
+    if (action) ACTIONS[action]();
+  });
 
   const [settings, slides] = await Promise.all([api("settings"), api("slides")]);
   if (!settings.ok) return;
   state.settings = settings.data;
   if (slides.ok) Object.assign(state, { slides: slides.data.slides, maxSlides: slides.data.max });
   renderMain();
-  renderSide();
   refreshStatus();
   clearInterval(statusTimer);
   statusTimer = setInterval(refreshStatus, STATUS_REFRESH_MS);
 }
 
 function renderMain() {
-  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === state.tab));
-  if (state.tab === "slides") renderSlides();
-  else renderSettings();
+  const tab = TABS.find(t => t.id === state.tab) ?? TABS[0];
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === tab.id));
+  $("#title").textContent = tab.label;
+  $("#subtitle").textContent = tab.sub;
+  ({ home: renderHome, display: renderDisplay, services: renderServices, slides: renderSlides, system: renderSystem })[tab.id]();
+  renderStatus();
 }
 
 // Einstellungen speichern; nach Erfolg kommt die neue Fassung vom Daemon zurück.
@@ -185,124 +220,76 @@ async function save(part, msgId, okText = "Gespeichert") {
   return true;
 }
 
+// --- Übersicht ---
+
+function renderHome() {
+  $("#main").innerHTML = `
+    <div class="facts" id="facts"></div>
+    <div id="issue"></div>
+    <div class="row wrap">
+      <button class="primary wide" data-action="sync"><span>Jetzt neu laden</span>${icon("refresh-cw")}</button>
+      <button class="secondary wide" data-action="reboot"><span>Rahmen neu starten</span>${icon("power")}</button>
+    </div>
+    <div class="msg" id="action-msg"></div>`;
+}
+
+// --- Anzeige ---
+
 function toggle(name, options, current) {
   return `<div class="toggle" data-toggle="${name}">${options.map(([value, label]) =>
     `<button type="button" data-value="${value}" class="${String(current) === String(value) ? "on" : ""}">${label}</button>`).join("")}</div>`;
 }
 
-function renderSettings() {
+const switchRow = (key, name, hint, on) => `
+  <button type="button" class="switch-row" data-switch="${key}" aria-pressed="${on}">
+    <span><span class="setting-name">${name}</span><span class="setting-hint">${hint}</span></span>
+    <span class="switch"><span></span></span>
+  </button>`;
+
+function renderDisplay() {
   const s = state.settings;
   $("#main").innerHTML = `
-    <div class="section-head">
-      <div class="kicker">ZUGANGSDATEN</div>
-      <div class="section-title">Server & API-Key</div>
-    </div>
-    <form class="block" id="server-form" novalidate>
-      <div class="grid2">
-        <div class="field">
-          <label class="label" for="url">SERVER-URL</label>
-          <input type="url" id="url" value="${esc(s.server.url)}" placeholder="https://…">
-        </div>
-        <div class="field">
-          <label class="label" for="apiKey">API-KEY</label>
-          <input type="text" id="apiKey" placeholder="${esc(s.server.apiKey)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-      <div class="row"><button class="secondary">Prüfen & speichern</button><div class="msg" id="server-msg"></div></div>
-    </form>
-
-    <div class="section-head">
-      <div class="kicker">ZUSÄTZLICHE QUELLE</div>
-      <div class="section-title">AthletePT</div>
-      <div class="setting-hint">Optional. Die Trainings aus AthletePT erscheinen zusätzlich im Plan. URL leeren und speichern entfernt die Quelle.</div>
-    </div>
-    <form class="block" id="athletept-form" novalidate>
-      <div class="grid2">
-        <div class="field">
-          <label class="label" for="athleteptUrl">ATHLETEPT-URL</label>
-          <input type="url" id="athleteptUrl" value="${esc(s.athletept.url)}" placeholder="https://…">
-        </div>
-        <div class="field">
-          <label class="label" for="athleteptKey">API-KEY</label>
-          <input type="text" id="athleteptKey" placeholder="${esc(s.athletept.apiKey)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-      <div class="row"><button class="secondary">Prüfen & speichern</button><div class="msg" id="athletept-msg"></div></div>
-    </form>
-
-    <div class="section-head">
-      <div class="kicker">ZUSÄTZLICHE QUELLE</div>
-      <div class="section-title">Garmin</div>
-      <div class="setting-hint">Optional. Schlaf, HRV, Ruhepuls und Body Battery von Garmin gehen in der Erholungsleiste vor; Aktivitäten der Woche haken passende Einheiten im Plan ab. Key anlegen unter Garmin Connect → Einstellungen → Personal API; er läuft je nach Wahl nach 30 Tagen bis einem Jahr ab.</div>
-    </div>
-    <form class="block" id="garmin-form" novalidate>
-      <div class="field">
-        <label class="label" for="garminKey">PERSONAL-API-KEY</label>
-        <input type="text" id="garminKey" placeholder="${esc(s.garmin.apiKey)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="row">
-        <button class="secondary">Prüfen & speichern</button>
-        ${s.garmin.active ? `<button type="button" class="secondary" id="garmin-remove">Entfernen</button>` : ""}
-        <div class="msg" id="garmin-msg"></div>
-      </div>
-    </form>
-
-    <div class="section-head">
-      <div class="kicker">ANZEIGE</div>
-      <div class="section-title">Ort, Erscheinungsbild & Module</div>
-    </div>
-    <div class="block">
-      <form class="field" id="geo-form" novalidate>
-        <label class="label" for="geo">ORT (WETTER) · AKTUELL ${esc(s.location.name.toUpperCase())}</label>
-        <div class="row"><input type="text" id="geo" placeholder="Ort suchen"><button class="secondary">Suchen</button></div>
-        <div class="results" id="geo-results"></div>
-        <div class="msg" id="geo-msg"></div>
-      </form>
+    <div class="list">
       <div class="setting">
         <div>
           <div class="setting-name">Erscheinungsbild</div>
           <div class="setting-hint">Automatisch folgt dem Nachtfenster 22:00 – 06:00</div>
         </div>
-        ${toggle("theme", [["light", "HELL"], ["dark", "DUNKEL"], ["auto", "AUTO"]], s.display.theme)}
+        ${toggle("theme", [["light", "HELL"], ["dark", "DUNKEL"], ["auto", "AUTOMATISCH"]], s.display.theme)}
       </div>
-      <div class="setting">
-        <div><div class="setting-name">Wetter</div><div class="setting-hint">Kopfzeile und Tagesansicht</div></div>
-        ${toggle("showWeather", [[true, "AN"], [false, "AUS"]], s.display.showWeather)}
-      </div>
-      <div class="setting">
-        <div><div class="setting-name">Erholung & Schlaf</div><div class="setting-hint">Leiste unten</div></div>
-        ${toggle("showRecovery", [[true, "AN"], [false, "AUS"]], s.display.showRecovery)}
-      </div>
-      <div class="msg" id="display-msg"></div>
+      <form class="setting stack" id="geo-form" novalidate>
+        <div class="setting-line">
+          <div>
+            <div class="setting-name">Ort</div>
+            <div class="setting-hint">Für das Wetter · aktuell ${esc(s.location.name)}</div>
+          </div>
+          <div class="row"><input type="text" id="geo" placeholder="Ort suchen"><button class="secondary">Suchen</button></div>
+        </div>
+        <div class="results" id="geo-results"></div>
+        <div class="msg" id="geo-msg"></div>
+      </form>
     </div>
 
-    <div class="section-head">
-      <div class="kicker">RUHE</div>
-      <div class="section-title">Slideshow & Display aus</div>
+    <div class="kicker-row">AUF DEM DISPLAY ZEIGEN</div>
+    <div class="list soft">
+      ${switchRow("showWeather", "Wetter", "Kopfzeile und Tagesansicht", s.display.showWeather)}
+      ${switchRow("showRecovery", "Erholung & Schlaf", "Leiste unten", s.display.showRecovery)}
     </div>
-    <form class="block" id="rest-form" novalidate>
-      <div class="grid2">
-        <div class="field">
-          <label class="label" for="slideshowAfter">SLIDESHOW NACH (MINUTEN)</label>
-          <input type="number" id="slideshowAfter" min="1" max="120" value="${s.deadlines.slideshowAfterMin}">
-        </div>
-        <div class="field">
-          <label class="label" for="offAfter">DISPLAY AUS NACH (MINUTEN)</label>
-          <input type="number" id="offAfter" min="2" max="600" value="${s.deadlines.offAfterMin}">
-        </div>
+    <div class="msg" id="display-msg"></div>
+
+    <div class="kicker-row">RUHE</div>
+    <form class="list" id="rest-form" novalidate>
+      <div class="setting">
+        <div class="setting-name">Slideshow nach (Minuten)</div>
+        <input type="number" class="num" id="slideshowAfter" min="1" max="120" value="${s.deadlines.slideshowAfterMin}">
       </div>
-      <div class="setting-hint">Gezählt ab der letzten Bewegung oder Berührung. Ohne Bilder geht das Display schon nach der ersten Frist aus.</div>
+      <div class="setting">
+        <div class="setting-name">Display aus nach (Minuten)</div>
+        <input type="number" class="num" id="offAfter" min="2" max="600" value="${s.deadlines.offAfterMin}">
+      </div>
+      <div class="setting-hint pad">Gezählt ab der letzten Bewegung oder Berührung. Ohne Bilder geht das Display schon nach der ersten Frist aus.</div>
       <div class="row"><button class="secondary">Speichern</button><div class="msg" id="rest-msg"></div></div>
     </form>`;
-
-  $("#server-form").addEventListener("submit", async e => {
-    e.preventDefault();
-    setMsg("server-msg", "Prüfe den Server …", true);
-    if (await save({ server: { url: $("#url").value, apiKey: $("#apiKey").value } }, "server-msg", "Server erreichbar, gespeichert")) {
-      $("#apiKey").value = "";
-      $("#apiKey").placeholder = `${state.settings.server.apiKey} · leer lassen zum Behalten`;
-    }
-  });
 
   $("#geo-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -317,47 +304,126 @@ function renderSettings() {
   $("#geo-results").addEventListener("click", async e => {
     const g = state.geo[e.target.closest("[data-geo]")?.dataset.geo];
     if (!g) return;
-    if (await save({ location: { name: g.name, lat: g.lat, lon: g.lon } }, "geo-msg", `Ort: ${g.name}`)) renderSettings();
-  });
-
-  $("#athletept-form").addEventListener("submit", async e => {
-    e.preventDefault();
-    const url = $("#athleteptUrl").value.trim();
-    setMsg("athletept-msg", url ? "Prüfe AthletePT …" : "Entferne AthletePT …", true);
-    if (await save({ athletept: { url, apiKey: $("#athleteptKey").value } }, "athletept-msg", url ? "AthletePT erreichbar, gespeichert" : "AthletePT entfernt")) {
-      $("#athleteptKey").value = "";
-      $("#athleteptKey").placeholder = `${state.settings.athletept.apiKey} · leer lassen zum Behalten`;
-    }
-  });
-
-  $("#garmin-form").addEventListener("submit", async e => {
-    e.preventDefault();
-    setMsg("garmin-msg", "Prüfe Garmin …", true);
-    // Neu zeichnen, damit „Entfernen“ erscheint; die Meldung danach wieder setzen.
-    if (await save({ garmin: { apiKey: $("#garminKey").value } }, "garmin-msg")) {
-      renderSettings();
-      setMsg("garmin-msg", "Garmin erreichbar, gespeichert", true);
-    }
-  });
-  $("#garmin-remove")?.addEventListener("click", async () => {
-    if (await save({ garmin: null }, "garmin-msg")) {
-      renderSettings();
-      setMsg("garmin-msg", "Garmin entfernt", true);
+    if (await save({ location: { name: g.name, lat: g.lat, lon: g.lon } }, "geo-msg")) {
+      renderDisplay();
+      setMsg("geo-msg", `Ort: ${g.name}`, true);
     }
   });
 
   document.querySelectorAll("[data-toggle]").forEach(t => t.addEventListener("click", async e => {
     const value = e.target.dataset.value;
     if (value === undefined) return;
-    const display = { ...state.settings.display, [t.dataset.toggle]: t.dataset.toggle === "theme" ? value : value === "true" };
-    if (await save({ display }, "display-msg")) {
+    if (await save({ display: { ...state.settings.display, theme: value } }, "display-msg")) {
       t.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
     }
+  }));
+  document.querySelectorAll("[data-switch]").forEach(b => b.addEventListener("click", async () => {
+    const key = b.dataset.switch;
+    const on = !state.settings.display[key];
+    if (await save({ display: { ...state.settings.display, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
   }));
 
   $("#rest-form").addEventListener("submit", e => {
     e.preventDefault();
     save({ deadlines: { slideshowAfterMin: Number($("#slideshowAfter").value), offAfterMin: Number($("#offAfter").value) } }, "rest-msg");
+  });
+}
+
+// --- Dienste ---
+
+// Eine Zeile je Zugang; „Ändern“ klappt das Formular darunter auf.
+function serviceRow({ id, name, active, missing, value, form }) {
+  const open = state.open === id;
+  return `
+    <div class="service">
+      <div class="service-line">
+        <div class="service-text">
+          <div class="row">
+            <span class="setting-name">${name}</span>
+            <span class="badge ${!active && missing ? "bad" : ""}">${active ? "AKTIV" : missing ? "FEHLT" : "OPTIONAL"}</span>
+          </div>
+          <div class="mono">${esc(value)}</div>
+        </div>
+        <button type="button" class="secondary" data-open="${id}">${open ? "Schließen" : active ? "Ändern" : "Hinzufügen"}</button>
+      </div>
+      <div class="service-form"${open ? "" : " hidden"}>${form}</div>
+    </div>`;
+}
+
+const keyField = (id, label, masked) => `
+  <div class="field">
+    <label class="label" for="${id}">${label}</label>
+    <input type="text" id="${id}" placeholder="${esc(masked)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
+  </div>`;
+
+function renderServices() {
+  const s = state.settings;
+  $("#main").innerHTML = `<div class="list">
+    ${serviceRow({ id: "server", name: "Trainingsplan", active: Boolean(s.server.url), missing: true, value: s.server.url || "nicht gesetzt", form: `
+      <form class="block" id="server-form" novalidate>
+        <div class="grid2">
+          <div class="field">
+            <label class="label" for="url">SERVER-URL</label>
+            <input type="url" id="url" value="${esc(s.server.url)}" placeholder="https://…">
+          </div>
+          ${keyField("apiKey", "API-KEY", s.server.apiKey)}
+        </div>
+        <div class="row"><button class="secondary">Prüfen & speichern</button><div class="msg" id="server-msg"></div></div>
+      </form>` })}
+    ${serviceRow({ id: "athletept", name: "AthletePT", active: Boolean(s.athletept.url), value: s.athletept.url || "nicht verbunden", form: `
+      <form class="block" id="athletept-form" novalidate>
+        <div class="setting-hint">Die Trainings aus AthletePT erscheinen zusätzlich im Plan. URL leeren und speichern entfernt die Quelle.</div>
+        <div class="grid2">
+          <div class="field">
+            <label class="label" for="athleteptUrl">ATHLETEPT-URL</label>
+            <input type="url" id="athleteptUrl" value="${esc(s.athletept.url)}" placeholder="https://…">
+          </div>
+          ${keyField("athleteptKey", "API-KEY", s.athletept.apiKey)}
+        </div>
+        <div class="row"><button class="secondary">Prüfen & speichern</button><div class="msg" id="athletept-msg"></div></div>
+      </form>` })}
+    ${serviceRow({ id: "garmin", name: "Garmin", active: s.garmin.active, value: s.garmin.active ? s.garmin.apiKey : "nicht verbunden", form: `
+      <form class="block" id="garmin-form" novalidate>
+        <div class="setting-hint">Schlaf, HRV, Ruhepuls und Body Battery von Garmin gehen in der Erholungsleiste vor; Aktivitäten der Woche haken passende Einheiten im Plan ab. Key anlegen unter Garmin Connect → Einstellungen → Personal API; er läuft je nach Wahl nach 30 Tagen bis einem Jahr ab.</div>
+        ${keyField("garminKey", "PERSONAL-API-KEY", s.garmin.apiKey)}
+        <div class="row">
+          <button class="secondary">Prüfen & speichern</button>
+          ${s.garmin.active ? `<button type="button" class="secondary" id="garmin-remove">Entfernen</button>` : ""}
+          <div class="msg" id="garmin-msg"></div>
+        </div>
+      </form>` })}
+  </div>`;
+
+  $("#main").querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => {
+    state.open = state.open === b.dataset.open ? null : b.dataset.open;
+    renderServices();
+  }));
+
+  // Nach dem Speichern neu zeichnen, damit Kennzeichen und Werte stimmen; die Meldung danach wieder setzen.
+  const saved = (msgId, text) => { renderServices(); setMsg(msgId, text, true); };
+
+  $("#server-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    setMsg("server-msg", "Prüfe den Server …", true);
+    if (await save({ server: { url: $("#url").value, apiKey: $("#apiKey").value } }, "server-msg")) saved("server-msg", "Server erreichbar, gespeichert");
+  });
+
+  $("#athletept-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const url = $("#athleteptUrl").value.trim();
+    setMsg("athletept-msg", url ? "Prüfe AthletePT …" : "Entferne AthletePT …", true);
+    if (await save({ athletept: { url, apiKey: $("#athleteptKey").value } }, "athletept-msg")) {
+      saved("athletept-msg", url ? "AthletePT erreichbar, gespeichert" : "AthletePT entfernt");
+    }
+  });
+
+  $("#garmin-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    setMsg("garmin-msg", "Prüfe Garmin …", true);
+    if (await save({ garmin: { apiKey: $("#garminKey").value } }, "garmin-msg")) saved("garmin-msg", "Garmin erreichbar, gespeichert");
+  });
+  $("#garmin-remove")?.addEventListener("click", async () => {
+    if (await save({ garmin: null }, "garmin-msg")) saved("garmin-msg", "Garmin entfernt");
   });
 }
 
@@ -378,13 +444,9 @@ async function resizeImage(file) {
 
 function renderSlides() {
   $("#main").innerHTML = `
-    <div class="section-head">
-      <div class="kicker">SLIDESHOW</div>
-      <div class="section-title">Bilder</div>
-    </div>
     <div class="block">
       <div class="upload">
-        <label class="primary" for="files"><span>Bilder hochladen</span><span>+</span></label>
+        <label class="primary wide" for="files"><span>Bilder hochladen</span>${icon("plus")}</label>
         <input type="file" id="files" accept="image/jpeg,image/png,image/webp" multiple>
         <span class="muted">${state.slides.length} von ${state.maxSlides} · werden auf 800 × 480 zugeschnitten</span>
       </div>
@@ -426,101 +488,26 @@ function renderSlides() {
   });
 }
 
-// --- Seitenleiste: Status, Aktionen, Passwort ---
+// --- System: Update, Status, Aktionen, Passwort ---
 
-function formatUptime(sec) {
-  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
-  return d ? `${d} T ${String(h).padStart(2, "0")} h` : `${h} h ${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")} min`;
-}
-
-const time = ts => (ts ? new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "–");
-
-function renderStatus() {
-  const s = state.status;
-  if (!s) return;
-  $("#state").textContent = `${SETUP_LABELS[s.setup] ?? s.setup} · ${REST_LABELS[s.rest] ?? s.rest}`;
-  const rows = [
-    ["WLAN", s.wifi ? `${s.wifi}${s.signal ? ` · ${s.signal} dBm` : ""}` : "–"],
-    ["IP im Netz", s.ip ?? "–"],
-    ["Uptime", formatUptime(s.uptimeSec)],
-    ["CPU-Temperatur", s.cpuTemp != null ? `${Math.round(s.cpuTemp)} °C` : "–"],
-    ["Speicher", s.diskUsedPercent != null ? `${s.diskUsedPercent} % belegt` : "–"],
-    ["Letzter Sync", s.sync.planError ? `${time(s.sync.planAt)} · ${s.sync.planError.message}` : time(s.sync.planAt)],
-    ["Wetter", s.sync.weatherError ? s.sync.weatherError.message : time(s.sync.weatherAt)]
-  ];
-  $("#status").innerHTML = rows.map(([k, v]) => `<div class="status-row"><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
-}
-
-async function refreshStatus() {
-  const r = await api("status");
-  if (!r.ok) return;
-  state.status = r.data;
-  renderStatus();
-}
-
-function renderSide() {
-  $("#side").innerHTML = `
-    <div class="section-head">
-      <div class="kicker">SYSTEM</div>
-      <div class="section-title">Status</div>
-    </div>
+function renderSystem() {
+  $("#main").innerHTML = `
+    <div id="update"></div>
     <dl class="status-list" id="status"></dl>
-    <div class="side-actions">
-      <button class="primary" id="sync"><span>Jetzt neu laden</span><span>↻</span></button>
-      <button class="secondary" id="wifi-reset">WLAN ändern</button>
-      <button class="secondary" id="reboot">Neu starten</button>
-      <button class="secondary" id="poweroff">Herunterfahren</button>
-      <div class="msg" id="side-msg"></div>
+    <div class="row wrap">
+      <button class="secondary" data-action="wifi-reset">WLAN ändern</button>
+      <button class="secondary" data-action="reboot">Neu starten</button>
+      <button class="secondary" data-action="poweroff">Herunterfahren</button>
     </div>
-    <div class="section-head">
-      <div class="kicker">UPDATE</div>
-      <div class="section-title">Software</div>
-    </div>
-    <div class="side-actions" id="update"></div>
-    <div class="section-head">
-      <div class="kicker">ZUGANG</div>
-      <div class="section-title">Passwort ändern</div>
-    </div>
-    <form class="side-actions" id="password-form" novalidate>
-      ${passwordField("current", "AKTUELLES PASSWORT", "current-password")}
-      ${passwordField("next", "NEUES PASSWORT (MIN. 8 ZEICHEN)", "new-password")}
-      <button class="secondary">Ändern</button>
-      <div class="msg" id="password-msg"></div>
+    <div class="msg" id="action-msg"></div>
+    <div class="kicker-row">PASSWORT ÄNDERN</div>
+    <form class="block" id="password-form" novalidate>
+      <div class="grid2">
+        ${passwordField("current", "AKTUELLES PASSWORT", "current-password")}
+        ${passwordField("next", "NEUES PASSWORT (MIN. 8 ZEICHEN)", "new-password")}
+      </div>
+      <div class="row"><button class="secondary">Ändern</button><div class="msg" id="password-msg"></div></div>
     </form>`;
-
-  $("#sync").addEventListener("click", async () => {
-    $("#sync").disabled = true;
-    setMsg("side-msg", "Lade Plan und Wetter …", true);
-    const r = await api("sync", { method: "POST", body: {} });
-    $("#sync").disabled = false;
-    if (!r.ok) return setMsg("side-msg", r.error);
-    state.status = r.data;
-    renderStatus();
-    const err = r.data.sync.planError ?? r.data.sync.weatherError;
-    setMsg("side-msg", err ? err.message : "Aktualisiert", !err);
-  });
-
-  $("#wifi-reset").addEventListener("click", async () => {
-    if (!confirm("WLAN wirklich ändern? Der Rahmen trennt sich vom Heimnetz und öffnet wieder seinen Hotspot. Danach geht es auf dem Display mit Schritt 1 weiter; das Admin-Passwort bleibt.")) return;
-    const r = await api("wifi-reset", { method: "POST", body: {} });
-    if (!r.ok) return setMsg("side-msg", r.error);
-    clearInterval(statusTimer);
-    app.innerHTML = authLayout(`<div class="field"><h1>Hotspot ist offen</h1><div class="muted">Folge den Schritten auf dem Display.</div></div>`);
-  });
-
-  const power = (action, question, title, text) => async () => {
-    if (!confirm(question)) return;
-    const r = await api(action, { method: "POST", body: {} });
-    if (!r.ok) return setMsg("side-msg", r.error);
-    clearInterval(statusTimer);
-    app.innerHTML = authLayout(`<div class="field"><h1>${title}</h1><div class="muted">${text}</div></div>`);
-  };
-  $("#reboot").addEventListener("click", power("reboot",
-    "Rahmen wirklich neu starten? Das dauert etwa eine Minute.",
-    "Rahmen startet neu", "Lade diese Seite in etwa einer Minute neu."));
-  $("#poweroff").addEventListener("click", power("poweroff",
-    "Rahmen wirklich herunterfahren? Einschalten geht danach nur, indem du den Strom kurz trennst.",
-    "Rahmen fährt herunter", "Den Strom erst trennen, wenn die grüne LED am Pi nicht mehr blinkt."));
 
   $("#update").addEventListener("click", e => {
     if (e.target.closest("#update-check")) checkUpdate();
@@ -537,28 +524,118 @@ function renderSide() {
   });
 }
 
+function formatUptime(sec) {
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
+  return d ? `${d} T ${String(h).padStart(2, "0")} h` : `${h} h ${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")} min`;
+}
+
+const time = ts => (ts ? new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "–");
+
+// Zeichnet nur die Statusteile, die im aktuellen Bereich vorhanden sind; Eingaben bleiben unberührt.
+function renderStatus() {
+  const s = state.status;
+  if (!s) return;
+  $("#state").textContent = `${SETUP_LABELS[s.setup] ?? s.setup} · ${REST_LABELS[s.rest] ?? s.rest}`;
+
+  const facts = $("#facts");
+  if (facts) facts.innerHTML = [
+    ["LETZTER SYNC", time(s.sync.planAt)],
+    ["DISPLAY", REST_LABELS[s.rest] ?? s.rest],
+    ["BILDER", String(s.slides)]
+  ].map(([k, v]) => `<div class="fact"><div class="label">${k}</div><div class="fact-value">${esc(v)}</div></div>`).join("");
+
+  const issue = $("#issue");
+  if (issue) {
+    const err = s.sync.planError ?? s.sync.weatherError;
+    issue.innerHTML = err ? `
+      <div class="issue">
+        <div class="row">${icon("alert-triangle", 17)}<span>${esc(err.message)}</span></div>
+        ${s.sync.planError ? `<button type="button" class="link" data-goto="services">Zu Dienste</button>` : ""}
+      </div>` : "";
+    issue.querySelector("[data-goto]")?.addEventListener("click", () => { state.tab = "services"; renderMain(); });
+  }
+
+  const list = $("#status");
+  if (list) list.innerHTML = [
+    ["WLAN", s.wifi ? `${s.wifi}${s.signal ? ` · ${s.signal} dBm` : ""}` : "–"],
+    ["IP-Adresse", s.ip ?? "–"],
+    ["Laufzeit", formatUptime(s.uptimeSec)],
+    ["CPU-Temperatur", s.cpuTemp != null ? `${Math.round(s.cpuTemp)} °C` : "–"],
+    ["Speicher", s.diskUsedPercent != null ? `${s.diskUsedPercent} % belegt` : "–"],
+    ["Letzter Sync", s.sync.planError ? `${time(s.sync.planAt)} · ${s.sync.planError.message}` : time(s.sync.planAt)],
+    ["Wetter", s.sync.weatherError ? s.sync.weatherError.message : time(s.sync.weatherAt)]
+  ].map(([k, v]) => `<div class="status-row"><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("");
+}
+
+async function refreshStatus() {
+  const r = await api("status");
+  if (!r.ok) return;
+  state.status = r.data;
+  renderStatus();
+}
+
+// Danach ist der Rahmen nicht mehr erreichbar; das Panel weicht einer Abschlussseite.
+const power = (action, question, title, text) => async () => {
+  if (!confirm(question)) return;
+  const r = await api(action, { method: "POST", body: {} });
+  if (!r.ok) return setMsg("action-msg", r.error);
+  clearInterval(statusTimer);
+  app.innerHTML = authLayout(`<div class="field"><h1>${title}</h1><div class="muted">${text}</div></div>`);
+};
+
+const ACTIONS = {
+  async sync() {
+    const button = $("[data-action=sync]");
+    button.disabled = true;
+    setMsg("action-msg", "Lade Plan und Wetter …", true);
+    const r = await api("sync", { method: "POST", body: {} });
+    button.disabled = false;
+    if (!r.ok) return setMsg("action-msg", r.error);
+    state.status = r.data;
+    renderStatus();
+    const err = r.data.sync.planError ?? r.data.sync.weatherError;
+    setMsg("action-msg", err ? err.message : "Aktualisiert", !err);
+  },
+  "wifi-reset": power("wifi-reset",
+    "WLAN wirklich ändern? Der Rahmen trennt sich vom Heimnetz und öffnet wieder seinen Hotspot. Danach geht es auf dem Display mit Schritt 1 weiter; das Admin-Passwort bleibt.",
+    "Hotspot ist offen", "Folge den Schritten auf dem Display."),
+  reboot: power("reboot",
+    "Rahmen wirklich neu starten? Das dauert etwa eine Minute.",
+    "Rahmen startet neu", "Lade diese Seite in etwa einer Minute neu."),
+  poweroff: power("poweroff",
+    "Rahmen wirklich herunterfahren? Einschalten geht danach nur, indem du den Strom kurz trennst.",
+    "Rahmen fährt herunter", "Den Strom erst trennen, wenn die grüne LED am Pi nicht mehr blinkt.")
+};
+
 // --- Update per Knopf ---
 
 const short = commit => (commit ? commit.slice(0, 7) : "–");
 const UPDATE_DONE = { done: "ok", current: "ok", failed: "error" };
 
 function renderUpdate(info, { changes = null, message = null, ok = true } = {}) {
+  const box = $("#update");
+  if (!box) return;
   const last = info.lastRun;
   const lastText = last && last.state !== "running"
     ? `Letztes Update ${new Date(last.at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}: ${last.message}`
     : "";
-  $("#update").innerHTML = `
-    <dl class="status-list" style="margin:0">
-      <div class="status-row"><dt>Version</dt><dd>${esc(short(info.commit))}</dd></div>
-      <div class="status-row"><dt>Branch</dt><dd>${esc(`${info.remote}/${info.branch}`)}</dd></div>
-    </dl>
-    ${changes?.length ? `
+  const available = changes?.length > 0;
+  box.innerHTML = `
+    <div class="hero">
       <div class="field">
+        <div class="label">SOFTWARE</div>
+        <div class="hero-title">Version ${esc(short(info.commit))}${available ? " · Update verfügbar" : ""}</div>
+        <div class="page-sub small">${esc(`${info.remote}/${info.branch}`)}</div>
+      </div>
+      ${available
+        ? `<button class="primary wide" id="update-install"><span>Installieren</span>${icon("download")}</button>`
+        : `<button class="secondary wide" id="update-check"${info.running ? " disabled" : ""}><span>Nach Updates suchen</span>${icon("refresh-cw")}</button>`}
+    </div>
+    ${available ? `
+      <div class="field changes">
         <div class="label">${changes.length} NEUE ÄNDERUNG${changes.length === 1 ? "" : "EN"}</div>
         <div class="muted" style="font-size:13px;line-height:1.5">${changes.map(esc).join("<br>")}</div>
-      </div>
-      <button class="primary" id="update-install"><span>Installieren</span><span>↓</span></button>` : ""}
-    <button class="secondary" id="update-check"${info.running ? " disabled" : ""}>Nach Updates suchen</button>
+      </div>` : ""}
     <div class="msg ${ok ? "ok" : "error"}" id="update-msg">${esc(message ?? lastText)}</div>`;
 }
 

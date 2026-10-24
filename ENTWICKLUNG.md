@@ -72,7 +72,7 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 
 - Passwort als scrypt-Hash in `config.json`; nach 5 Fehlversuchen 30 s Sperre.
 - Sitzung per Cookie (`HttpOnly`, `SameSite=Strict`, 12 h; in `data/sessions.json` liegt nur der SHA-256 des Tokens, ein Neustart meldet nicht ab). Schreibende Anfragen verlangen JSON.
-- Panel: Server und API-Key (wird vor dem Speichern geprüft), Wetter-Ort (Suche über Open-Meteo), Erscheinungsbild, Module Wetter und Erholung, Ruhe-Fristen, Status, „Jetzt neu laden“, „WLAN ändern“, Passwort ändern.
+- Panel (Aufbau nach `Admin.dc.html`): Übersicht (letzter Sync, Display, Bilder, Fehlerhinweis, „Jetzt neu laden“, Neustart), Anzeige (Erscheinungsbild, Wetter-Ort über Open-Meteo, Module Wetter und Erholung, Ruhe-Fristen), Dienste (Trainingsplan-Server, AthletePT, Garmin; Keys werden vor dem Speichern geprüft), Slideshow, System (Update, Status, „WLAN ändern“, Neustart, Herunterfahren, Passwort ändern).
 - Slideshow: Bilder werden im Browser auf 800 × 480 zugeschnitten und als JPEG hochgeladen; der Daemon prüft den Dateianfang, höchstens 200 Bilder, je 3 MB. Ablage in `data/slides/`.
 - `/api/slides` liefert die Bilder an das Display (localhost) und an angemeldete Admins.
 
