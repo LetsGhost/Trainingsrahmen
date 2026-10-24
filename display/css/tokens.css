@@ -28,6 +28,8 @@
   --slide-bg: #000000;
   --slide-ink: #ffffff;
   --slide-shadow: rgba(0, 0, 0, 0.6);
+  --ok: #5cc97a;
+  --warn: #e8b04a;
 }
 
 :root[data-theme="light"] {
@@ -50,4 +52,6 @@
   --slide-bg: #000000;
   --slide-ink: #ffffff;
   --slide-shadow: rgba(0, 0, 0, 0.6);
+  --ok: #24813f;
+  --warn: #a96a00;
 }

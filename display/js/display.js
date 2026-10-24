@@ -1,5 +1,6 @@
 import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
+import { renderRecovery } from "./recovery.js";
 import { renderSetup } from "./setup.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
@@ -13,18 +14,19 @@ const DENSE_SESSIONS = 3;
 const SETUP_DONE_MS = 4000;
 
 // Entwicklungs-Parameter: ?theme=dark|light, ?now=2026-09-09T18:42 (verstellte Uhr) und
-// ?day=0…6 (Tagesansicht offen, ohne Rücksprung). Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
+// ?day=0…6 bzw. ?day=recovery (Tages- bzw. Erholungs-Ansicht offen, ohne Rücksprung).
+// Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
 const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
-const urlDay = /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
+const urlDay = params.get("day") === "recovery" ? "recovery" : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
 const frame = document.getElementById("frame");
 // daemon und sync: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
 // app: { commit, demo } des laufenden Daemons.
-// openDay: Index des Tages in der Tagesansicht oder null. setupDoneUntil: bis dahin steht 3C.
+// openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht oder null. setupDoneUntil: bis dahin steht 3C.
 const state = {
-  plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, setupDoneUntil: 0
+  plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, openSession: 0, setupDoneUntil: 0
 };
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
@@ -56,7 +58,8 @@ function applyTheme(d, screen) {
 }
 
 function renderHead(d, dates) {
-  const count = state.plan ? state.plan.days.reduce((n, day) => n + day.sessions.length, 0) : 0;
+  // Gezählt wird der Plan; ungeplante Garmin-Aktivitäten nicht.
+  const count = state.plan ? state.plan.days.reduce((n, day) => n + day.sessions.filter(s => !s.unplanned).length, 0) : 0;
   const first = dates[0], last = dates[6];
   const range = `${pad(first.getDate())}.–${pad(last.getDate())}.${pad(last.getMonth() + 1)}.`;
   const w = shownWeather();
@@ -85,11 +88,14 @@ function renderHead(d, dates) {
     </header>`;
 }
 
+// Erledigt (Garmin): Häkchen statt Sport-Icon, die Sportart steht daneben. Ungeplant: gestrichelte Karte,
+// Meta zeigt das Gemachte.
 function renderSession(s) {
-  const meta = [s.time, s.dur].filter(Boolean).join(" · ");
+  const meta = [s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · ");
+  const cls = (s.done ? " done" : "") + (s.unplanned ? " unplanned" : "");
   return `
-    <div class="session">
-      <div class="session-top">${icon(s.icon)}<span class="session-sport">${esc(s.sport)}</span></div>
+    <div class="session${cls}">
+      <div class="session-top">${icon(s.done ? "circle-check" : s.icon)}<span class="session-sport">${esc(s.sport)}</span></div>
       <div class="session-title">${esc(hyphenate(s.title))}</div>
       ${meta ? `<div class="session-meta">${esc(meta)}</div>` : ""}
     </div>`;
@@ -139,7 +145,8 @@ function screenFor(f) {
   if (isSetup(f) || setupDone()) return "setup";
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
-  return state.openDay !== null && state.plan ? "day" : "plan";
+  if (state.openDay === null || !state.plan) return "plan";
+  return state.openDay === "recovery" ? "recovery" : "day";
 }
 
 function render() {
@@ -151,10 +158,12 @@ function render() {
   if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
   else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
+  else if (screen === "recovery") frame.innerHTML = renderRecovery({ d, r: state.plan.recoveryRaw });
   else if (screen === "day") {
     const index = state.openDay;
     frame.innerHTML = renderDay({
-      d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: shownWeather(), recovery: shownRecovery()
+      d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: shownWeather(), recovery: shownRecovery(),
+      session: state.openSession
     });
   } else {
     const dates = weekDates(d);
@@ -230,11 +239,14 @@ document.addEventListener("click", e => {
   e.stopPropagation();
 }, true);
 
-// Tagesansicht: Tipp auf einen Tag öffnet ihn; ein weiterer Tipp oder 60 s führen zurück zur Woche.
+// Tagesansicht: Tipp auf einen Tag öffnet ihn, Tipp auf die Erholungswerte die Erholungs-Ansicht;
+// ein weiterer Tipp oder 60 s führen zurück zur Woche.
 let dayTimer = null;
 
-function openDay(index) {
+// session: welche Einheit des Tages groß steht (Tipp auf „Weitere Einheiten“); startet die 60 s neu.
+function openDay(index, session = 0) {
   state.openDay = index;
+  state.openSession = session;
   clearTimeout(dayTimer);
   dayTimer = setTimeout(closeDay, DAY_VIEW_MS);
   render();
@@ -248,9 +260,13 @@ function closeDay(rerender = true) {
 }
 
 frame.addEventListener("click", e => {
-  if (frame.dataset.screen === "day") return closeDay();
+  const session = e.target.closest("[data-session]");
+  if (frame.dataset.screen === "day" && session) return openDay(state.openDay, Number(session.dataset.session));
+  if (frame.dataset.screen === "day" || frame.dataset.screen === "recovery") return closeDay();
+  if (frame.dataset.screen !== "plan" || !state.plan) return;
   const day = e.target.closest("[data-day]");
-  if (frame.dataset.screen === "plan" && day && state.plan) openDay(Number(day.dataset.day));
+  if (day) openDay(Number(day.dataset.day));
+  else if (e.target.closest(".recovery")) openDay("recovery");
 });
 
 render();

@@ -122,6 +122,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       wifi: config.wifi?.ssid ?? null,
       server: { url: config.server?.url ?? "", apiKey: maskKey(config.server?.apiKey) },
       athletept: { url: config.athletept?.url ?? "", apiKey: maskKey(config.athletept?.apiKey) },
+      garmin: { active: Boolean(config.garmin), apiKey: maskKey(config.garmin?.apiKey) },
       location: config.location,
       display: config.display,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin }
@@ -144,6 +145,14 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       const url = String(input.athletept.url ?? "").trim();
       next.athletept = url ? validateAthletept({ url, apiKey: String(input.athletept.apiKey ?? "").trim() || config.athletept?.apiKey }) : null;
       if (next.athletept) await backend.checkAthletept(next.athletept);
+    }
+    // garmin: null entfernt die Quelle; ein leerer Key behält den bisherigen.
+    if ("garmin" in input) {
+      const apiKey = input.garmin ? String(input.garmin.apiKey ?? "").trim() || config.garmin?.apiKey : null;
+      if (input.garmin && !apiKey) throw new FrameError("INVALID", "Garmin-Key fehlt");
+      next.garmin = apiKey ? { apiKey } : null;
+      // Mit dem HRV-Verlauf aus dem Cache, damit die Prüfung nicht alle Vortage neu abfragt.
+      if (next.garmin) await backend.fetchGarmin(next.garmin, sync.plan()?.recovery?.hrvHistory);
     }
     if (input.location) {
       const { name, lat, lon } = input.location;
@@ -169,11 +178,14 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
 
     if (next.server) config.server = next.server;
     if ("athletept" in next) config.athletept = next.athletept;
+    if ("garmin" in next) config.garmin = next.garmin;
     if (next.location) config.location = next.location;
     if (next.display) config.display = next.display;
     if (next.deadlines) frame.setDeadlines(next.deadlines);
     saveConfig(config);
     if (next.server || "athletept" in next) sync.syncPlan();
+    // Beim Entfernen den Plan neu holen, damit das Display ohne die Garmin-Werte neu zeichnet.
+    if ("garmin" in next) next.garmin ? sync.syncGarmin() : sync.syncPlan();
     if (next.location) sync.syncWeather();
     frame.changed();
     return settings();

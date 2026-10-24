@@ -90,4 +90,4 @@ function mergePlans(base, extra) {
   return { ...base, trainingsweek: [...trainingsweek, ...added] };
 }
 
-module.exports = { apiBase, toTrainingsweek, mergePlans };
+module.exports = { apiBase, toTrainingsweek, mergePlans, DAY_NAMES, dayKey };

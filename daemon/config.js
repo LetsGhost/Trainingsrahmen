@@ -14,6 +14,7 @@ const DEFAULTS = {
   wifi: null,             // { ssid, password }
   server: null,           // { url, apiKey }: Sport-Analytics
   athletept: null,        // { url, apiKey } oder null: AthletePT 3.0, optional, ergänzt den Plan
+  garmin: null,           // { apiKey } oder null: Garmin Personal API, optional, Erholungswerte mit Vorrang
   slideshowAfterMin: 5,
   offAfterMin: 30,
   // Wetter-Ort, im Admin-Bereich einstellbar.

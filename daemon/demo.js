@@ -10,10 +10,14 @@ const NETWORKS = [
 ];
 
 // Erster Start im Demo-Modus: alles so eintragen, als wäre die Einrichtung schon durch. Kurze Fristen zum Vorführen.
+// AthletePT und Garmin sind an (Fixtures), damit Zusatz-Einheiten, Häkchen, ungeplante Einheiten und die
+// Erholungs-Ansicht zu sehen sind; im Admin lassen sie sich entfernen.
 function seedConfig(config) {
   Object.assign(config, {
     wifi: { ssid: "Demo-WLAN", password: "" },
     server: { url: "https://demo.invalid", apiKey: "demo" },
+    athletept: { url: "https://demo.invalid", apiKey: "apt_demo" },
+    garmin: { apiKey: "demo" },
     admin: hashPassword(DEMO_PASSWORD),
     slideshowAfterMin: 1,
     offAfterMin: 3

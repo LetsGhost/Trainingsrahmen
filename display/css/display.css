@@ -108,6 +108,9 @@ body {
   overflow: hidden;
 }
 .session-meta { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--sub); }
+.session.done { border-left-color: var(--accent); }
+.session.done .session-top .icon { color: var(--accent); }
+.session.unplanned { background: transparent; border: 1px dashed var(--bar); border-left: 3px dashed var(--accent); }
 
 .day.dense { gap: 5px; }
 .day.dense .session { gap: 2px; padding: 5px 6px 5px; }
@@ -260,6 +263,11 @@ body {
   -webkit-line-clamp: 4;
   overflow: hidden;
 }
+.dv-exercises { border-collapse: collapse; margin-top: 12px; width: 100%; max-width: 375px; font-size: 13px; }
+.dv-exercises th { text-align: left; padding: 0 0 4px; border-bottom: 2px solid var(--rule); }
+.dv-exercises td { padding: 4px 0; border-bottom: 1px solid var(--rule-soft); font-weight: 700; }
+.dv-exercises td + td, .dv-exercises th + th { width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+.dv-exercises td + td { font-weight: 800; }
 .dv-more { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
 .dv-spacer { flex: 1; }
 .dv-recovery { display: flex; align-items: center; gap: 19px; padding-top: 12px; border-top: 2px solid var(--rule); }
@@ -275,9 +283,48 @@ body {
 .dv-row .icon { width: 13px; height: 13px; stroke-width: 1.9; color: var(--sub); }
 .dv-row-dow { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; width: 24px; flex-shrink: 0; color: var(--muted); }
 .dv-more .dv-row-dow { display: none; }
+/* Antippbar: höhere Zeile als Touch-Ziel. */
+.dv-more .dv-row { min-height: 32px; }
 .dv-row-title { flex: 1; min-width: 0; font-size: 11px; font-weight: 700; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dv-row-title.muted { color: var(--muted); }
 .dv-row-meta { font-size: 10px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.dv-row .dv-row-check { display: flex; }
+.dv-row .dv-row-check .icon { color: var(--accent); }
 .dv-row-line { flex: 1; height: 1px; background: var(--rule-soft); }
 .dv-hi { font-size: 11px; font-weight: 800; letter-spacing: -0.01em; }
 .dv-lo { font-size: 10px; font-weight: 600; color: var(--muted); width: 27px; text-align: right; }
+
+/* Erholungs-Ansicht (Tipp auf die Fußleiste); Raster und Spalten wie die Tagesansicht. */
+.rv-block { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; }
+.rv-block + .rv-block { padding-top: 14px; border-top: 2px solid var(--rule); }
+.rv-head { display: flex; align-items: baseline; gap: 10px; }
+.rv-big-row { display: flex; align-items: flex-end; gap: 12px; }
+.rv-big { font-size: 86px; font-weight: 800; line-height: 0.85; letter-spacing: -0.045em; }
+.rv-note { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); }
+.rv-now { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.rv-now-value { font-size: 33px; font-weight: 800; line-height: 0.9; letter-spacing: -0.03em; color: var(--sub); }
+.rv-value { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; }
+.rv-sleep-bar { display: flex; height: 22px; gap: 2px; }
+.rv-deep { background: var(--ink); }
+.rv-light { background: var(--bar); }
+.rv-rem { background: var(--accent); }
+.rv-awake { background: var(--rule-soft); }
+.rv-legend { display: flex; gap: 16px; }
+.rv-legend-item { display: flex; align-items: center; gap: 5px; }
+.rv-swatch { width: 9px; height: 9px; }
+.rv-legend-value { font-size: 12px; font-weight: 800; }
+
+.rv-side-block { display: flex; flex-direction: column; gap: 6px; padding: 17px 19px; }
+.rv-side-block + .rv-side-block { border-top: 2px solid var(--rule); }
+.rv-status { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; }
+.rv-status.ok { color: var(--ok); }
+.rv-status.warn { color: var(--warn); }
+.rv-status.bad { color: var(--accent); }
+.rv-chart { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.rv-bars { position: relative; display: flex; align-items: flex-end; gap: 8px; height: 120px; }
+.rv-bar { flex: 1; background: var(--bar); }
+.rv-bar.today { background: var(--accent); }
+.rv-avg { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink); }
+.rv-days { display: flex; gap: 8px; }
+.rv-days > div { flex: 1; text-align: center; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
+.rv-days > .today { color: var(--accent-ink); }

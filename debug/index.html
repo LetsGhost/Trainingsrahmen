@@ -59,6 +59,11 @@
         <button data-action="sync">Jetzt abgleichen</button>
       </div>
       <label class="check"><input type="checkbox" data-sim="liveServer"> Echter Server (aus der Einrichtung)</label>
+      <form id="garmin" class="row">
+        <input name="apiKey" placeholder="Garmin-Key (leer = entfernen)" autocomplete="off" spellcheck="false">
+        <button>Garmin setzen</button>
+      </form>
+      <label class="check"><input type="checkbox" data-sim="liveGarmin"> Echtes Garmin (Key oben)</label>
       <label class="check"><input type="checkbox" data-sim="liveWeather"> Echtes Wetter (Open-Meteo)</label>
     </section>
 

@@ -1,0 +1,13 @@
+{
+  "sleep": { "calendarDate": "2026-10-24", "sleepTimeSeconds": 27300, "deepSleepSeconds": 5400, "lightSleepSeconds": 15600, "remSleepSeconds": 6300, "awakeSleepSeconds": 1500 },
+  "hrv": { "hrvSummary": { "calendarDate": "2026-10-24", "weeklyAvg": 64, "lastNightAvg": 67, "status": "BALANCED" } },
+  "hrvPast": [61, 66, null, 58, 70, 63],
+  "summary": { "calendarDate": "2026-10-24", "restingHeartRate": 46, "bodyBatteryAtWakeTime": 84, "bodyBatteryMostRecentValue": 71 },
+  "activities": [
+    { "activityId": 1, "activityName": "Berlin Laufen", "startTimeLocal": "2026-10-19 06:52:10", "activityType": { "typeKey": "running" }, "duration": 3485.2, "distance": 10234.5 },
+    { "activityId": 2, "activityName": "Rennrad GA1", "startTimeLocal": "2026-10-20 17:05:00", "activityType": { "typeKey": "road_biking" }, "duration": 10512, "distance": 81200 },
+    { "activityId": 3, "activityName": "Krafttraining", "startTimeLocal": "2026-10-21 18:34:00", "activityType": { "typeKey": "strength_training" }, "duration": 3720, "distance": 0 },
+    { "activityId": 4, "activityName": "Yoga", "startTimeLocal": "2026-10-21 21:00:00", "activityType": { "typeKey": "yoga" }, "duration": 1800 },
+    { "activityId": 5, "activityName": "Lockerer Lauf", "startTimeLocal": "2026-10-23 07:10:00", "activityType": { "typeKey": "trail_running" }, "duration": 2400, "distance": 6100 }
+  ]
+}

@@ -42,8 +42,8 @@ const MIME = {
 };
 
 // Fehlerschalter und Entwicklungs-Einstellungen; nur mit FRAME_ENV=dev änderbar.
-// liveServer / liveWeather: echte Abrufe statt Fixtures.
-const sim = { wrongPassword: false, noInternet: false, keyRejected: false, liveServer: false, liveWeather: false };
+// liveServer / liveGarmin / liveWeather: echte Abrufe statt Fixtures.
+const sim = { wrongPassword: false, noInternet: false, keyRejected: false, liveServer: false, liveGarmin: false, liveWeather: false };
 const dev = { theme: null, clockOffsetMs: 0, plan: "data.json" };
 const DEADLINE_PRESETS = {
   normal: { slideshowAfterMin: configStore.DEFAULTS.slideshowAfterMin, offAfterMin: configStore.DEFAULTS.offAfterMin },
@@ -57,7 +57,7 @@ if (DEMO && !configStore.exists()) {
 }
 const system = createSystemAdapter({ dev: DEV, demo: DEMO, sim, port: PORT });
 const backend = createBackend({ dev: DEV || DEMO, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan),
-  athleteptFixture: path.join(FIXTURE_DIR, "athletept.json")
+  athleteptFixture: path.join(FIXTURE_DIR, "athletept.json"), garminFixture: path.join(FIXTURE_DIR, "garmin.json")
 });
 const slides = createSlides(configStore.DATA_DIR);
 const updater = createUpdater({ dev: DEV, rootDir: ROOT, baseDir: configStore.BASE_DIR, dataDir: configStore.DATA_DIR, config, port: PORT });
@@ -217,7 +217,15 @@ const DEBUG_ACTIONS = {
     sim[key] = Boolean(value);
     if (key === "noInternet") frame.check();
     if (key === "liveServer" || key === "keyRejected") sync.syncPlan();
+    if (key === "liveGarmin" || key === "keyRejected") sync.syncGarmin();
     if (key === "liveWeather") sync.syncWeather();
+  },
+  // Garmin-Key ohne Admin-Login setzen; leer entfernt die Quelle. Mit Fixtures geht jeder Key.
+  garmin: ({ apiKey }) => {
+    const key = String(apiKey ?? "").trim();
+    config.garmin = key ? { apiKey: key } : null;
+    configStore.save(config);
+    return key ? sync.syncGarmin() : sync.syncPlan();
   },
   sync: () => sync.syncAll(),
   clock: ({ now }) => { dev.clockOffsetMs = now ? Date.parse(now) - Date.now() : 0; },

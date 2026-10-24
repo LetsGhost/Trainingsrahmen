@@ -231,6 +231,23 @@ function renderSettings() {
     </form>
 
     <div class="section-head">
+      <div class="kicker">ZUSÄTZLICHE QUELLE</div>
+      <div class="section-title">Garmin</div>
+      <div class="setting-hint">Optional. Schlaf, HRV, Ruhepuls und Body Battery von Garmin gehen in der Erholungsleiste vor; Aktivitäten der Woche haken passende Einheiten im Plan ab. Key anlegen unter Garmin Connect → Einstellungen → Personal API; er läuft je nach Wahl nach 30 Tagen bis einem Jahr ab.</div>
+    </div>
+    <form class="block" id="garmin-form" novalidate>
+      <div class="field">
+        <label class="label" for="garminKey">PERSONAL-API-KEY</label>
+        <input type="text" id="garminKey" placeholder="${esc(s.garmin.apiKey)} · leer lassen zum Behalten" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="row">
+        <button class="secondary">Prüfen & speichern</button>
+        ${s.garmin.active ? `<button type="button" class="secondary" id="garmin-remove">Entfernen</button>` : ""}
+        <div class="msg" id="garmin-msg"></div>
+      </div>
+    </form>
+
+    <div class="section-head">
       <div class="kicker">ANZEIGE</div>
       <div class="section-title">Ort, Erscheinungsbild & Module</div>
     </div>
@@ -310,6 +327,22 @@ function renderSettings() {
     if (await save({ athletept: { url, apiKey: $("#athleteptKey").value } }, "athletept-msg", url ? "AthletePT erreichbar, gespeichert" : "AthletePT entfernt")) {
       $("#athleteptKey").value = "";
       $("#athleteptKey").placeholder = `${state.settings.athletept.apiKey} · leer lassen zum Behalten`;
+    }
+  });
+
+  $("#garmin-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    setMsg("garmin-msg", "Prüfe Garmin …", true);
+    // Neu zeichnen, damit „Entfernen“ erscheint; die Meldung danach wieder setzen.
+    if (await save({ garmin: { apiKey: $("#garminKey").value } }, "garmin-msg")) {
+      renderSettings();
+      setMsg("garmin-msg", "Garmin erreichbar, gespeichert", true);
+    }
+  });
+  $("#garmin-remove")?.addEventListener("click", async () => {
+    if (await save({ garmin: null }, "garmin-msg")) {
+      renderSettings();
+      setMsg("garmin-msg", "Garmin entfernt", true);
     }
   });
 

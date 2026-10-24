@@ -19,6 +19,7 @@ Einstellungen (WLAN, Server, Fristen) speichert der Daemon in `data/config.json`
 | `?theme=dark` / `?theme=light` | Farbschema erzwingen (Vorrang vor der Dev-Leiste) |
 | `?now=2026-09-09T18:42` | Uhr verstellen (Wochentag, Nachtmodus; Vorrang vor der Dev-Leiste) |
 | `?day=0` … `?day=6` | Tagesansicht für Montag … Sonntag offen halten, ohne Rücksprung nach 60 s |
+| `?day=recovery` | Erholungs-Ansicht (Tipp auf die Fußleiste) offen halten |
 
 ## Display
 
@@ -62,6 +63,7 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 - Das Display lädt beides neu, sobald sich `planAt` oder `weatherAt` in `/events` ändern; ein eigenes Intervall hat es nicht mehr.
 - Fußzeile: „Sync HH:MM“, bei Fehler die Meldung mit „Stand HH:MM“, ohne Netz „Offline · Stand HH:MM“.
 - In der Entwicklung kommen Plan und Wetter aus `fixtures/`. In der Dev-Leiste unter „Sync“ schalten „Echter Server“ (URL und Key aus der Einrichtung) und „Echtes Wetter“ auf echte Abrufe um.
+- Garmin: In der Dev-Leiste unter „Sync“ einen Key eintragen und „Garmin setzen“ (leer entfernt die Quelle, kein Admin-Login nötig). Ohne weiteren Schalter kommen die Werte aus `fixtures/garmin.json`, mit jedem beliebigen Key; „Echtes Garmin“ holt sie mit dem eingetragenen Personal-API-Key von Garmin, unabhängig von „Echter Server“. „Kein Internet“ und „Server lehnt Key ab“ gelten auch für Garmin. Der Status zeigt Garmin-Stand und -Fehler getrennt. Die Fixture-Aktivitäten werden auf dieselben Wochentage der laufenden Woche gelegt (nichts nach heute), damit Häkchen und ungeplante Einheiten zu sehen sind.
 - Die Antwort des Servers muss gültiges JSON mit einem Array `trainingsweek` sein, sonst gilt der Abruf als fehlgeschlagen und der alte Stand bleibt.
 
 ## Admin
@@ -226,6 +228,7 @@ npm run demo                      # am PC
 ```
 
 - Startet direkt im Plan mit Testplan und Testwetter aus `fixtures/`, kurze Ruhe-Fristen (1 / 3 min), Fußzeile „Demo · Sync …“.
+- AthletePT und Garmin sind eingetragen und kommen ebenfalls aus `fixtures/`: zusätzliche Einheiten, Häkchen und ungeplante Einheiten (nur bis heute, also gegen Ende der Woche am meisten), Tipp auf die Fußleiste öffnet die Erholungs-Ansicht. Gilt nur für neu angelegte Demo-Daten; bestehende mit `--fresh` (am PC `data/demo/` löschen) neu anlegen.
 - WLAN, Hotspot und Internet werden nur gespielt (`daemon/demo.js`); Backlight, PIR und CPU-Temperatur sind echt. „WLAN ändern“ im Admin-Bereich führt durch die Einrichtung, das Portal liegt dann unter der normalen LAN-Adresse.
 - Admin-Passwort `demo1234`.
 - Einstellungen, Cache und Bilder liegen unter `data/demo/`, die echte Einrichtung bleibt unberührt. Der Schalter steht als `FRAME_DEMO=1` in `data/frame.env`.

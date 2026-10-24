@@ -8,14 +8,37 @@ function titleSize(title) {
   return "";
 }
 
-function renderRow(dow, s) {
+// session: Index der Einheit am Tag; damit wird die Zeile unter „Weitere Einheiten“ antippbar.
+function renderRow(dow, s, session) {
   return `
-    <div class="dv-row">
+    <div class="dv-row"${session === undefined ? "" : ` data-session="${session}"`}>
       <div class="dv-row-dow">${dow}</div>
       ${icon(s ? s.icon : "moon")}
       <div class="dv-row-title${s ? "" : " muted"}">${esc(s ? s.title : "Ruhetag")}</div>
-      <div class="dv-row-meta">${esc(s ? [s.time, s.dur].filter(Boolean).join(" · ") || "—" : "—")}</div>
+      <div class="dv-row-meta">${esc(s ? [s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · ") || "—" : "—")}</div>
+      ${s?.done ? `<span class="dv-row-check">${icon("circle-check")}</span>` : ""}
     </div>`;
+}
+
+// „Kniebeuge 4 × 6, Hip Thrust 3 × 10, Plank 3 × 60 s.“ → [[Übung, Sätze, Wdh.], …]; null, wenn der Text
+// keine Übungsliste ist (Fließtext oder Schwimm-Serien wie „6 × 100 m“ ohne Übungsnamen davor).
+// strength: Kraft-Einheit, dort reicht eine Übung; sonst braucht es zwei, damit „Intervalle 5 × 3 min“ Text bleibt.
+export function parseExercises(text, strength = false) {
+  const parts = text.replace(/\.\s*$/, "").split(/,\s*/);
+  const rows = parts.map(p => p.match(/^(.+?)\s+(\d+)\s*×\s*(.+)$/)?.slice(1) ?? (p.includes("×") ? null : [p, "", ""]));
+  return (strength || parts.length > 1) && rows.every(Boolean) && rows.some(r => r[1]) ? rows : null;
+}
+
+function renderDescription(text, strength) {
+  const rows = parseExercises(text, strength);
+  if (!rows) return `<div class="dv-desc">${esc(text)}</div>`;
+  return `
+    <table class="dv-exercises">
+      <thead><tr><th class="dv-label">ÜBUNG</th><th class="dv-label">SÄTZE</th><th class="dv-label">WDH.</th></tr></thead>
+      <tbody>${rows.map(([name, sets, reps]) => `
+        <tr><td>${esc(name)}</td><td>${esc(sets)}</td><td>${esc(reps)}</td></tr>`).join("")}
+      </tbody>
+    </table>`;
 }
 
 function renderMain(main, more) {
@@ -24,20 +47,21 @@ function renderMain(main, more) {
       <div class="dv-sport">${icon("moon")}<div class="dv-sport-label">RUHETAG</div></div>
       <div class="dv-title">Kein Training</div>`;
   }
-  const facts = [["START", main.time], ["DAUER", main.dur], ["BELASTUNG", main.intensity]].filter(([, v]) => v);
+  const facts = [["START", main.time], ["DAUER", main.dur], ["BELASTUNG", main.intensity], ["ERLEDIGT", main.done]]
+    .filter(([, v]) => v);
   return `
-    <div class="dv-sport">${icon(main.icon)}<div class="dv-sport-label">${esc(main.sport)}</div></div>
+    <div class="dv-sport">${icon(main.icon)}<div class="dv-sport-label">${esc(main.sport)}${main.unplanned ? " · UNGEPLANT" : ""}</div></div>
     <div class="dv-title${titleSize(main.title)}">${esc(hyphenate(main.title))}</div>
     ${facts.length ? `<div class="dv-facts">${facts.map(([label, value]) => `
       <div class="dv-fact">
         <div class="dv-label">${label}</div>
         <div class="dv-fact-value">${esc(value)}</div>
       </div>`).join("")}</div>` : ""}
-    ${main.description ? `<div class="dv-desc">${esc(main.description)}</div>` : ""}
+    ${main.description ? renderDescription(main.description, main.icon === "dumbbell") : ""}
     ${more.length ? `
       <div class="dv-more">
-        <div class="dv-label">WEITERE EINHEITEN</div>
-        ${more.map(s => renderRow("", s)).join("")}
+        <div class="dv-label">WEITERE EINHEITEN · ANTIPPEN FÜR DETAILS</div>
+        ${more.map(([i, s]) => renderRow("", s, i)).join("")}
       </div>` : ""}`;
 }
 
@@ -69,8 +93,11 @@ function renderWeather(weather, today) {
 }
 
 // d: jetzt; date und index: der gewählte Tag; today: Index von heute.
-export function renderDay({ d, date, index, today, plan, weather, recovery }) {
-  const [main, ...more] = plan.days[index].sessions;
+// session: Index der groß gezeigten Einheit; die übrigen stehen als [Index, Einheit] darunter.
+export function renderDay({ d, date, index, today, plan, weather, recovery, session = 0 }) {
+  const sessions = plan.days[index].sessions;
+  const main = sessions[session] ?? sessions[0];
+  const more = [...sessions.entries()].filter(([, s]) => s !== main);
   const isToday = index === today;
   const upcoming = plan.days.slice(index + 1).map((day, k) => renderRow(DOW_SHORT[index + 1 + k], day.sessions[0]));
   return `

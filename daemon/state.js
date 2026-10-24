@@ -215,10 +215,11 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   }
 
   // Zurück in die Einrichtung: WLAN und Server vergessen, Hotspot auf.
-  // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleibt das Passwort erhalten; Werkseinstellung löscht es.
+  // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleiben Passwort und Garmin-Key erhalten (beides steht nur im
+  // Admin, nicht im Portal); Werkseinstellung löscht sie.
   async function reset({ keepAdmin = false } = {}) {
     Object.assign(config, { wifi: null, server: null, athletept: null });
-    if (!keepAdmin) config.admin = null;
+    if (!keepAdmin) Object.assign(config, { admin: null, garmin: null });
     saveConfig(config);
     await openHotspot();
   }

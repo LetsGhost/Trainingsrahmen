@@ -28,6 +28,8 @@ function renderSync(s) {
   const rows = [
     ["Plan", time(s.planAt)],
     ["Plan-Fehler", s.planError ? `${s.planError.code}: ${s.planError.message}` : "–"],
+    ["Garmin", time(s.garminAt)],
+    ["Garmin-Fehler", s.garminError ? `${s.garminError.code}: ${s.garminError.message}` : "–"],
     ["Wetter", time(s.weatherAt)],
     ["Wetter-Fehler", s.weatherError ? `${s.weatherError.code}: ${s.weatherError.message}` : "–"]
   ];
@@ -85,6 +87,10 @@ async function init() {
     const v = Object.fromEntries(new FormData(e.target));
     send("submit", { wifi: { ssid: v.ssid, password: v.password }, server: { url: v.url, apiKey: v.apiKey },
       athletept: { url: v.athleteptUrl, apiKey: v.athleteptKey } });
+  });
+  $("#garmin").addEventListener("submit", e => {
+    e.preventDefault();
+    send("garmin", { apiKey: new FormData(e.target).get("apiKey") });
   });
   $("#clock").addEventListener("submit", e => {
     e.preventDefault();

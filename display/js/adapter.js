@@ -27,6 +27,15 @@ export function formatHours(min) {
   return isMinutes(min) ? `${Math.floor(min / 60)} h ${pad(min % 60)}` : null;
 }
 
+// 10.2 → "10,2 km"
+const formatKm = km => (Number.isFinite(km) && km > 0 ? `${String(km).replace(".", ",")} km` : null);
+
+// done: Werte der Garmin-Aktivität → "58 min · 10,2 km"; ohne Werte trotzdem als erledigt erkennbar.
+function adaptDone(done) {
+  if (!done) return null;
+  return [formatDuration(done.duration), formatKm(done.distance)].filter(Boolean).join(" · ") || "erledigt";
+}
+
 function adaptRecovery(r) {
   if (!r) return [];
   return [
@@ -39,6 +48,7 @@ function adaptRecovery(r) {
 
 // Ergebnis: immer 7 Tage (Mo–So), jeder mit einer Liste von Einheiten.
 // Pflicht sind nur type und title; time, duration, description, intensity und recovery sind optional.
+// done und unplanned setzt der Daemon aus den Garmin-Aktivitäten (daemon/garmin.js).
 export function adaptPlan(raw) {
   const days = Array.from({ length: 7 }, () => ({ sessions: [] }));
   let totalMinutes = 0;
@@ -55,9 +65,12 @@ export function adaptPlan(raw) {
         time: t.time ?? null,
         dur: formatDuration(t.duration),
         description: t.description ?? null,
-        intensity: t.intensity ?? null
+        intensity: t.intensity ?? null,
+        done: adaptDone(t.done),
+        unplanned: t.unplanned === true
       });
     }
   }
-  return { days, total: formatHours(totalMinutes), recovery: adaptRecovery(raw?.recovery) };
+  // recoveryRaw: alle Erholungswerte unformatiert für die Erholungs-Ansicht (display/js/recovery.js).
+  return { days, total: formatHours(totalMinutes), recovery: adaptRecovery(raw?.recovery), recoveryRaw: raw?.recovery ?? {} };
 }
