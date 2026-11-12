@@ -2,6 +2,7 @@ import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
 import { renderSetup } from "./setup.js";
+import { renderSettings, renderPower, stepUp, stepDown } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
@@ -12,21 +13,26 @@ const DAY_VIEW_MS = 60 * 1000;
 const DENSE_SESSIONS = 3;
 // So lange steht 3C („Alles bereit“) nach der Einrichtung, bevor der Plan erscheint.
 const SETUP_DONE_MS = 4000;
+// So lange muss man WLAN ändern, Neustart und Herunterfahren gedrückt halten.
+const HOLD_MS = 2000;
 
 // Entwicklungs-Parameter: ?theme=dark|light, ?now=2026-09-09T18:42 (verstellte Uhr) und
-// ?day=0…6 bzw. ?day=recovery (Tages- bzw. Erholungs-Ansicht offen, ohne Rücksprung).
+// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|system): Ansicht offen, ohne Rücksprung.
 // Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
 const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
-const urlDay = params.get("day") === "recovery" ? "recovery" : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
+const urlDay = ["recovery", "settings"].includes(params.get("day")) ? params.get("day") : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
 const frame = document.getElementById("frame");
 // daemon und sync: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
 // app: { commit, demo } des laufenden Daemons.
-// openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht oder null. setupDoneUntil: bis dahin steht 3C.
+// openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht, "settings" für die Einstellungen
+// oder null. setupDoneUntil: bis dahin steht 3C.
+// settingsTab, syncing, notice: Einstellungs-Screen. power: "reboot" | "poweroff", sobald ausgelöst (Vollbild bis zum Aus).
 const state = {
-  plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, openSession: 0, setupDoneUntil: 0
+  plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, openSession: 0, setupDoneUntil: 0,
+  settingsTab: params.get("tab") ?? "status", syncing: false, notice: null, power: null
 };
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
@@ -44,7 +50,7 @@ function isoWeek(d) {
 }
 
 // Einstellungen aus dem Admin-Bereich (über /events); fehlen sie, gilt alles als an.
-const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true };
+const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true, brightness: "high" };
 const shownWeather = () => (settings().showWeather ? state.weather : null);
 const shownRecovery = () => (settings().showRecovery ? state.plan?.recovery ?? [] : []);
 
@@ -135,27 +141,38 @@ function renderFoot() {
   if (state.daemon?.setup === "OFFLINE") sync = `${icon("wifi-off")}<span>Offline${stand ? ` · Stand ${stand}` : ""}</span>`;
   else if (s?.planError) sync = `${icon("wifi-off")}<span>${esc(s.planError.message)}${stand ? ` · Stand ${stand}` : ""}</span>`;
   else sync = `${icon("wifi")}<span>${state.app?.demo ? "Demo · " : ""}Sync ${stand ?? "…"}</span>`;
-  return `<footer class="foot">${recovery}<div class="sync">${sync}</div></footer>`;
+  return `<footer class="foot">${recovery}<button type="button" class="sync" data-settings>${sync}</button></footer>`;
 }
 
 const isSetup = f => ["SETUP_HOTSPOT", "SETUP_ACCOUNT", "SETUP_ADMIN"].includes(f?.setup);
 const setupDone = () => Date.now() < state.setupDoneUntil;
 
 function screenFor(f) {
+  if (state.power) return "power";
   if (isSetup(f) || setupDone()) return "setup";
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
+  if (state.openDay === "settings") return "settings";
   if (state.openDay === null || !state.plan) return "plan";
   return state.openDay === "recovery" ? "recovery" : "day";
 }
 
 function render() {
+  // Ein neues innerHTML während des Haltens würde den Knopf samt Füllung ersetzen.
+  if (holdTimer) return;
   const d = now();
   const screen = screenFor(state.daemon);
   applyTheme(d, screen);
   frame.dataset.screen = screen;
   if (screen !== "slideshow") stopSlideshow();
-  if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
+  if (screen === "power") frame.innerHTML = renderPower(state.power);
+  else if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
+  else if (screen === "settings") {
+    frame.innerHTML = renderSettings({
+      d, tab: state.settingsTab, daemon: state.daemon, sync: state.sync, app: state.app, syncing: state.syncing, notice: state.notice,
+      settings: settings(), deadlines: state.daemon?.deadlines ?? { slideshowAfterMin: 5, offAfterMin: 30 }
+    });
+  }
   else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
   else if (screen === "recovery") frame.innerHTML = renderRecovery({ d, r: state.plan.recoveryRaw });
@@ -211,7 +228,7 @@ function listen() {
     state.daemon = msg.frame;
     state.sync = msg.sync;
     state.dev = msg.dev;
-    if (msg.frame.rest !== "AKTIV") closeDay(false);
+    if (msg.frame.rest !== "AKTIV" || isSetup(msg.frame)) closeDay(false);
     if (newData) load();
     else render();
   };
@@ -259,13 +276,105 @@ function closeDay(rerender = true) {
   if (rerender) render();
 }
 
+// --- Einstellungs-Screen ---
+
+// Aktion am Daemon; ein Fehler steht danach in der Kopfzeile.
+async function frameAction(name, body = {}) {
+  try {
+    const res = await fetch(`/api/frame/${name}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `Fehler ${res.status}`);
+    state.notice = null;
+    return true;
+  } catch (err) {
+    state.notice = err.message;
+    return false;
+  }
+}
+
+async function syncNow() {
+  state.syncing = true;
+  render();
+  await frameAction("sync");
+  state.syncing = false;
+  render();
+}
+
+async function power(action) {
+  state.power = action;
+  render();
+  if (!(await frameAction(action))) {
+    state.power = null;
+    render();
+  }
+}
+
+const HOLD_ACTIONS = { "wifi-reset": () => frameAction("wifi-reset").then(render), reboot: () => power("reboot"), poweroff: () => power("poweroff") };
+
+// Halten: Füllung per CSS-Übergang; nach 2 s löst die Aktion aus, Loslassen vorher bricht ab.
+let holdTimer = null;
+let holdButton = null;
+frame.addEventListener("pointerdown", e => {
+  const button = e.target.closest("[data-hold]");
+  // Ein zweiter Finger startet kein zweites Halten; sonst feuerten Neustart und Herunterfahren beide.
+  if (!button || holdButton || frame.dataset.screen !== "settings") return;
+  holdButton = button;
+  button.classList.add("holding");
+  holdTimer = setTimeout(() => {
+    holdTimer = null;
+    HOLD_ACTIONS[button.dataset.hold]();
+  }, HOLD_MS);
+});
+function cancelHold() {
+  if (!holdButton) return;
+  holdButton.classList.remove("holding");
+  holdButton = null;
+  if (!holdTimer) return;
+  clearTimeout(holdTimer);
+  holdTimer = null;
+  render();
+}
+["pointerup", "pointercancel", "pointerleave"].forEach(type => frame.addEventListener(type, cancelHold));
+// Finger rutscht vom Knopf: Halten abbrechen (Touch-Pointer sind implizit gefangen, daher per Koordinate prüfen).
+frame.addEventListener("pointermove", e => {
+  if (holdButton && document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-hold]") !== holdButton) cancelHold();
+});
+// Long-Press öffnet in Chromium sonst das Kontextmenü und bricht das Halten ab.
+frame.addEventListener("contextmenu", e => e.preventDefault());
+
+function changeSetting(el) {
+  if (el.dataset.set) {
+    return frameAction("settings", { display: { ...settings(), [el.dataset.set]: el.dataset.value } }).then(render);
+  }
+  const deadlines = { ...state.daemon.deadlines };
+  const key = el.dataset.step;
+  deadlines[key] = (el.dataset.dir === "1" ? stepUp : stepDown)(deadlines[key]) ?? deadlines[key];
+  return frameAction("settings", { deadlines }).then(render);
+}
+
+function settingsClick(e) {
+  openDay("settings");
+  if (e.target.closest("[data-close]")) return closeDay();
+  const el = e.target.closest("[data-tab], [data-action], [data-set], [data-step]");
+  if (!el || el.disabled) return;
+  if (el.dataset.tab) {
+    state.settingsTab = el.dataset.tab;
+    render();
+  } else if (el.dataset.action === "sync") syncNow();
+  else changeSetting(el);
+}
+
 frame.addEventListener("click", e => {
+  if (frame.dataset.screen === "settings") return settingsClick(e);
   const session = e.target.closest("[data-session]");
   if (frame.dataset.screen === "day" && session) return openDay(state.openDay, Number(session.dataset.session));
   if (frame.dataset.screen === "day" || frame.dataset.screen === "recovery") return closeDay();
-  if (frame.dataset.screen !== "plan" || !state.plan) return;
+  if (frame.dataset.screen !== "plan") return;
   const day = e.target.closest("[data-day]");
-  if (day) openDay(Number(day.dataset.day));
+  if (e.target.closest("[data-settings]")) {
+    state.settingsTab = "status";
+    state.notice = null;
+    openDay("settings");
+  } else if (day) openDay(Number(day.dataset.day));
   else if (e.target.closest(".recovery")) openDay("recovery");
 });
 

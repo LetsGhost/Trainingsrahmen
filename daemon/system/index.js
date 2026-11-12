@@ -10,6 +10,7 @@
 //   connectWifi({ ssid, password })   wirft FrameError("WIFI_AUTH")
 //   checkInternet()                   → true | false
 //   setBacklight(on)
+//   setBrightness("low" | "mid" | "high")
 //   readCpuTemp()                     → °C | null
 //   power("reboot" | "poweroff")      Pi neu starten oder herunterfahren (Admin-Bereich)
 //   status()                          → { hotspot, wifi, backlight, ip, signal (dBm) } für Dev-Leiste und Admin

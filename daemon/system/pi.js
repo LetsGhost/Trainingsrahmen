@@ -74,9 +74,24 @@ const hotspotSsid = () => `Rahmen-${(readFile(`/sys/class/net/${IFACE}/address`)
 
 const newPassword = () => Array.from(crypto.randomBytes(8), b => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]).join("");
 
+// SSID und Passwort der gespeicherten Rahmen-Verbindung, null ohne Verbindung.
+// shortcut: SSIDs mit „:“ oder „\“ maskiert nmcli; die passen dann nicht und werden einmal neu angelegt.
+async function savedConnection() {
+  try {
+    const get = async field => (await nmcli("-s", "-g", field, "connection", "show", WIFI_CON)).trim();
+    const ssid = await get("802-11-wireless.ssid");
+    // Offene Netze haben keinen Sicherheitsteil; dann scheitert die Abfrage, das Passwort ist leer.
+    return { ssid, password: await get("802-11-wireless-security.psk").catch(() => "") };
+  } catch {
+    return null;
+  }
+}
+
 function ipAddress() {
   return (os.networkInterfaces()[IFACE] ?? []).find(a => a.family === "IPv4")?.address ?? null;
 }
+
+const BRIGHTNESS = { low: 0.2, mid: 0.55, high: 1 };
 
 function findBacklight() {
   try {
@@ -206,6 +221,8 @@ module.exports = function createPiAdapter({ port }) {
     },
 
     async connectWifi({ ssid, password }) {
+      // Nach einem Neustart des Daemons die vorhandene Verbindung übernehmen, statt sie alle 30 s neu anzulegen.
+      if (!saved) saved = await savedConnection();
       const same = saved && saved.ssid === ssid && saved.password === password;
       // Bei Internetausfall ruft state.js das alle 30 s auf; steht das WLAN selbst, nicht neu verbinden.
       await refresh();
@@ -252,6 +269,17 @@ module.exports = function createPiAdapter({ port }) {
         fs.writeFileSync(path.join(backlight, "bl_power"), on ? "0" : "4");
       } catch (err) {
         console.error(`Backlight: ${err.message}`);
+      }
+    },
+
+    // Anteil von max_brightness; shortcut: Stufen geschätzt, am Pi nachmessen, ob „Niedrig“ nachts nicht zu hell ist.
+    async setBrightness(level) {
+      if (!backlight) return;
+      try {
+        const max = Number(readFile(path.join(backlight, "max_brightness"))) || 255;
+        fs.writeFileSync(path.join(backlight, "brightness"), String(Math.max(1, Math.round(max * BRIGHTNESS[level]))));
+      } catch (err) {
+        console.error(`Helligkeit: ${err.message}`);
       }
     },
 

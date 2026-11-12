@@ -52,7 +52,8 @@ function toRecovery({ sleep, hrv, summary }) {
     sleepRem: minutes(sleep?.remSleepSeconds),
     sleepAwake: minutes(sleep?.awakeSleepSeconds),
     hrvWeekly: num(hrv?.hrvSummary?.weeklyAvg),
-    hrvStatus: hrv?.hrvSummary?.status || undefined
+    hrvStatus: hrv?.hrvSummary?.status || undefined,
+    restingHrWeekly: num(summary?.lastSevenDaysAvgRestingHeartRate)
   });
 }
 

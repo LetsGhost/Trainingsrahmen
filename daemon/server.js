@@ -2,6 +2,7 @@
 // Ohne Abhängigkeiten, damit auf dem Pi kein npm install nötig ist.
 const http = require("http");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const configStore = require("./config");
 const createBackend = require("./backend");
@@ -59,6 +60,7 @@ const system = createSystemAdapter({ dev: DEV, demo: DEMO, sim, port: PORT });
 const backend = createBackend({ dev: DEV || DEMO, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan),
   athleteptFixture: path.join(FIXTURE_DIR, "athletept.json"), garminFixture: path.join(FIXTURE_DIR, "garmin.json")
 });
+system.setBrightness(config.display.brightness);
 const slides = createSlides(configStore.DATA_DIR);
 const updater = createUpdater({ dev: DEV, rootDir: ROOT, baseDir: configStore.BASE_DIR, dataDir: configStore.DATA_DIR, config, port: PORT });
 const frame = createFrame({
@@ -99,7 +101,8 @@ function message(local) {
   const f = frame.snapshot();
   if (!local) f.adminCode = null;
   // app.commit: Das Display lädt neu, wenn nach einem Update ein anderer Stand läuft.
-  const app = { commit: updater.commit(), demo: DEMO };
+  // bootAt: für „Läuft seit“ im Einstellungs-Screen.
+  const app = { commit: updater.commit(), demo: DEMO, bootAt: Date.now() - os.uptime() * 1000 };
   return JSON.stringify({ frame: f, sync: sync.status(), app, dev: DEV ? { ...dev, sim } : null });
 }
 
@@ -255,6 +258,29 @@ async function handleDebug(req, res) {
   sendJson(res, 200, { ok: true });
 }
 
+// --- Einstellungs-Screen am Rahmen ---
+
+// Ohne Admin-Login, dafür nur vom Display auf dem Pi (localhost). Gefährliches bestätigt das Display durch 2 s Halten.
+const FRAME_ACTIONS = {
+  sync: () => sync.syncAll(),
+  settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines }),
+  "wifi-reset": () => frame.reset({ keepAdmin: true }),
+  reboot: () => system.power("reboot"),
+  poweroff: () => system.power("poweroff")
+};
+
+async function handleFrameAction(req, res, name) {
+  if (!isLocal(req)) return sendJson(res, 403, { error: "Nur am Rahmen" });
+  const action = FRAME_ACTIONS[name];
+  if (!action) return sendJson(res, 404, { error: "Unbekannt" });
+  try {
+    await action(await readJson(req));
+  } catch (err) {
+    return sendJson(res, err.code === "INVALID" ? 400 : 409, { error: err.message });
+  }
+  sendJson(res, 200, { ok: true });
+}
+
 // --- Einrichtung (Captive Portal) ---
 
 const inSetup = () => {
@@ -365,6 +391,7 @@ function handle(req, res) {
     const display = [...clients.values()].some(local => local);
     return sendJson(res, 200, { ok: true, commit: updater.commit(), demo: DEMO, display });
   }
+  if (pathname.startsWith("/api/frame/") && req.method === "POST") return handleFrameAction(req, res, pathname.slice("/api/frame/".length));
   if (pathname === "/api/activity" && req.method === "POST") {
     frame.activity();
     return sendJson(res, 200, { ok: true });
@@ -391,4 +418,7 @@ http.createServer(handle).listen(PORT, () => {
   console.log(`Trainingsrahmen läuft auf http://localhost:${PORT}${notes ? ` (${notes})` : ""}`);
   frame.boot();
 });
-if (PORTAL_PORT && PORTAL_PORT !== String(PORT)) http.createServer(handle).listen(PORTAL_PORT);
+// Ohne Port 80 läuft das Portal weiter über PORT; nur das automatische Öffnen auf dem Handy fehlt dann.
+if (PORTAL_PORT && PORTAL_PORT !== String(PORT)) {
+  http.createServer(handle).on("error", err => console.error(`Portal-Port ${PORTAL_PORT} nicht verfügbar: ${err.message}`)).listen(PORTAL_PORT);
+}

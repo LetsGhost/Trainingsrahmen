@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { writeAtomic } = require("./config");
 const { mergePlans } = require("./athletept");
-const { withRecovery, withActivities } = require("./garmin");
+const { today, withRecovery, withActivities } = require("./garmin");
 
 const PLAN_INTERVAL_MS = 10 * 60 * 1000;
 const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
@@ -37,10 +37,13 @@ function createSync({ backend, weather, config, dataDir, isOnline }) {
   const athletept = () => (config.athletept ? entries.athletept : null);
   const garmin = () => (config.garmin ? entries.garmin : null);
 
+  const source = (name, configured) => ({ configured, at: entries[name]?.fetchedAt ?? null, error: errors[name], running: running[name] });
+
   // Gemeinsamer Ablauf für Plan und Wetter: abrufen, cachen, Fehler merken, Änderung melden.
   async function run(name, load) {
     if (running[name]) return;
     running[name] = true;
+    emitter.emit("change");
     try {
       const data = await load();
       if (data === undefined) return;
@@ -74,7 +77,11 @@ function createSync({ backend, weather, config, dataDir, isOnline }) {
     syncWeather,
     plan: () => {
       const merged = mergePlans(entries.plan?.data ?? null, athletept()?.data ?? null);
-      return withActivities(withRecovery(merged, garmin()?.data?.recovery), garmin()?.data?.activities);
+      // Garmin-Erholung gilt nur am Tag des Abrufs, sonst stünden nach einer Nacht offline Schlaf und HRV von gestern da.
+      // shortcut: das Display holt den Plan erst bei der nächsten Änderung neu, offline bleibt der alte Wert bis dahin stehen.
+      const g = garmin();
+      const recovery = g && today(new Date(g.fetchedAt)) === today() ? g.data?.recovery : null;
+      return withActivities(withRecovery(merged, recovery), g?.data?.activities);
     },
     weather: () => entries.weather?.data ?? null,
     // Für Display und Dev-Leiste: Zeitpunkte des letzten Stands und letzte Fehler.
@@ -86,7 +93,14 @@ function createSync({ backend, weather, config, dataDir, isOnline }) {
       // Für die Dev-Leiste: Garmin getrennt, null ohne Key.
       garminAt: garmin()?.fetchedAt ?? null,
       garminError: config.garmin ? errors.garmin : null,
-      weatherError: errors.weather
+      weatherError: errors.weather,
+      // Für den Einstellungs-Screen: jede Quelle einzeln.
+      sources: {
+        plan: source("plan", Boolean(config.server)),
+        athletept: source("athletept", Boolean(config.athletept)),
+        garmin: source("garmin", Boolean(config.garmin)),
+        weather: source("weather", true)
+      }
     }),
     on: emitter.on.bind(emitter)
   };

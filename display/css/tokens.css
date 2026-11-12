@@ -29,7 +29,9 @@
   --slide-ink: #ffffff;
   --slide-shadow: rgba(0, 0, 0, 0.6);
   --ok: #5cc97a;
-  --warn: #e8b04a;
+  --warn: #ffb547;
+  --warn-fill: #ffb547;
+  --dim: #7d7979;
 }
 
 :root[data-theme="light"] {
@@ -53,5 +55,7 @@
   --slide-ink: #ffffff;
   --slide-shadow: rgba(0, 0, 0, 0.6);
   --ok: #24813f;
-  --warn: #a96a00;
+  --warn: #8f5200;
+  --warn-fill: #e09a2b;
+  --dim: #9b9797;
 }

@@ -8,14 +8,15 @@ function titleSize(title) {
   return "";
 }
 
-// session: Index der Einheit am Tag; damit wird die Zeile unter „Weitere Einheiten“ antippbar.
+// session: Index der Einheit am Tag; damit wird die Zeile unter „Weitere Einheiten“ antippbar und zeigt die Uhrzeit.
+// In der restlichen Woche steht laut Vorlage nur die Dauer.
 function renderRow(dow, s, session) {
   return `
     <div class="dv-row"${session === undefined ? "" : ` data-session="${session}"`}>
       <div class="dv-row-dow">${dow}</div>
       ${icon(s ? s.icon : "moon")}
       <div class="dv-row-title${s ? "" : " muted"}">${esc(s ? s.title : "Ruhetag")}</div>
-      <div class="dv-row-meta">${esc(s ? [s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · ") || "—" : "—")}</div>
+      <div class="dv-row-meta">${esc(s ? [session !== undefined && s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · ") || "—" : "—")}</div>
       ${s?.done ? `<span class="dv-row-check">${icon("circle-check")}</span>` : ""}
     </div>`;
 }

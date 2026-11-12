@@ -163,8 +163,11 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
     if (input.display) {
       const { theme, showWeather, showRecovery } = input.display;
+      // Das Admin-Panel schickt keine Helligkeit mit; dann bleibt die bisherige.
+      const brightness = input.display.brightness ?? config.display.brightness;
       if (!["auto", "light", "dark"].includes(theme)) throw new FrameError("INVALID", "Erscheinungsbild ungültig");
-      next.display = { theme, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery) };
+      if (!["low", "mid", "high"].includes(brightness)) throw new FrameError("INVALID", "Helligkeit ungültig");
+      next.display = { theme, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery), brightness };
     }
     if (input.deadlines) {
       const slideshowAfterMin = Number(input.deadlines.slideshowAfterMin);
@@ -180,7 +183,10 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     if ("athletept" in next) config.athletept = next.athletept;
     if ("garmin" in next) config.garmin = next.garmin;
     if (next.location) config.location = next.location;
-    if (next.display) config.display = next.display;
+    if (next.display) {
+      config.display = next.display;
+      system.setBrightness(next.display.brightness);
+    }
     if (next.deadlines) frame.setDeadlines(next.deadlines);
     saveConfig(config);
     if (next.server || "athletept" in next) sync.syncPlan();
@@ -363,7 +369,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     return true;
   }
 
-  return { route, isAuthed };
+  return { route, isAuthed, updateSettings };
 }
 
 module.exports = { createAdmin, hashPassword, verifyPassword };

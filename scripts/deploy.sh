@@ -5,7 +5,7 @@
 #   ./scripts/deploy.sh admin@10.0.0.7   an eine andere Adresse
 #   ./scripts/deploy.sh --restore        auf dem Pi zurück auf den committeten Stand (git checkout + clean)
 # Der Pi muss einmal mit scripts/setup-pi.sh eingerichtet sein. Solange dort Änderungen von deploy.sh liegen,
-# scheitert der Update-Knopf (git pull --ff-only) absichtlich – erst --restore, dann geht er wieder.
+# bricht der Update-Knopf absichtlich ab (Prüfung in self-update.sh) – erst --restore, dann geht er wieder.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

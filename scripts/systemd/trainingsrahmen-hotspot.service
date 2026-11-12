@@ -18,3 +18,6 @@ ExecStart=/usr/sbin/hostapd @DIR@/data/hostapd.conf
 ExecStartPost=/usr/sbin/dnsmasq --conf-file=/dev/null --interface=wlan0 --bind-interfaces --no-resolv --no-hosts \
   --dhcp-range=10.42.0.10,10.42.0.254,1h --address=/#/10.42.0.1 --pid-file=/run/trainingsrahmen-dnsmasq.pid
 ExecStopPost=/usr/sbin/ip addr flush dev wlan0
+# Stirbt hostapd während der Einrichtung, kommt der Hotspot von selbst wieder; ein Stopp durch den Daemon zählt nicht.
+Restart=on-failure
+RestartSec=3

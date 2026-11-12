@@ -17,7 +17,7 @@ test("tokenExpiry", () => {
 test("toRecovery", () => {
   assert.deepEqual(toRecovery(fixture), {
     score: 84, sleepMinutes: 455, hrv: 67, restingHr: 46, batteryNow: 71,
-    sleepDeep: 90, sleepLight: 260, sleepRem: 105, sleepAwake: 25, hrvWeekly: 64, hrvStatus: "BALANCED"
+    sleepDeep: 90, sleepLight: 260, sleepRem: 105, sleepAwake: 25, hrvWeekly: 64, hrvStatus: "BALANCED", restingHrWeekly: 48
   });
   // Kein Schlaf und keine HRV für heute (leere Antworten): nur was da ist.
   assert.deepEqual(toRecovery({ sleep: null, hrv: null, summary: { restingHeartRate: 50, bodyBatteryAtWakeTime: null } }), { restingHr: 50 });

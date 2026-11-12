@@ -79,15 +79,18 @@ function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
         FRAME_HEALTH_URL: `http://localhost:${port}/health`
       };
       writeStatus("running", "Gestartet");
+      const failed = () => writeStatus("failed", "Update konnte nicht gestartet werden");
       if (dev) {
         const log = fs.openSync(path.join(dataDir, "update.log"), "a");
         spawn("bash", [path.join(appDir, "scripts", "self-update.sh")], {
           cwd: appDir, env: { ...process.env, ...env }, detached: true, stdio: ["ignore", log, log], windowsHide: true
-        }).unref();
+        }).on("error", failed).unref();
       } else {
         // Die Unit liest Branch und Pfade aus data/update.env (auch im Demo-Modus dort, nicht unter data/demo/).
         fs.writeFileSync(path.join(baseDir, "update.env"), Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
-        spawn("systemctl", ["start", "--no-block", "trainingsrahmen-update.service"], { detached: true, stdio: "ignore" }).unref();
+        // Mit --no-block endet systemctl sofort; ein Exit-Code ≠ 0 heißt, die Unit ließ sich nicht starten.
+        spawn("systemctl", ["start", "--no-block", "trainingsrahmen-update.service"], { detached: true, stdio: "ignore" })
+          .on("error", failed).on("exit", code => code && failed()).unref();
       }
     }
   };

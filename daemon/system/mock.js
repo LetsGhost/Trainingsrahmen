@@ -67,6 +67,10 @@ module.exports = function createMockAdapter({ sim, port }) {
       hw.backlight = on;
     },
 
+    async setBrightness(level) {
+      hw.brightness = level;
+    },
+
     async power(action) {
       console.log(`Mock: ${action} (am Pi: systemctl ${action})`);
     },

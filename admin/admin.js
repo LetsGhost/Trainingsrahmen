@@ -7,6 +7,8 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const SLIDE_W = 800, SLIDE_H = 480;
 const STATUS_REFRESH_MS = 10000;
 const UPDATE_POLL_MS = 2000;
+// Länger als fetch + update.sh + 30 s Health-Prüfung + Rollback; danach hängt etwas.
+const UPDATE_GIVE_UP_MS = 5 * 60 * 1000;
 const SETUP_LABELS = {
   READY: "Online", OFFLINE: "Offline", SETUP_ADMIN: "Einrichtung", SETUP_HOTSPOT: "Hotspot", SETUP_ACCOUNT: "Hotspot"
 };
@@ -310,17 +312,18 @@ function renderDisplay() {
     }
   });
 
+  // brightness: undefined fällt beim JSON weg; der Daemon behält dann die am Rahmen eingestellte Helligkeit.
   document.querySelectorAll("[data-toggle]").forEach(t => t.addEventListener("click", async e => {
     const value = e.target.dataset.value;
     if (value === undefined) return;
-    if (await save({ display: { ...state.settings.display, theme: value } }, "display-msg")) {
+    if (await save({ display: { ...state.settings.display, brightness: undefined, theme: value } }, "display-msg")) {
       t.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
     }
   }));
   document.querySelectorAll("[data-switch]").forEach(b => b.addEventListener("click", async () => {
     const key = b.dataset.switch;
     const on = !state.settings.display[key];
-    if (await save({ display: { ...state.settings.display, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
+    if (await save({ display: { ...state.settings.display, brightness: undefined, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
   }));
 
   $("#rest-form").addEventListener("submit", e => {
@@ -666,6 +669,7 @@ async function installUpdate() {
       const res = await fetch("/api/admin/update");
       if (res.ok) info = await res.json();
     } catch {}
+    if (Date.now() - started > UPDATE_GIVE_UP_MS) return setMsg("update-msg", "Keine Rückmeldung vom Rahmen. Seite neu laden oder Rahmen prüfen.");
     if (!info) return setMsg("update-msg", "Rahmen startet neu …", true), setTimeout(poll, UPDATE_POLL_MS);
     const last = info.lastRun;
     if (last && last.at >= started && UPDATE_DONE[last.state]) {

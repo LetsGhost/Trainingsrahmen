@@ -71,6 +71,13 @@ if [ "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)" ]; then
   exit 0
 fi
 
+# git pull --ff-only scheitert nur, wenn eine geänderte Datei auch im Update vorkommt; ein Rollback per
+# reset --hard würde lokale Änderungen (z. B. von deploy.sh) sonst stillschweigend löschen.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  status failed "Lokale Änderungen auf dem Rahmen, Update abgebrochen"
+  exit 1
+fi
+
 status running "Lade Update"
 if ! git pull --ff-only --quiet "$REMOTE" "$BRANCH"; then
   status failed "git pull fehlgeschlagen, lokale Änderungen oder abweichender Verlauf"

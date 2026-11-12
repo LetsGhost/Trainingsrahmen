@@ -194,7 +194,7 @@ Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. 
 ./scripts/deploy.sh --restore        # Pi zurück auf den committeten Stand
 ```
 
-`deploy.sh` (Git Bash) kopiert alle Dateien, die git kennt oder nicht ignoriert, mit LF-Zeilenenden auf den Pi, führt `install-services.sh` aus und wartet auf `/health`. `data/` bleibt. Solange Änderungen von `deploy.sh` auf dem Pi liegen, scheitert der Update-Knopf absichtlich (`git pull --ff-only`); `--restore` räumt auf. Mit einem SSH-Key (`ssh-copy-id admin@rahmen.local`) fragt es nicht mehrfach nach dem Passwort.
+`deploy.sh` (Git Bash) kopiert alle Dateien, die git kennt oder nicht ignoriert, mit LF-Zeilenenden auf den Pi, führt `install-services.sh` aus und wartet auf `/health`. `data/` bleibt. Solange Änderungen von `deploy.sh` auf dem Pi liegen, bricht der Update-Knopf absichtlich ab („Lokale Änderungen auf dem Rahmen“, Prüfung per `git status` in `self-update.sh`); `--restore` räumt auf. Mit einem SSH-Key (`ssh-copy-id admin@rahmen.local`) fragt es nicht mehrfach nach dem Passwort.
 
 **Updates**: Commit pushen, dann im Admin-Panel „Nach Updates suchen“ und „Installieren“. Das Display lädt nach dem Neustart des Daemons selbst neu, sobald es einen anderen Commit sieht.
 
