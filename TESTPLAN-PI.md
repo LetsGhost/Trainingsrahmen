@@ -6,14 +6,36 @@ Hilfsmittel: `ssh admin@rahmen.local`, Logs mit `journalctl -u trainingsrahmen -
 
 Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
 
-**Automatisch (`scripts/pi-check.sh`):** Was ohne Hand und Auge geht, misst und prüft das Skript. Mit 🤖 markierte Punkte unten deckt es ab.
+## Systemtest-Skript `scripts/pi-check.sh`
 
-```
-./scripts/pi-check.sh              # auf dem Pi nach jedem Boot: Bootzeit, RAM, Temperatur, Unterspannung,
-                                   # Dienste, Commit, Backlight, gpiomon, WLAN-Neuanlage, Fehler im Log
-nohup ./scripts/pi-check.sh soak 48 &   # Dauerlauf, alle 5 min eine Zeile nach data/soak.csv
-./scripts/pi-check.sh remote       # vom PC (Git Bash): /api/frame/* von außen gesperrt?
-```
+Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierten Punkte unten deckt es ab; alles andere (Touch, PIR, Helligkeit nach Gefühl, Handy-Portal) bleibt Handarbeit.
+
+| Aufruf | Wo | Wann |
+|---|---|---|
+| `./scripts/pi-check.sh` | Pi (`cd ~/trainingsrahmen`) | nach jedem Boot und am Ende jedes Abschnitts |
+| `nohup ./scripts/pi-check.sh soak 48 &` | Pi | Start von Abschnitt 7, läuft 48 h im Hintergrund weiter |
+| `./scripts/pi-check.sh remote` | PC (Git Bash), anderer Host per `FRAME_PI=…` | einmal in Abschnitt 2 |
+
+**Momentaufnahme lesen.** Jede Zeile ist `OK`, `FEHLER` oder `·` (nur Info). Am Ende steht „Alles OK.“ oder die Zahl der Fehler; der Exit-Code ist dann 1.
+
+| Abschnitt der Ausgabe | Gut | Wenn nicht |
+|---|---|---|
+| Boot | „Einschalten bis Plan: N s“ | Kiosk startet nicht: `journalctl -b -u trainingsrahmen-kiosk` |
+| Ressourcen | RAM deutlich unter 1 GB, kaum Swap, `get_throttled=0x0` | Unterspannung → anderes Netzteil (5,1 V/2,5 A); viel Swap → Browser zu schwer |
+| Dienste | beide laufen, 0 Neustarts, Hotspot mit `Restart=on-failure` | Neustarts → Log ansehen; fehlendes Restart → `install-services.sh` |
+| Daemon | Commit = HEAD, Display verbunden | anderer Commit → Daemon neu starten oder Update hängt |
+| Hardware | Backlight mit `max_brightness` > 1, gpiomon läuft | nur an/aus → Helligkeitsstufen ohne Wirkung |
+| Netz | rahmen-wifi höchstens 2× angelegt/gelöscht | mehr → Neuanlage-Schleife, Fix aus Abschnitt 5 greift nicht |
+| Log | keine Fehlermeldungen | die letzten 5 werden angezeigt; einmalige Sync-Fehler ohne Netz sind harmlos |
+
+**Dauerlauf auswerten** (`data/soak.csv`, Spalten `zeit, ram_mb, swap_mb, browser_mb, temp_c, drossel, display, sync_fehler`):
+
+- `ram_mb` und `browser_mb` pendeln, steigen aber nicht stetig (sonst Speicherleck im Display).
+- `display` immer `ja`, `drossel` immer `0x0`, `temp_c` unter 70.
+- `sync_fehler` nur vereinzelt, nicht dauerhaft.
+- Zum Ansehen: `column -s, -t < data/soak.csv | less` oder die Datei am PC in eine Tabelle laden.
+
+**Grenzen:** Die WLAN-Prüfung sucht in den Logs von NetworkManager nach `connection-add`/`connection-delete`. Das Format ist auf dem Pi noch nicht gesehen; einmal mit dem Handtest aus Abschnitt 5 gegenprüfen. Die Fehlersuche im Log geht nach Wörtern („error“, „Fehler“) und kann auch harmlose Meldungen zählen.
 
 ## 0. Aufspielen
 
@@ -26,6 +48,7 @@ nohup ./scripts/pi-check.sh soak 48 &   # Dauerlauf, alle 5 min eine Zeile nach 
 ## 1. Grundbetrieb (Regression)
 
 - [ ] Nach `sudo reboot`: Plymouth-Splash → Kiosk mit Wochenraster, ohne weißes Aufblitzen und ohne Mauszeiger.
+- [ ] 🤖 Danach `./scripts/pi-check.sh` → „Alles OK.“; Bootzeit, RAM und Temperatur unten eintragen.
 - [ ] 🤖 Zeit vom Einschalten bis zum Plan stoppen: ____ s.
 - [ ] 🤖 `free -m` nach 10 min: Speicher in Benutzung ____ MB, Swap ____ MB.
 - [ ] 🤖 `vcgencmd measure_temp` nach 30 min: ____ °C.
@@ -87,7 +110,7 @@ nohup ./scripts/pi-check.sh soak 48 &   # Dauerlauf, alle 5 min eine Zeile nach 
 
 ## 7. Dauerlauf und Strom
 
-- [ ] 🤖 (`soak`) 48 h laufen lassen. Danach `free -m`: Speicher ungefähr wie bei Punkt 1? Hängt das Display oder ist es eingefroren? Sync-Zeit aktuell?
+- [ ] 🤖 `nohup ./scripts/pi-check.sh soak 48 &` starten, 48 h laufen lassen, `data/soak.csv` wie oben auswerten. Hängt das Display oder ist es eingefroren? Sync-Zeit aktuell?
 - [ ] 🤖 `pi-check.sh` nach dem Dauerlauf: keine Fehlermeldungen, keine Neustarts der Dienste.
 - [ ] Im Betrieb den Stecker ziehen und wieder einstecken → startet normal, Einstellungen und Bilder sind noch da.
 
