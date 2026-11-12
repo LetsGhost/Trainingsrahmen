@@ -215,6 +215,7 @@ Nach einer Änderung: `sudo systemctl restart trainingsrahmen trainingsrahmen-ki
 - Touch reagiert nicht, obwohl das Bild läuft: Der Touch-Chip ist beim Booten oft noch nicht bereit (`dmesg`: `I2C communication failure: -5`). `trainingsrahmen-touch.service` bindet den Treiber dann neu (Goodix an `0x5d`/`0x14` oder FT5x06 an `0x38`, je nach Waveshare-Version). Logs: `journalctl -u trainingsrahmen-touch`; prüfen mit `sudo libinput list-devices`.
 - Das Display ist nativ quer (800 × 480), `FRAME_ROTATION` bleibt also auf `normal`.
 - DevTools des Kiosk-Browsers: `ssh -L 9222:localhost:9222 admin@rahmen.local`, dann am PC `chrome://inspect` → `localhost:9222`.
+- Systemtest: `./scripts/pi-check.sh` auf dem Pi (Bootzeit, RAM, Temperatur, Dienste, Backlight, Fehler im Log), `soak 48` für den Dauerlauf nach `data/soak.csv`, `remote` vom PC. Was es nicht abdeckt, steht in `TESTPLAN-PI.md`.
 - Den Pi nicht per Stecker ausschalten (`sudo poweroff`). Bei der Slotmaschine hat ein Stromausfall schon Chromium-Dateien zerstört; Prüfen mit `sudo dpkg --verify`. Read-only-Root kommt mit Phase 8.
 
 ## Demo-Modus
