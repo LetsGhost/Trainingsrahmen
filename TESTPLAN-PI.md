@@ -6,20 +6,29 @@ Hilfsmittel: `ssh admin@rahmen.local`, Logs mit `journalctl -u trainingsrahmen -
 
 Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
 
+**Automatisch (`scripts/pi-check.sh`):** Was ohne Hand und Auge geht, misst und prüft das Skript. Mit 🤖 markierte Punkte unten deckt es ab.
+
+```
+./scripts/pi-check.sh              # auf dem Pi nach jedem Boot: Bootzeit, RAM, Temperatur, Unterspannung,
+                                   # Dienste, Commit, Backlight, gpiomon, WLAN-Neuanlage, Fehler im Log
+nohup ./scripts/pi-check.sh soak 48 &   # Dauerlauf, alle 5 min eine Zeile nach data/soak.csv
+./scripts/pi-check.sh remote       # vom PC (Git Bash): /api/frame/* von außen gesperrt?
+```
+
 ## 0. Aufspielen
 
 - [ ] Vorher notieren: `git -C ~/trainingsrahmen rev-parse --short HEAD` (alter Stand für den Rollback-Test).
 - [ ] Aktuellen Stand per **Update-Knopf** im Admin-Panel installieren (testet gleich den Normalfall).
   - Erwartet: „Lade Update“ → „Führe Update-Skript aus“ → „Starte neu“ → Erfolg; das Display lädt von selbst neu.
 - [ ] Danach einmal `~/trainingsrahmen/scripts/install-services.sh` ausführen. Der Update-Knopf bringt geänderte Units nicht mit, hier betrifft das `Restart=on-failure` in der Hotspot-Unit.
-- [ ] `systemctl cat trainingsrahmen-hotspot | grep Restart` zeigt `Restart=on-failure`.
+- [ ] 🤖 `systemctl cat trainingsrahmen-hotspot | grep Restart` zeigt `Restart=on-failure`.
 
 ## 1. Grundbetrieb (Regression)
 
 - [ ] Nach `sudo reboot`: Plymouth-Splash → Kiosk mit Wochenraster, ohne weißes Aufblitzen und ohne Mauszeiger.
-- [ ] Zeit vom Einschalten bis zum Plan stoppen: ____ s.
-- [ ] `free -m` nach 10 min: Speicher in Benutzung ____ MB, Swap ____ MB.
-- [ ] `vcgencmd measure_temp` nach 30 min: ____ °C.
+- [ ] 🤖 Zeit vom Einschalten bis zum Plan stoppen: ____ s.
+- [ ] 🤖 `free -m` nach 10 min: Speicher in Benutzung ____ MB, Swap ____ MB.
+- [ ] 🤖 `vcgencmd measure_temp` nach 30 min: ____ °C.
 - [ ] Tag antippen → Tagesansicht; „Weitere Einheiten“ antippen → Einheit groß; nach 60 s ohne Berührung zurück zum Plan.
 - [ ] Fußleiste antippen → Erholungs-Ansicht, Werte plausibel.
 - [ ] Wetter stimmt mit dem eingestellten Ort.
@@ -30,7 +39,7 @@ Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
 
 - [ ] **Status:** WLAN-Name und Signal stimmen, jede Quelle mit Stand; „Jetzt synchronisieren“ dreht und aktualisiert die Zeit.
 - [ ] **Anzeige → Helligkeit:** Niedrig / Mittel / Hoch sind sichtbar verschieden. Nachts im dunklen Raum: Ist „Niedrig“ angenehm, nicht zu hell? Falls nicht, Werte in `daemon/system/pi.js` (`BRIGHTNESS`) anpassen.
-  - [ ] `ls /sys/class/backlight/` und `cat /sys/class/backlight/*/max_brightness` notieren: ____
+  - [ ] 🤖 `ls /sys/class/backlight/` und `cat /sys/class/backlight/*/max_brightness` notieren: ____
   - [ ] Dimmt das Display stufenlos, oder kennt es nur an und aus?
 - [ ] **Anzeige → Theme und Ruhe-Fristen** ändern; die Werte stimmen danach im Admin-Panel.
 - [ ] **Halten-Knöpfe** (WLAN ändern, Neustart, Herunterfahren):
@@ -40,7 +49,7 @@ Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
   - [ ] Beim langen Drücken erscheint **kein** Kontextmenü und keine Textauswahl.
   - [ ] Mit zwei Fingern gleichzeitig auf Neustart und Herunterfahren → höchstens eine Aktion.
 - [ ] 60 s ohne Berührung → zurück zum Plan.
-- [ ] Von einem anderen Gerät aus: `curl -X POST -H 'content-type: application/json' -d '{}' http://rahmen.local:8080/api/frame/sync` liefert einen Fehler (nur localhost erlaubt).
+- [ ] 🤖 (`remote`) Von einem anderen Gerät aus: `curl -X POST -H 'content-type: application/json' -d '{}' http://rahmen.local:8080/api/frame/sync` liefert einen Fehler (nur localhost erlaubt).
 
 ## 3. Admin-Panel
 
@@ -58,7 +67,7 @@ Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
 ## 5. WLAN und Hotspot
 
 - [ ] **Fix WLAN-Neuanlage:** Router aus, dann `sudo systemctl restart trainingsrahmen`, 3 min warten.
-  - `journalctl -u NetworkManager --since "-3 min" | grep -c rahmen-wifi` darf nicht im 30-s-Takt wachsen; keine Zeilen „connection added“ oder „deleted“.
+  - 🤖 danach `pi-check.sh` (Zeile „rahmen-wifi … angelegt/gelöscht“), oder von Hand: `journalctl -u NetworkManager --since "-3 min" | grep -c rahmen-wifi` darf nicht im 30-s-Takt wachsen; keine Zeilen „connection added“ oder „deleted“.
   - Router wieder an → der Rahmen verbindet sich von selbst, das Display geht auf online.
 - [ ] Router aus, ohne Daemon-Neustart → „Offline · Stand HH:MM“, der letzte Plan bleibt sichtbar.
 - [ ] Über Nacht offline lassen (oder die Uhr über Mitternacht stellen) → **Fix Erholung:** Garmin-Werte von gestern erscheinen nach dem nächsten Neuladen nicht mehr als heute.
@@ -78,8 +87,8 @@ Jeden Punkt abhaken; was scheitert, mit Log-Auszug notieren.
 
 ## 7. Dauerlauf und Strom
 
-- [ ] 48 h laufen lassen. Danach `free -m`: Speicher ungefähr wie bei Punkt 1? Hängt das Display oder ist es eingefroren? Sync-Zeit aktuell?
-- [ ] `journalctl -u trainingsrahmen --since "-48h" -p warning` ohne wiederkehrende Fehler.
+- [ ] 🤖 (`soak`) 48 h laufen lassen. Danach `free -m`: Speicher ungefähr wie bei Punkt 1? Hängt das Display oder ist es eingefroren? Sync-Zeit aktuell?
+- [ ] 🤖 `pi-check.sh` nach dem Dauerlauf: keine Fehlermeldungen, keine Neustarts der Dienste.
 - [ ] Im Betrieb den Stecker ziehen und wieder einstecken → startet normal, Einstellungen und Bilder sind noch da.
 
 ## Ergebnis

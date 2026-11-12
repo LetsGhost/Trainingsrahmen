@@ -96,6 +96,7 @@ const isLocal = req => LOCAL.has(req.socket.remoteAddress);
 
 // res → lokal ja/nein
 const clients = new Map();
+let displaySeen = false;
 
 function message(local) {
   const f = frame.snapshot();
@@ -124,6 +125,11 @@ function openEvents(req, res) {
     Connection: "keep-alive"
   });
   res.write(`retry: 2000\ndata: ${message(isLocal(req))}\n\n`);
+  // Einmal pro Boot ins Journal: scripts/pi-check.sh misst daraus die Zeit vom Einschalten bis zum Plan.
+  if (isLocal(req) && !displaySeen) {
+    displaySeen = true;
+    console.log(`Display verbunden nach ${Math.round(os.uptime())} s Systemlaufzeit`);
+  }
   clients.set(res, isLocal(req));
   req.on("close", () => clients.delete(res));
 }
