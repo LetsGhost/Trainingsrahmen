@@ -20,7 +20,7 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h; Knöpfe für Neustart und Herunterfahren des Pi (`systemctl reboot`/`poweroff`, erlaubt per polkit) |
 | Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (Standard `origin/master`), bei Neuem `git pull` und `scripts/update.sh` |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
-| Sensor | Seeed Grove Mini-PIR an einem GPIO-Pin |
+| Sensor | 24-GHz-Radar-Präsenzsensor (z. B. HLK-LD2410), OUT an einem GPIO-Pin |
 | Slideshow | Nur Bilder, Upload über das Admin-Panel |
 | Boot-Bildschirm | Plymouth-Theme mit Splash 4A (dunkel, `scripts/boot/`), Balken läuft während des Bootens, Bild bleibt bis zum Kiosk; eingerichtet mit `scripts/setup-bootscreen.sh` (auch aus `setup-pi.sh`) |
 | Installation | Pi OS Lite, User `admin`, Repo unter `~/trainingsrahmen`, eingerichtet mit `scripts/setup-pi.sh` |
@@ -118,7 +118,7 @@ Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, ni
 - Fristen (Start 5 und 30 Minuten) im Admin-Panel einstellbar.
 - Der erste Tipp im Zustand AUS weckt nur.
 - Ohne Bilder geht das Display nach der ersten Frist direkt aus.
-- Der PIR reicht etwa 2 m, sieht nicht durch Glas und erkennt keine stillstehende Person; er braucht eine Öffnung in der Front.
+- Der Radar erkennt auch still sitzende Personen und sieht durch Holz, Glas und dünne Wände; Fehlauslöser aus dem Nebenraum über Reichweite/Empfindlichkeit (HLKRadarTool-App) begrenzen.
 - Bilder werden im Browser des Admin-Panels auf 800 × 480 verkleinert, bevor sie hochgeladen werden.
 - Im Display nur zwei `<img>`-Elemente; das nächste Bild wird vorab dekodiert.
 - Bilder liegen auf der Daten-Partition, Obergrenze 200.

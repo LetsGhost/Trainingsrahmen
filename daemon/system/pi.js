@@ -1,5 +1,5 @@
 // Echter Adapter für den Pi: WLAN über NetworkManager (nmcli), Hotspot über hostapd + dnsmasq
-// (scripts/systemd/trainingsrahmen-hotspot.service), PIR über gpiomon (libgpiod),
+// (scripts/systemd/trainingsrahmen-hotspot.service), Radar-Präsenzsensor über gpiomon (libgpiod),
 // Backlight über /sys/class/backlight, CPU-Temperatur aus /sys/class/thermal.
 // Die Rechte dafür (nmcli ohne root, Backlight schreiben, GPIO lesen) richtet scripts/setup-pi.sh ein.
 // Noch nicht auf echter Hardware geprüft (Phase 2 und 5).
@@ -9,6 +9,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const readline = require("readline");
 const { FrameError } = require("../errors");
 const { BASE_DIR } = require("../config");
 
@@ -142,16 +143,25 @@ module.exports = function createPiAdapter({ port }) {
   setInterval(refresh, STATUS_INTERVAL_MS).unref();
   refresh();
 
+  // Radar-Präsenzsensor (z. B. HLK-LD2410): OUT bleibt HIGH, solange jemand da ist, auch wer still sitzt.
+  // Daher beide Flanken: "presence" true/false statt einzelner "motion"-Pulse.
   function watchPir() {
     if (PIR_PIN === "off") return;
     let logged = false;
     // libgpiod 1.x und 2.x haben unterschiedliche Aufrufe.
     run("gpiomon", ["--version"], 5000)
       .then(out => /v2\./.test(out), () => false)
-      .then(function start(v2) {
-        const args = v2 ? ["--edges=rising", "--chip", PIR_CHIP, PIR_PIN] : ["--rising-edge", PIR_CHIP, PIR_PIN];
-        const proc = spawn("gpiomon", args, { stdio: ["ignore", "pipe", "pipe"] });
-        proc.stdout.on("data", () => events.emit("motion"));
+      .then(async function start(v2) {
+        // Pegel vor gpiomon lesen (beide wollen die Leitung): wer schon vor dem Rahmen sitzt, erzeugt keine Flanke.
+        await run("gpioget", v2 ? ["--chip", PIR_CHIP, PIR_PIN] : [PIR_CHIP, PIR_PIN], 5000)
+          .then(out => events.emit("presence", /=active|^\s*1/.test(out)), () => {});
+        const args = v2 ? ["--edges=both", "--chip", PIR_CHIP, PIR_PIN] : [PIR_CHIP, PIR_PIN];
+        // stdbuf -oL: gpiomon puffert sonst in der Pipe, Flanken kämen verspätet an.
+        const proc = spawn("stdbuf", ["-oL", "gpiomon", ...args], { stdio: ["ignore", "pipe", "pipe"] });
+        readline.createInterface({ input: proc.stdout }).on("line", line => {
+          if (/falling/i.test(line)) events.emit("presence", false);
+          else if (/rising/i.test(line)) events.emit("presence", true);
+        });
         proc.stderr.on("data", d => { if (!logged) console.error(`PIR (gpiomon): ${String(d).trim()}`); });
         proc.on("error", err => { if (!logged) console.error(`PIR: gpiomon startet nicht (${err.message})`); });
         proc.on("close", code => {

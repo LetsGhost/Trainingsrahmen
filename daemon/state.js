@@ -54,6 +54,7 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     adminCode: null
   };
   let restTimers = [];
+  let present = false;
   let retryTimer = null;
   let checkTimer = null;
   let checking = false;
@@ -96,7 +97,8 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
 
   function scheduleRest() {
     clearRestTimers();
-    if (!operating()) return;
+    // Solange der Radar jemanden sieht, laufen keine Fristen; sie starten erst, wenn er wieder geht.
+    if (!operating() || present) return;
     const toSlideshow = config.slideshowAfterMin * MIN;
     const toOff = config.offAfterMin * MIN;
     // Ohne Bilder geht das Display nach der ersten Frist direkt aus.
@@ -256,7 +258,8 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     }
   }
 
-  system.events.on("motion", activity);
+  system.events.on("motion", activity); // Mock/Dev-Leiste
+  system.events.on("presence", on => { present = on; activity(); });
 
   return {
     boot, snapshot, activity, portalOpened, submit, adminCompleted, reset, check, force, setDeadlines, changed,

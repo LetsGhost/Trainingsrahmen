@@ -22,6 +22,30 @@ test("validate", () => {
   assert.throws(() => validate({ ...input, server: { url: "https://s.de", apiKey: "" } }), invalid);
 });
 
+test("Radar: Fristen ruhen, solange jemand da ist", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const system = {
+    events: new EventEmitter(),
+    connectWifi: async () => { throw new Error("kein WLAN"); },
+    checkInternet: async () => false,
+    readCpuTemp: async () => null,
+    setBacklight: () => {},
+    portalUrl: () => null,
+    adminUrl: () => null,
+    status: () => ({})
+  };
+  const config = { wifi: { ssid: "x" }, server: { url: "https://s.de" }, slideshowAfterMin: 1, offAfterMin: 2 };
+  const frame = createFrame({ system, backend: {}, config, saveConfig: () => {}, hasImages: () => false });
+  await frame.boot();
+  assert.equal(frame.snapshot().setup, SETUP.OFFLINE);
+  system.events.emit("presence", true);
+  t.mock.timers.tick(10 * 60 * 1000);
+  assert.equal(frame.snapshot().rest, "AKTIV");
+  system.events.emit("presence", false);
+  t.mock.timers.tick(60 * 1000);
+  assert.equal(frame.snapshot().rest, "AUS");
+});
+
 test("Hotspot: Fehlstart wird nach 30 s wiederholt", async t => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   t.mock.method(console, "error", () => {});

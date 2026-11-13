@@ -109,7 +109,7 @@ Hotspot und Captive Portal haben mit einem älteren Stand bereits funktioniert. 
 1. **Hotspot-Robustheit:** Startet die Unit hostapd nach einem Absturz neu (`Restart=`)? Hält das WLAN mit Stromsparen über Tage durch?
 2. **Display-Overlay:** `vc4-kms-dsi-7inch` passt nur zu Waveshare-Revisionen, die das offizielle Display nachbilden. Neuere brauchen `vc4-kms-dsi-waveshare-panel,…`. Davon hängen Backlight-Pfad und Helligkeitsstufen ab (`pi.js:83,260`).
 3. **Chromium-Paketname** (`chromium` oder `chromium-browser`) im Selbsttest von `setup-pi.sh`.
-4. **PIR über gpiomon:** Ausgabe in der Pipe eventuell gepuffert; Abhilfe wäre `stdbuf -oL`.
+4. **Radar über gpiomon:** beide Flanken, läuft unter `stdbuf -oL`; Pegel beim Start per `gpioget`. Noch nicht auf dem Pi gemessen.
 5. **RAM und Startzeit** mit Chromium auf 1 GB; falls nötig auf WPE/Cog wechseln.
 
 ## Fahrplan zur v1
