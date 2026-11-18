@@ -78,7 +78,7 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
 
 - [ ] Login, falsches Passwort fünfmal → 30 s gesperrt, danach geht es wieder.
 - [ ] **Fix Helligkeit:** Am Rahmen „Niedrig“ wählen, dann im Admin Theme oder ein Modul umschalten → die Helligkeit bleibt „Niedrig“.
-- [ ] Dienste: Garmin- und AthletePT-Key speichern (falscher Key wird abgelehnt, richtiger gespeichert).
+- [ ] Dienste: Trainingsplan (Server-URL und API-Key), Garmin- und AthletePT-Key speichern (falscher Key wird abgelehnt, richtiger gespeichert). Das Portal fragt diese Zugänge nicht mehr ab.
 - [ ] Slideshow: 2–3 Bilder hochladen; nach der Ruhe-Frist läuft die Slideshow mit Überblendung, danach geht das Display aus.
 
 ## 4. Ruhe, PIR und Wecken
@@ -98,7 +98,8 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
   - [ ] Mit Android verbinden → das Portal öffnet sich von selbst.
   - [ ] Mit iPhone verbinden → das Portal öffnet sich von selbst.
   - [ ] Falsches WLAN-Passwort → nach etwa 30 s Hotspot mit Fehlermeldung zurück.
-  - [ ] Richtiges Passwort → verbunden, Plan erscheint; das Admin-Passwort bleibt erhalten.
+  - [ ] Das Portal zeigt nur WLAN und Passwort.
+  - [ ] Richtiges Passwort → verbunden, Plan erscheint; Admin-Passwort und Zugänge unter „Dienste“ bleiben erhalten.
 - [ ] **Fix Hotspot-Neustart:** Während der Hotspot läuft `sudo pkill -9 hostapd` (mit `-9`, ein normales SIGTERM gilt für systemd als sauberes Ende) → nach ca. 3 s ist der Hotspot wieder sichtbar (`systemctl status trainingsrahmen-hotspot`).
 
 ## 6. Update und Rollback

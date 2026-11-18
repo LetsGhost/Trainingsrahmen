@@ -57,8 +57,7 @@ export function renderSetup(f, done) {
   if (f.setup === "SETUP_ACCOUNT") {
     return renderScreen({
       step: 1,
-      // Hinter „API-“ steht ein Wortverbinder (U+2060); er verhindert den Umbruch am Bindestrich („API-“ / „Key“).
-      title: "Trage im Portal dein WLAN und den API-⁠Key ein",
+      title: "Trage im Portal dein WLAN ein",
       value: f.portalUrl ? f.portalUrl.replace(/^https?:\/\//, "") : null,
       note: "Hat sich das Portal nicht geöffnet? QR-Code scannen.",
       side: qrImage("/api/setup/qr/portal.svg")

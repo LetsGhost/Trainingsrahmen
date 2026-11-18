@@ -92,6 +92,8 @@ function showSetup() {
     $("#submit").disabled = false;
     if (!r.ok) return setMsg("auth-msg", r.error);
     history.replaceState(null, "", "/admin");
+    // Das Portal fragt nur das WLAN ab: nach dem ersten Passwort direkt zu den Zugängen.
+    state.tab = "services";
     showPanel();
   });
 }

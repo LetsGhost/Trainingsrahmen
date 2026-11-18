@@ -1,5 +1,5 @@
 // Zugriff auf die Trainings-Backends:
-// - Sport-Analytics (config.server, Pflicht): GET {url}/data mit Header x-api-key.
+// - Sport-Analytics (config.server, im Admin-Bereich einzutragen): GET {url}/data mit Header x-api-key.
 // - AthletePT 3.0 (config.athletept, optional): GET {url}/api/v1/me/week und /me/plan mit Bearer-Key;
 //   daemon/athletept.js baut daraus das Format des Sport-Analytics-Backends.
 // - Garmin Personal API (config.garmin, optional): Schlaf, HRV, Ruhepuls und Body Battery, siehe daemon/garmin.js.
@@ -116,7 +116,7 @@ module.exports = function createBackend({ dev, sim, fixture, athleteptFixture, g
   }
 
   return {
-    // Bei der Einrichtung: Erreichbarkeit und Key prüfen.
+    // Beim Speichern im Admin-Bereich: Erreichbarkeit und Key prüfen.
     async check(server) {
       if (!live()) return simulate();
       await requestSports(server);

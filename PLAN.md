@@ -9,14 +9,14 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Thema | Entscheidung |
 |---|---|
 | Gerät | Ein Pi 3B+ für eine Person |
-| Daten | `GET /data` mit Header `x-api-key` vom Sport-Analytics-Backend; Server bleibt unverändert. Optional zusätzlich AthletePT 3.0 (Portal und Admin): `GET /api/v1/me/week` und `/me/plan` mit `Authorization: Bearer apt_…` (Bereiche `workouts:read`, `plans:read`); `daemon/athletept.js` baut daraus das Sport-Analytics-Format, der Sync hängt die Einheiten an den Plan an. Beide Quellen haben einen eigenen Cache; fällt eine aus, bleibt ihr letzter Stand. Einheiten, die Sport-Analytics am selben Tag schon hat (Titel ist Anfang des anderen, oder gleiche Sportart bei den AthletePT-Freitexten Laufen/Rad/Schwimmen), werden nicht doppelt gezeigt; fehlende Felder der Sport-Analytics-Einheit (z. B. die Übungen in `description`) kommen dann von AthletePT |
+| Daten | `GET /data` mit Header `x-api-key` vom Sport-Analytics-Backend; Server bleibt unverändert. Optional zusätzlich AthletePT 3.0 (im Admin-Bereich): `GET /api/v1/me/week` und `/me/plan` mit `Authorization: Bearer apt_…` (Bereiche `workouts:read`, `plans:read`); `daemon/athletept.js` baut daraus das Sport-Analytics-Format, der Sync hängt die Einheiten an den Plan an. Beide Quellen haben einen eigenen Cache; fällt eine aus, bleibt ihr letzter Stand. Einheiten, die Sport-Analytics am selben Tag schon hat (Titel ist Anfang des anderen, oder gleiche Sportart bei den AthletePT-Freitexten Laufen/Rad/Schwimmen), werden nicht doppelt gezeigt; fehlende Felder der Sport-Analytics-Einheit (z. B. die Übungen in `description`) kommen dann von AthletePT |
 | Erholung | Optional Garmin Connect Personal API (nur Admin, nur lesen): Key aus Garmin Connect → Einstellungen → Personal API, getauscht gegen ein Bearer-Token (JWT, 24 h, im Speicher). Alle 30 min `dailySleep` (`sleepTimeSeconds`), `hrv/{Datum}` (`hrvSummary.lastNightAvg`) und `usersummary/daily` (`restingHeartRate`, `lastSevenDaysAvgRestingHeartRate`, `bodyBatteryAtWakeTime` als Erholung) für heute. Eigener Cache; die Garmin-Werte gehen pro Feld vor `recovery` von Sport-Analytics, was Garmin nicht hat, bleibt. „WLAN ändern“ behält den Key, Werkseinstellung löscht ihn |
 | Aktivitäten | Mit demselben Garmin-Key: `activities/search/activities` von Montag bis heute (`startTimeLocal`, `activityType.typeKey`, `duration`, `distance`). Gleicher Wochentag und gleiche Sportart → die geplante Einheit bekommt `done` (Häkchen statt Sport-Icon, Tagesansicht „ERLEDIGT 58 min · 10,2 km“), in Reihenfolge der Startzeit; „Sonstiges“ wird nie zugeordnet. Der Rest erscheint als ungeplante Einheit (gestrichelte Karte, zählt nicht in Anzahl und Wochensumme). Aktivitäten aus einer anderen Woche (alter Cache) zählen nicht |
 | Wetter | Open-Meteo direkt vom Pi, ohne Key; Ort im Admin-Bereich einstellbar (Standard Berlin) |
 | Hauptscreen | Wochenraster 2A (dunkel, 22–06 Uhr) / 2B (hell) |
 | Touch | Tag antippen öffnet die Tagesansicht (1B); Tipp auf eine Zeile unter „Weitere Einheiten“ zeigt diese Einheit groß, jeder andere Tipp oder 60 s ohne Berührung führt zurück |
 | Einstellungen am Rahmen | Tipp auf das Sync-Symbol öffnet `Einstellungen.dc.html`: Tabs Status (WLAN, Quellen, Jetzt synchronisieren, WLAN ändern), Anzeige (Helligkeit 3 Stufen, Theme, Ruhe-Fristen), System (Software, Laufzeit, CPU, Neustart, Herunterfahren). Ohne Login, `POST /api/frame/*` nur von localhost; WLAN ändern, Neustart und Herunterfahren 2 s halten. 60 s ohne Berührung → zurück zum Plan |
-| Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal WLAN, Server-URL und API-Key ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt wird |
+| Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal nur das WLAN ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt und unter „Dienste“ Server-URL und API-Key (optional AthletePT, Garmin) eingetragen werden |
 | Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h; Knöpfe für Neustart und Herunterfahren des Pi (`systemctl reboot`/`poweroff`, erlaubt per polkit) |
 | Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (Standard `origin/master`), bei Neuem `git pull` und `scripts/update.sh` |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
@@ -98,11 +98,11 @@ Pi OS Lite 64-bit (kein Desktop)
 
 1. Ohne gespeichertes WLAN öffnet der Pi den Hotspot (NetworkManager); der QR-Code enthält SSID und Passwort.
 2. dnsmasq leitet alle DNS-Anfragen auf den Pi, das Handy öffnet das Portal von selbst.
-3. Im Portal: Heim-WLAN wählen, Passwort, Server-URL, API-Key.
-4. Hotspot zu, verbinden, Server testen. Scheitert etwas, kommt der Hotspot nach 30 s mit Fehlermeldung zurück.
-5. Im Heimnetz zeigt das Display einen QR-Code zum Admin-Bereich mit Einmal-Code. Dort am PC oder Handy das Admin-Passwort festlegen; man ist sofort angemeldet, die Einrichtung ist abgeschlossen.
+3. Im Portal: Heim-WLAN wählen und Passwort eingeben. Mehr fragt das Portal nicht ab.
+4. Hotspot zu, verbinden, Internet prüfen. Scheitert etwas, kommt der Hotspot nach 30 s mit Fehlermeldung zurück.
+5. Im Heimnetz zeigt das Display einen QR-Code zum Admin-Bereich mit Einmal-Code. Dort am PC oder Handy das Admin-Passwort festlegen; man ist sofort angemeldet, die Einrichtung ist abgeschlossen. Der Admin-Bereich öffnet dann „Dienste“; dort kommen Server-URL und API-Key (optional AthletePT, Garmin) hinein. Bis dahin zeigt das Display unten „Trainingsplan im Admin-Bereich eintragen“.
 
-„WLAN ändern“ im Admin-Bereich startet wieder bei Schritt 1, behält aber das Passwort; Schritt 5 entfällt dann. Die Werkseinstellung löscht auch das Passwort.
+„WLAN ändern“ im Admin-Bereich startet wieder bei Schritt 1, behält aber das Passwort und die Zugänge; Schritt 5 entfällt dann. Die Werkseinstellung löscht auch Passwort und Zugänge.
 
 Der 3B+ hat ein Funkmodul; Hotspot und Heim-WLAN laufen deshalb nacheinander, nicht gleichzeitig.
 

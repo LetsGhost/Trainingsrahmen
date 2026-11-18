@@ -85,8 +85,7 @@ async function init() {
   $("#submit").addEventListener("submit", e => {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(e.target));
-    send("submit", { wifi: { ssid: v.ssid, password: v.password }, server: { url: v.url, apiKey: v.apiKey },
-      athletept: { url: v.athleteptUrl, apiKey: v.athleteptKey } });
+    send("submit", { wifi: { ssid: v.ssid, password: v.password } });
   });
   $("#garmin").addEventListener("submit", e => {
     e.preventDefault();

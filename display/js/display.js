@@ -140,6 +140,8 @@ function renderFoot() {
   let sync;
   if (state.daemon?.setup === "OFFLINE") sync = `${icon("wifi-off")}<span>Offline${stand ? ` · Stand ${stand}` : ""}</span>`;
   else if (s?.planError) sync = `${icon("wifi-off")}<span>${esc(s.planError.message)}${stand ? ` · Stand ${stand}` : ""}</span>`;
+  // Das Portal fragt nur das WLAN ab; ohne Zugang zum Trainingsplan bliebe hier sonst „Sync …“ stehen.
+  else if (s?.sources && !s.sources.plan.configured && !s.sources.athletept.configured) sync = `${icon("wifi")}<span>Trainingsplan im Admin-Bereich eintragen</span>`;
   else sync = `${icon("wifi")}<span>${state.app?.demo ? "Demo · " : ""}Sync ${stand ?? "…"}</span>`;
   return `<footer class="foot">${recovery}<button type="button" class="sync" data-settings>${sync}</button></footer>`;
 }

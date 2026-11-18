@@ -65,7 +65,6 @@ const slides = createSlides(configStore.DATA_DIR);
 const updater = createUpdater({ dev: DEV, rootDir: ROOT, baseDir: configStore.BASE_DIR, dataDir: configStore.DATA_DIR, config, port: PORT });
 const frame = createFrame({
   system,
-  backend,
   config,
   saveConfig: configStore.save,
   hasImages: () => slides.count() > 0

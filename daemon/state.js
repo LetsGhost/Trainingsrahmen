@@ -34,18 +34,15 @@ function validateAthletept(input) {
   return { url, apiKey };
 }
 
-// Eingaben aus dem Portal prüfen und säubern.
-function validate({ wifi, server, athletept } = {}) {
+// Eingaben aus dem Portal prüfen und säubern. Das Portal fragt nur das WLAN ab;
+// die Zugänge für die Trainingsdaten kommen danach im Admin-Bereich.
+function validate({ wifi } = {}) {
   const ssid = String(wifi?.ssid ?? "").trim();
-  const url = String(server?.url ?? "").trim();
-  const apiKey = String(server?.apiKey ?? "").trim();
   if (!ssid) throw new FrameError("INVALID", "WLAN fehlt");
-  if (!/^https?:\/\/\S+$/i.test(url)) throw new FrameError("INVALID", "Server-URL muss mit http:// oder https:// beginnen");
-  if (!apiKey) throw new FrameError("INVALID", "API-Key fehlt");
-  return { wifi: { ssid, password: String(wifi.password ?? "") }, server: { url, apiKey }, athletept: validateAthletept(athletept) };
+  return { wifi: { ssid, password: String(wifi.password ?? "") } };
 }
 
-function createFrame({ system, backend, config, saveConfig, hasImages }) {
+function createFrame({ system, config, saveConfig, hasImages }) {
   const emitter = new EventEmitter();
   // connectingTo: WLAN-Name, solange nach dem Absenden verbunden wird.
   // adminCode: Einmal-Code für das erste Admin-Passwort; der Server gibt ihn nur an das Display (localhost) weiter.
@@ -138,11 +135,9 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
     changed();
   }
 
-  async function connect(wifi, server, athletept) {
+  async function connect(wifi) {
     await system.connectWifi(wifi);
     if (!(await system.checkInternet())) throw new FrameError(NO_INTERNET.code, NO_INTERNET.message);
-    await backend.check(server);
-    if (athletept) await backend.checkAthletept(athletept);
   }
 
   async function openHotspot(error = null) {
@@ -167,15 +162,15 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   // Eingaben aus dem Portal. Scheitert etwas, kommt der Hotspot nach 30 s mit der Fehlermeldung zurück.
   async function submit(input) {
     if (s.connecting || connected()) throw new FrameError("NOT_IN_SETUP", "Keine Einrichtung aktiv");
-    const { wifi, server, athletept } = validate(input);
+    const { wifi } = validate(input);
     clearTimeout(retryTimer);
     Object.assign(s, { connecting: true, connectingTo: wifi.ssid, error: null });
     changed();
     await system.stopHotspot();
     s.hotspot = null;
     try {
-      await connect(wifi, server, athletept);
-      Object.assign(config, { wifi, server, athletept });
+      await connect(wifi);
+      config.wifi = wifi;
       saveConfig(config);
       setSetup(onlineState(), { connecting: false, connectingTo: null });
     } catch (err) {
@@ -213,23 +208,23 @@ function createFrame({ system, backend, config, saveConfig, hasImages }) {
   }
 
   async function boot() {
-    if (!config.wifi || !config.server) return openHotspot();
+    if (!config.wifi) return openHotspot();
     Object.assign(s, { connecting: true });
     changed();
     try {
-      await connect(config.wifi, config.server);
+      await connect(config.wifi);
       setSetup(onlineState(), { connecting: false, error: null });
     } catch (err) {
       setSetup(SETUP.OFFLINE, { connecting: false, error: toError(err) });
     }
   }
 
-  // Zurück in die Einrichtung: WLAN und Server vergessen, Hotspot auf.
-  // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleiben Passwort und Garmin-Key erhalten (beides steht nur im
+  // Zurück in die Einrichtung: WLAN vergessen, Hotspot auf.
+  // keepAdmin: aus dem Admin-Bereich („WLAN ändern“) bleiben Passwort und alle Zugänge erhalten (die stehen nur im
   // Admin, nicht im Portal); Werkseinstellung löscht sie.
   async function reset({ keepAdmin = false } = {}) {
-    Object.assign(config, { wifi: null, server: null, athletept: null });
-    if (!keepAdmin) Object.assign(config, { admin: null, garmin: null });
+    config.wifi = null;
+    if (!keepAdmin) Object.assign(config, { admin: null, server: null, athletept: null, garmin: null });
     saveConfig(config);
     await openHotspot();
   }

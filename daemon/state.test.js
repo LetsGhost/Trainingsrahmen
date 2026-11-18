@@ -15,11 +15,36 @@ test("validateAthletept", () => {
 });
 
 test("validate", () => {
+  // Zugänge im Portal-Input werden ignoriert, die gibt es nur im Admin-Bereich.
   const input = { wifi: { ssid: " Heim ", password: "pw" }, server: { url: "https://s.de", apiKey: "k" } };
-  assert.deepEqual(validate(input), { wifi: { ssid: "Heim", password: "pw" }, server: { url: "https://s.de", apiKey: "k" }, athletept: null });
+  assert.deepEqual(validate(input), { wifi: { ssid: "Heim", password: "pw" } });
   assert.throws(() => validate({ ...input, wifi: { ssid: " " } }), invalid);
-  assert.throws(() => validate({ ...input, server: { url: "ftp://s.de", apiKey: "k" } }), invalid);
-  assert.throws(() => validate({ ...input, server: { url: "https://s.de", apiKey: "" } }), invalid);
+});
+
+test("Einrichtung nur mit WLAN; WLAN ändern behält die Zugänge", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const system = {
+    events: new EventEmitter(),
+    startHotspot: async () => ({ ssid: "Rahmen-TEST", password: "pw" }),
+    stopHotspot: async () => {},
+    connectWifi: async () => {},
+    checkInternet: async () => true,
+    portalUrl: () => null,
+    adminUrl: () => null,
+    status: () => ({})
+  };
+  const server = { url: "https://s.de", apiKey: "k" };
+  const config = { wifi: null, server, admin: { salt: "s", hash: "h" }, slideshowAfterMin: 1, offAfterMin: 2 };
+  const frame = createFrame({ system, config, saveConfig: () => {}, hasImages: () => false });
+  await frame.boot();
+  await frame.submit({ wifi: { ssid: "Heim", password: "pw" } });
+  assert.equal(frame.snapshot().setup, SETUP.READY);
+  assert.deepEqual(config.wifi, { ssid: "Heim", password: "pw" });
+  await frame.reset({ keepAdmin: true });
+  assert.equal(config.wifi, null);
+  assert.equal(config.server, server);
+  await frame.reset();
+  assert.equal(config.server, null);
 });
 
 test("Radar: Fristen ruhen, solange jemand da ist", async t => {
@@ -35,7 +60,7 @@ test("Radar: Fristen ruhen, solange jemand da ist", async t => {
     status: () => ({})
   };
   const config = { wifi: { ssid: "x" }, server: { url: "https://s.de" }, slideshowAfterMin: 1, offAfterMin: 2 };
-  const frame = createFrame({ system, backend: {}, config, saveConfig: () => {}, hasImages: () => false });
+  const frame = createFrame({ system, config, saveConfig: () => {}, hasImages: () => false });
   await frame.boot();
   assert.equal(frame.snapshot().setup, SETUP.OFFLINE);
   system.events.emit("presence", true);
@@ -60,7 +85,7 @@ test("Hotspot: Fehlstart wird nach 30 s wiederholt", async t => {
     adminUrl: () => null,
     status: () => ({})
   };
-  const frame = createFrame({ system, backend: {}, config: { wifi: null, server: null }, saveConfig: () => {}, hasImages: () => false });
+  const frame = createFrame({ system, config: { wifi: null, server: null }, saveConfig: () => {}, hasImages: () => false });
   await frame.boot();
   assert.equal(frame.snapshot().setup, null);
   t.mock.timers.tick(30 * 1000);

@@ -89,8 +89,8 @@ Admin-Panel → „Software“: „Nach Updates suchen“ macht `git fetch` von 
 
 1. Dev-Leiste → „Werkseinstellung“: Das Display zeigt 3A mit WLAN-QR.
 2. `http://localhost:8080/setup` öffnen (am besten in den DevTools in Handygröße). Das zählt als „Handy öffnet Portal“, das Display springt auf 3B.
-3. WLAN wählen, Server-URL und API-Key eintragen, „Verbinden“. Fehler vorher in der Dev-Leiste einschalten, um 30 s Wartezeit und Rückkehr zu 3A zu sehen.
-4. Das Display zeigt den Admin-Schritt. Die Dev-Leiste zeigt den Einmal-Code; `http://localhost:8080/admin?code=…` öffnen und ein Passwort festlegen.
+3. WLAN wählen, „Verbinden“ (das Portal fragt nur das WLAN ab). Fehler vorher in der Dev-Leiste einschalten, um 30 s Wartezeit und Rückkehr zu 3A zu sehen.
+4. Das Display zeigt den Admin-Schritt. Die Dev-Leiste zeigt den Einmal-Code; `http://localhost:8080/admin?code=…` öffnen und ein Passwort festlegen. Danach öffnet der Admin-Bereich „Dienste“: Server-URL und API-Key eintragen (in der Entwicklung reicht jeder Wert, der Plan kommt aus den Fixtures).
 
 Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Ist das Handy im selben WLAN, öffnet es das Portal direkt. Unter Windows muss die Firewall Node für private Netze zulassen.
 
@@ -98,7 +98,7 @@ Mit einem echten Handy: Der QR-Code auf 3B zeigt auf die LAN-Adresse des PCs. Is
 |---|---|
 | `GET /setup` | Portal; meldet dem Daemon „Portal geöffnet“ |
 | `GET /api/setup/networks` | WLAN-Liste vom Adapter |
-| `POST /api/setup` | `{ wifi: { ssid, password }, server: { url, apiKey } }`; antwortet sofort mit 202, verbindet danach |
+| `POST /api/setup` | `{ wifi: { ssid, password } }`; antwortet sofort mit 202, verbindet danach. Die Zugänge für die Trainingsdaten kommen nur über den Admin-Bereich |
 | `GET /api/setup/qr/wifi.svg`, `…/portal.svg` | QR-Codes für 3A und 3B |
 
 ## Ordner
