@@ -165,9 +165,11 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       const { theme, showWeather, showRecovery } = input.display;
       // Das Admin-Panel schickt keine Helligkeit mit; dann bleibt die bisherige.
       const brightness = input.display.brightness ?? config.display.brightness;
+      const skin = input.display.skin ?? config.display.skin;
       if (!["auto", "light", "dark"].includes(theme)) throw new FrameError("INVALID", "Erscheinungsbild ungültig");
       if (!["low", "mid", "high"].includes(brightness)) throw new FrameError("INVALID", "Helligkeit ungültig");
-      next.display = { theme, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery), brightness };
+      if (!["modern", "sport"].includes(skin)) throw new FrameError("INVALID", "Theme ungültig");
+      next.display = { theme, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery), brightness, skin };
     }
     if (input.deadlines) {
       const slideshowAfterMin = Number(input.deadlines.slideshowAfterMin);

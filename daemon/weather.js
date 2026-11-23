@@ -1,5 +1,5 @@
 // Wetter von Open-Meteo (ohne Key), übersetzt in das Modell, das das Display anzeigt:
-// { place, label, icon, temp, feels, wind, precip, low, sunset, forecast: [{ icon, hi, lo }] } – forecast beginnt mit heute.
+// { place, label, icon, temp, feels, wind, precip, low, sunset, forecast: [{ icon, label, hi, lo }] } – forecast beginnt mit heute.
 // In der Entwicklung kommt das Wetter aus fixtures/weather.json, außer die Dev-Leiste schaltet „Echtes Wetter“ ein.
 const fs = require("fs");
 const { FrameError } = require("./errors");
@@ -42,7 +42,7 @@ function adapt(json, place) {
     low: round(d.temperature_2m_min[1] ?? d.temperature_2m_min[0]),
     sunset: String(d.sunset?.[0] ?? "").slice(11, 16),
     forecast: d.time.map((_, i) => ({
-      icon: describe(d.weather_code[i]).icon,
+      ...describe(d.weather_code[i]),
       hi: round(d.temperature_2m_max[i]),
       lo: round(d.temperature_2m_min[i])
     }))

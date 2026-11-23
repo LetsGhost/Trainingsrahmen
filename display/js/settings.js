@@ -1,8 +1,8 @@
 // Einstellungen am Rahmen (Einstellungen.dc.html): Tipp auf das Sync-Symbol im Wochenplan öffnet sie.
-// Links die Tabs Status · Anzeige · System, rechts der Inhalt. Gefährliches (WLAN ändern, Neustart, Aus) braucht 2 s Halten.
+// Links die Tabs Status · Anzeige · Anpassen · System, rechts der Inhalt. Gefährliches (WLAN ändern, Neustart, Aus) braucht 2 s Halten.
 import { hhmm, esc } from "./util.js";
 
-export const TABS = [["status", "STATUS"], ["display", "ANZEIGE"], ["system", "SYSTEM"]];
+export const TABS = [["status", "STATUS"], ["display", "ANZEIGE"], ["customize", "ANPASSEN"], ["system", "SYSTEM"]];
 const SOURCES = [["plan", "Sport-Analytics"], ["athletept", "AthletePT"], ["garmin", "Garmin"], ["weather", "Wetter"]];
 // Raster der Stepper; Grenzen wie im Admin (Slideshow 1–120, Display aus danach bis 600).
 const STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 600];
@@ -60,7 +60,7 @@ function renderStatus({ daemon, sync, syncing }) {
   } else button = `<button type="button" class="st-sync" data-action="sync"><span>Jetzt synchronisieren</span><span>${last ? `zuletzt ${time(last)}` : ""}</span></button>`;
 
   return `
-    <div class="st-kicker">WLAN</div>
+    <div class="st-kicker st-modern">WLAN</div>
     <div class="st-wifi">
       <div class="st-wifi-left">
         <span class="st-bars" role="img" aria-label="Signal ${n} von 4">${[1, 2, 3, 4].map(i => `<span${i <= n ? ' class="on"' : ""}></span>`).join("")}</span>
@@ -69,8 +69,10 @@ function renderStatus({ daemon, sync, syncing }) {
       ${hold("wifi-reset", "WLAN ändern")}
     </div>
     <div class="st-rule"></div>
-    <div class="st-kicker-row"><div class="st-kicker">DATENQUELLEN</div>${note}</div>
-    <div class="st-sources">${SOURCES.map(s => sourceRow(s, sources[s[0]], offline)).join("")}</div>
+    <div class="st-card">
+      <div class="st-kicker-row"><div class="st-kicker">DATENQUELLEN</div>${note}</div>
+      <div class="st-sources">${SOURCES.map(s => sourceRow(s, sources[s[0]], offline)).join("")}</div>
+    </div>
     <div class="st-grow"></div>
     ${button}`;
 }
@@ -95,15 +97,29 @@ function stepper(key, label, sub, value, canDown, canUp) {
 function renderDisplay({ settings, deadlines }) {
   const { slideshowAfterMin: slide, offAfterMin: off } = deadlines;
   return `
-    <div class="st-kicker">HELLIGKEIT</div>
-    ${segment("brightness", settings.brightness ?? "high", [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
-    <div class="st-kicker gap">THEME</div>
-    ${segment("theme", settings.theme, [["auto", "Auto <span>22–06</span>"], ["light", "Hell"], ["dark", "Dunkel"]])}
+    <div class="st-card">
+      <div class="st-kicker">HELLIGKEIT</div>
+      ${segment("brightness", settings.brightness ?? "high", [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
+      <div class="st-kicker gap">THEME</div>
+      ${segment("theme", settings.theme, [["auto", "Auto <span>22–06</span>"], ["light", "Hell"], ["dark", "Dunkel"]])}
+    </div>
     <div class="st-rule tight"></div>
+    <div class="st-card">
     <div class="st-kicker">RUHE-FRISTEN</div>
     ${stepper("slideshowAfterMin", "Slideshow nach", "ohne Berührung", slide, stepDown(slide) !== undefined,
       (stepUp(slide) ?? Infinity) < off && stepUp(slide) <= SLIDESHOW_MAX)}
-    ${stepper("offAfterMin", "Display aus nach", "immer später als die Slideshow", off, (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX)}`;
+    ${stepper("offAfterMin", "Display aus nach", "immer später als die Slideshow", off, (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX)}
+    </div>`;
+}
+
+// Theme = Aussehen aller Screens (Modern: bisheriges Layout, Sport: Sport-Edition.dc). Hell/Dunkel bleibt unter Anzeige.
+function renderCustomize({ settings }) {
+  return `
+    <div class="st-card">
+      <div class="st-kicker">THEME</div>
+      ${segment("skin", settings.skin ?? "modern", [["modern", "Modern"], ["sport", "Sport"]])}
+      <div class="st-hint">Sport: Kalk-Weiß, jede Sportart in ihrer Farbe. Immer hell.</div>
+    </div>`;
 }
 
 function uptime(bootAt, d) {
@@ -118,17 +134,17 @@ function renderSystem({ d, daemon, app }) {
     ["CPU", daemon?.cpuTemp != null ? `${Math.round(daemon.cpuTemp)} °C` : "–"]
   ];
   return `
-    <div class="st-kicker">GERÄT</div>
+    <div class="st-kicker st-modern">GERÄT</div>
     <div class="st-facts">${rows.map(([k, v]) => `<div class="st-fact"><span>${k}</span><span>${esc(v)}</span></div>`).join("")}</div>
     <div class="st-grow"></div>
-    <div class="st-kicker">NEUSTART &amp; AUS</div>
+    <div class="st-kicker st-modern">NEUSTART &amp; AUS</div>
     <div class="st-holds">${hold("reboot", "Neu starten", { big: true })}${hold("poweroff", "Herunterfahren", { big: true, warn: true })}</div>
     <div class="st-hint">Loslassen bricht ab – es passiert nichts.</div>`;
 }
 
 // notice: Fehlermeldung der letzten Aktion (z. B. Neustart verweigert), steht in der Kopfzeile.
 export function renderSettings(p) {
-  const body = ({ status: renderStatus, display: renderDisplay, system: renderSystem }[p.tab] ?? renderStatus)(p);
+  const body = ({ status: renderStatus, display: renderDisplay, customize: renderCustomize, system: renderSystem }[p.tab] ?? renderStatus)(p);
   return `
     <header class="st-head">
       <button type="button" class="st-back" data-close><span aria-hidden="true">←</span><span>Einstellungen</span></button>

@@ -21,8 +21,9 @@ const DEFAULTS = {
   location: { name: "Berlin", lat: 52.52, lon: 13.405 },
   // Admin-Passwort als scrypt-Hash: { salt, hash } oder null, solange es nicht gesetzt ist.
   admin: null,
-  // theme: "auto" (Nachtfenster 22–06) | "light" | "dark"; brightness: "low" | "mid" | "high" (Einstellungen am Rahmen)
-  display: { theme: "auto", showWeather: true, showRecovery: true, brightness: "high" },
+  // theme: "auto" (Nachtfenster 22–06) | "light" | "dark"; brightness: "low" | "mid" | "high"; skin: "modern" | "sport"
+  // (beides nur in den Einstellungen am Rahmen)
+  display: { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" },
   // Update-Knopf: von diesem Remote und Branch wird gezogen.
   update: { remote: "origin", branch: "master" }
 };

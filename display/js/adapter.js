@@ -64,6 +64,7 @@ export function adaptPlan(raw) {
         title: t.title ?? "",
         time: t.time ?? null,
         dur: formatDuration(t.duration),
+        min: isMinutes(t.duration) ? t.duration : null,
         description: t.description ?? null,
         intensity: t.intensity ?? null,
         done: adaptDone(t.done),

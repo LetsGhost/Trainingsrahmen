@@ -314,18 +314,18 @@ function renderDisplay() {
     }
   });
 
-  // brightness: undefined fällt beim JSON weg; der Daemon behält dann die am Rahmen eingestellte Helligkeit.
+  // brightness/skin: undefined fällt beim JSON weg; der Daemon behält dann die am Rahmen eingestellten Werte.
   document.querySelectorAll("[data-toggle]").forEach(t => t.addEventListener("click", async e => {
     const value = e.target.dataset.value;
     if (value === undefined) return;
-    if (await save({ display: { ...state.settings.display, brightness: undefined, theme: value } }, "display-msg")) {
+    if (await save({ display: { ...state.settings.display, brightness: undefined, skin: undefined, theme: value } }, "display-msg")) {
       t.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
     }
   }));
   document.querySelectorAll("[data-switch]").forEach(b => b.addEventListener("click", async () => {
     const key = b.dataset.switch;
     const on = !state.settings.display[key];
-    if (await save({ display: { ...state.settings.display, brightness: undefined, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
+    if (await save({ display: { ...state.settings.display, brightness: undefined, skin: undefined, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
   }));
 
   $("#rest-form").addEventListener("submit", e => {

@@ -51,7 +51,7 @@ function renderMain(main, more) {
   const facts = [["START", main.time], ["DAUER", main.dur], ["BELASTUNG", main.intensity], ["ERLEDIGT", main.done]]
     .filter(([, v]) => v);
   return `
-    <div class="dv-sport">${icon(main.icon)}<div class="dv-sport-label">${esc(main.sport)}${main.unplanned ? " · UNGEPLANT" : ""}</div></div>
+    <div class="dv-sport" data-sport="${main.icon}">${icon(main.icon)}<div class="dv-sport-label">${esc(main.sport)}${main.unplanned ? " · UNGEPLANT" : ""}</div></div>
     <div class="dv-title${titleSize(main.title)}">${esc(hyphenate(main.title))}</div>
     ${facts.length ? `<div class="dv-facts">${facts.map(([label, value]) => `
       <div class="dv-fact">
@@ -95,7 +95,8 @@ function renderWeather(weather, today) {
 
 // d: jetzt; date und index: der gewählte Tag; today: Index von heute.
 // session: Index der groß gezeigten Einheit; die übrigen stehen als [Index, Einheit] darunter.
-export function renderDay({ d, date, index, today, plan, weather, recovery, session = 0 }) {
+export function renderDay({ d, date, index, today, plan, weather, recovery, session = 0, sport = false }) {
+  if (sport) return renderSportDay({ d, date, index, today, plan, weather, session });
   const sessions = plan.days[index].sessions;
   const main = sessions[session] ?? sessions[0];
   const more = [...sessions.entries()].filter(([, s]) => s !== main);
@@ -120,6 +121,108 @@ export function renderDay({ d, date, index, today, plan, weather, recovery, sess
           <div class="dv-heading">RESTLICHE WOCHE</div>
           ${upcoming.length ? upcoming.join("") : `<div class="dv-row-title muted">Keine weiteren Tage diese Woche</div>`}
         </div>
+      </div>
+    </section>`;
+}
+
+// --- Theme Sport (Entwurf S3+): Einheit als Farbkarte, Übungen als Karte, weitere Einheiten als „Auch heute“;
+// rechts Wetter mit Text je Tag und die restliche Woche mit Farbpunkt der Sportart. ---
+
+// „Plan A – Unterkörper (Hüfte & Rumpf)“ → Titel und Untertitel.
+export function splitTitle(title) {
+  const m = title.match(/^(.+?)\s*\(([^()]+)\)$/);
+  return m ? [m[1], m[2]] : [title, null];
+}
+
+function sportHero(main) {
+  if (!main) return `<div class="sd-hero"><div class="sd-hero-top"><span class="sd-sport">RUHETAG</span></div><div class="sd-title">Kein Training</div></div>`;
+  const [title, sub] = splitTitle(main.title);
+  const facts = [["START", main.time], ["DAUER", main.dur], ["BELASTUNG", main.intensity]].filter(([, v]) => v);
+  return `
+    <div class="sd-hero" data-sport="${main.icon}">
+      <div class="sd-hero-top">
+        <span class="sd-sport">${esc(main.sport)}${main.unplanned ? " · UNGEPLANT" : ""}</span>
+        ${main.done ? `<span class="sd-done">✓ ERLEDIGT · ${esc(main.done.toUpperCase())}</span>` : ""}
+      </div>
+      <div class="sd-title${titleSize(title)}">${esc(hyphenate(title))}</div>
+      ${sub ? `<div class="sd-sub">${esc(sub)}</div>` : ""}
+      ${facts.length ? `<div class="sd-facts">${facts.map(([k, v]) => `<div><div class="sd-label">${k}</div><div class="sd-fact">${esc(v)}</div></div>`).join("")}</div>` : ""}
+    </div>`;
+}
+
+function sportDescription(main) {
+  if (!main?.description) return "";
+  const rows = parseExercises(main.description, main.icon === "dumbbell");
+  if (!rows) return `<div class="sd-card sd-text">${esc(main.description)}</div>`;
+  return `
+    <div class="sd-card">
+      <div class="sd-card-head"><span class="sd-label">ÜBUNGEN</span><span class="sd-label">SÄTZE × WDH.</span></div>
+      ${rows.map(([name, sets, reps]) => `
+        <div class="sd-ex"><span>${esc(name)}</span><span>${esc(sets ? `${sets} × ${reps}` : reps)}</span></div>`).join("")}
+    </div>`;
+}
+
+function sportMore(more) {
+  return more.map(([i, s]) => `
+    <div class="sd-more" data-session="${i}">
+      <span class="sd-label">AUCH HEUTE</span>
+      <span class="sd-more-title">${esc(s.title)}</span>
+      <span class="sd-more-meta">${esc([s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · "))}</span>
+      ${s.done ? `<span class="sd-more-done">✓ ERLEDIGT</span>` : ""}
+    </div>`).join("");
+}
+
+function sportWeather(w, today) {
+  return `
+    <div class="sd-card sd-weather">
+      <div class="sd-label">WETTER ${esc(w.place.toUpperCase())}</div>
+      <div class="sd-now"><span class="sd-temp">${w.temp}°</span><span class="sd-now-label">${esc(w.label)}</span><span class="sd-muted">nachts ${w.low}°</span></div>
+      ${w.forecast.slice(1, 7).map((f, k) => `
+        <div class="sd-row">
+          <span class="sd-dow">${DOW_SHORT[(today + 1 + k) % 7]}</span>
+          <span class="sd-row-title">${esc(f.label ?? "")}</span>
+          <span class="sd-hi">${f.hi}°</span><span class="sd-lo">${f.lo}°</span>
+        </div>`).join("")}
+    </div>`;
+}
+
+function sportWeek(plan, index) {
+  const rows = plan.days.slice(index + 1).map((day, k) => {
+    const s = day.sessions[0];
+    return `
+      <div class="sd-row">
+        <span class="sd-dow">${DOW_SHORT[index + 1 + k]}</span>
+        <span class="sd-dot"${s ? ` data-sport="${s.icon}"` : ""}></span>
+        <span class="sd-row-title${s ? "" : " sd-muted"}">${esc(s ? s.title : "Ruhetag")}</span>
+        <span class="sd-muted">${esc(s?.dur ?? "")}</span>
+      </div>`;
+  });
+  return `
+    <div class="sd-card sd-week">
+      <div class="sd-label">RESTLICHE WOCHE</div>
+      ${rows.length ? rows.join("") : `<div class="sd-row sd-muted">Keine weiteren Tage diese Woche</div>`}
+    </div>`;
+}
+
+function renderSportDay({ d, date, index, today, plan, weather, session }) {
+  const sessions = plan.days[index].sessions;
+  const main = sessions[session] ?? sessions[0];
+  const more = [...sessions.entries()].filter(([, s]) => s !== main);
+  return `
+    <section class="sportday">
+      <div class="sd-main">
+        <div class="sd-top">
+          <div class="kicker">${index === today ? "HEUTE · " : ""}${DOW_LONG[index]} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.</div>
+          <div class="dv-clock">${hhmm(d)}</div>
+        </div>
+        ${sportHero(main)}
+        ${sportDescription(main)}
+        <div class="dv-spacer"></div>
+        ${sportMore(more)}
+      </div>
+      <div class="sd-side">
+        ${weather?.forecast?.length ? sportWeather(weather, today) : ""}
+        ${sportWeek(plan, index)}
       </div>
     </section>`;
 }

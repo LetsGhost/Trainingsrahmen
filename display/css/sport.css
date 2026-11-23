@@ -1,0 +1,359 @@
+/* Theme „Sport · ganz neu“ (Trainingsrahmen in Holz.dc, S1–S8). Gleiches Markup wie Modern, nur umgestylt;
+   aktiv mit <html data-skin="sport">. Immer hell: Für die Nacht gibt es in der Vorlage keine Variante.
+   Kalk-Weiß als Fläche, jede Sportart in ihrer Erdfarbe, große Zahlen kursiv und breit, runde Formen. */
+
+/* Archivo als variable Schrift (Breite 62–125 %, kursiv), Google Fonts, SIL Open Font License 1.1. */
+@font-face {
+  font-family: "Archivo Sport";
+  src: url("../assets/fonts/Archivo-Var-latin.woff2") format("woff2");
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Archivo Sport";
+  src: url("../assets/fonts/Archivo-VarItalic-latin.woff2") format("woff2");
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-style: italic;
+  font-display: block;
+}
+
+:root[data-skin="sport"] {
+  --bg: #f2ebdd;
+  --ink: #1f1b16;
+  --paper: #fbf6ec;
+  --on-color: #fff6ea;
+  --accent: #b04a26;
+  --accent-ink: #b04a26;
+  --rule: rgba(31, 27, 22, 0.14);
+  --rule-soft: rgba(31, 27, 22, 0.14);
+  --muted: #6a6157;
+  --sub: #6a6157;
+  --label: #6a6157;
+  --today-col: transparent;
+  --today-date: var(--on-color);
+  --card: var(--paper);
+  --card-today: var(--paper);
+  --bar: #c9b49a;
+  --rest-bar: var(--rule);
+  --ok: #5e6b2e;
+  --warn: #b04a26;
+  --warn-fill: #b04a26;
+  --dim: #a69c8f;
+  /* Sportarten (Schlüssel = Icon-Name aus adapter.js) */
+  --c-run: #b04a26;
+  --c-bike: #c9922e;
+  --c-swim: #2f6470;
+  --c-strength: #5e6b2e;
+  --c-other: #7a5230;
+}
+
+:root[data-skin="sport"] .frame { font-family: "Archivo Sport", "Archivo", system-ui, sans-serif; }
+
+/* Startnummern-Zahlen */
+:root[data-skin="sport"] :is(.clock, .weather-temp, .recovery-value, .st-clock, .dv-clock, .rv-title, .rv-big, .rv-value,
+  .st-step-value, .pw-title) {
+  font-style: italic;
+  font-stretch: 125%;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+:root[data-skin="sport"] .rule { height: 1px; }
+
+/* Kopfzeile Wochenplan */
+:root[data-skin="sport"] .head { align-items: center; padding: 16px 18px 12px 20px; }
+:root[data-skin="sport"] .head .kicker { display: none; }
+:root[data-skin="sport"] .clock-row { gap: 14px; }
+:root[data-skin="sport"] .clock { font-size: 58px; line-height: 0.85; }
+:root[data-skin="sport"] .date { gap: 2px; }
+:root[data-skin="sport"] .date-dow { letter-spacing: 0.1em; }
+:root[data-skin="sport"] .date-day { font-size: 12px; letter-spacing: 0.02em; }
+:root[data-skin="sport"] .head + .rule { display: none; }
+
+:root[data-skin="sport"] .weather {
+  flex-direction: row-reverse; gap: 10px; height: 44px; padding: 0 16px; border-radius: 22px; background: var(--paper);
+}
+:root[data-skin="sport"] .weather-line { display: none; }
+:root[data-skin="sport"] .weather-place { font-size: 11px; letter-spacing: 0.06em; color: var(--muted); }
+:root[data-skin="sport"] .weather-now { border: 0; padding: 0; gap: 6px; }
+:root[data-skin="sport"] .weather-now .icon { width: 20px; height: 20px; color: var(--ink); }
+:root[data-skin="sport"] .weather-temp { font-size: 24px; }
+
+/* Wochenraster: Einheiten sind Farbblöcke, Höhe folgt der Dauer. Die 5 px Rand je Tag lassen Platz für den
+   Ring um die heutige Einheit. */
+:root[data-skin="sport"] .week { padding: 2px 9px 0; }
+:root[data-skin="sport"] .day { gap: 8px; padding: 0 5px 5px; border: 0; }
+:root[data-skin="sport"] .day.today { background: none; }
+:root[data-skin="sport"] .day-head { justify-content: center; align-items: center; height: 28px; flex-shrink: 0; border-radius: 14px; }
+:root[data-skin="sport"] .day-dow { font-size: 12px; letter-spacing: 0.08em; }
+:root[data-skin="sport"] .day-date { font-size: 12px; }
+:root[data-skin="sport"] .day.today .day-head { background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .day.today .day-dow { color: var(--on-color); }
+:root[data-skin="sport"] .day-bar { display: none; }
+
+:root[data-skin="sport"] .session {
+  --c: var(--c-other);
+  --c-text: var(--on-color);
+  justify-content: space-between;
+  gap: 4px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--c);
+  color: var(--c-text);
+  /* 60 min ≈ 83 px, 3 h ≈ 160 px wie in der Vorlage; lange Titel machen den Block höher statt abgeschnitten. */
+  flex-shrink: 0;
+  min-height: clamp(55px, calc(44px + var(--min, 45) * 0.65px), 160px);
+}
+:root[data-skin="sport"] .session[data-sport="footprints"] { --c: var(--c-run); }
+:root[data-skin="sport"] .session[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--ink); }
+:root[data-skin="sport"] .session[data-sport="waves"] { --c: var(--c-swim); }
+:root[data-skin="sport"] .session[data-sport="dumbbell"] { --c: var(--c-strength); }
+:root[data-skin="sport"] .session-top { color: inherit; }
+:root[data-skin="sport"] .session:not(.done) .session-top .icon { display: none; }
+:root[data-skin="sport"] .session-sport { color: inherit; opacity: 0.9; letter-spacing: 0.1em; }
+:root[data-skin="sport"] .session-title { font-size: 13px; font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; }
+:root[data-skin="sport"] .session-meta { margin-top: auto; font-size: 11px; letter-spacing: 0; color: inherit; }
+:root[data-skin="sport"] .session.done .session-top .icon { color: inherit; }
+:root[data-skin="sport"] .session.unplanned { background: none; color: var(--ink); border: 2px dashed var(--c); }
+:root[data-skin="sport"] .day.today .session { background: var(--c); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+:root[data-skin="sport"] .day.today .session.unplanned { background: none; }
+:root[data-skin="sport"] .day.today .session-top { color: inherit; }
+:root[data-skin="sport"] .day.dense .session { padding: 6px 8px; }
+
+:root[data-skin="sport"] .rest {
+  align-items: center; justify-content: center; height: 72px; padding: 0;
+  border: 2px dashed var(--rule); border-radius: 12px;
+}
+:root[data-skin="sport"] .rest .icon { display: none; }
+:root[data-skin="sport"] .rest-label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; }
+
+/* Fußzeile: Erholungswerte als Pillen */
+:root[data-skin="sport"] .foot { border-top: 1px solid var(--rule); padding: 10px 14px 12px 14px; }
+:root[data-skin="sport"] .week + .rule { display: none; }
+:root[data-skin="sport"] .recovery { gap: 8px; }
+:root[data-skin="sport"] .recovery-item {
+  flex-direction: row-reverse; align-items: baseline; gap: 6px; height: 40px; line-height: 40px; padding: 0 14px;
+  border-radius: 20px; background: var(--paper);
+}
+:root[data-skin="sport"] .recovery-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
+:root[data-skin="sport"] .recovery-value { font-size: 19px; }
+:root[data-skin="sport"] .frame .sync {
+  height: 40px; padding: 0 14px; margin: 0 0 0 auto; border-radius: 20px; background: var(--paper);
+  font-size: 11px; letter-spacing: 0.02em;
+}
+
+/* Tagesansicht (in der Vorlage nicht gezeichnet): Farbe der Sportart als Akzent */
+:root[data-skin="sport"] .dv-sport { --c: var(--c-other); }
+:root[data-skin="sport"] .dv-sport[data-sport="footprints"] { --c: var(--c-run); }
+:root[data-skin="sport"] .dv-sport[data-sport="bike"] { --c: var(--c-bike); }
+:root[data-skin="sport"] .dv-sport[data-sport="waves"] { --c: var(--c-swim); }
+:root[data-skin="sport"] .dv-sport[data-sport="dumbbell"] { --c: var(--c-strength); }
+:root[data-skin="sport"] .dv-sport .icon, :root[data-skin="sport"] .dv-sport-label { color: var(--c); }
+:root[data-skin="sport"] .dv-rule { height: 1px; }
+:root[data-skin="sport"] .dv-facts { border: 0; gap: 8px; }
+:root[data-skin="sport"] .dv-fact, :root[data-skin="sport"] .dv-fact:first-child {
+  width: auto; min-width: 94px; padding: 10px 14px; border: 0; border-radius: 14px; background: var(--paper);
+}
+:root[data-skin="sport"] .dv-clock { font-size: 22px; }
+:root[data-skin="sport"] .dv-recovery { border-top: 1px solid var(--rule); }
+:root[data-skin="sport"] .dv-divider { background: var(--rule); }
+:root[data-skin="sport"] .dv-exercises th { border-bottom-width: 1px; }
+
+/* Erholung (S4) */
+:root[data-skin="sport"] .rv-top { height: 64px; padding: 0 20px 0 12px; border-bottom: 1px solid var(--rule); }
+:root[data-skin="sport"] .rv-back { width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .rv-title { font-size: 22px; text-transform: uppercase; }
+:root[data-skin="sport"] .recoveryview { grid-template-columns: 330px minmax(0, 1fr); gap: 18px; padding: 16px 18px 18px 22px; }
+:root[data-skin="sport"] .rv-main { padding: 0; border: 0; }
+:root[data-skin="sport"] .dv-heading { font-size: 11px; letter-spacing: 0.16em; }
+:root[data-skin="sport"] .rv-score .dv-heading { color: var(--c-strength); }
+:root[data-skin="sport"] .rv-big { font-size: 150px; line-height: 0.8; }
+:root[data-skin="sport"] .rv-verdict {
+  align-self: flex-start; height: 28px; line-height: 28px; padding: 0 12px; margin-top: 16px; border-radius: 14px;
+  background: var(--ink); color: var(--on-color); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+:root[data-skin="sport"] .rv-text { padding: 0; border: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--ink); }
+:root[data-skin="sport"] .rv-battery { border: 0; }
+:root[data-skin="sport"] .rv-side { gap: 10px; }
+:root[data-skin="sport"] .rv-cell, :root[data-skin="sport"] .rv-cell + .rv-cell {
+  --c: var(--c-other); padding: 14px 16px; border: 0; border-left: 6px solid var(--c); border-radius: 16px; background: var(--paper);
+}
+:root[data-skin="sport"] .rv-cell:not(.rv-hrv):not(.rv-hr) { --c: var(--c-swim); }
+:root[data-skin="sport"] .rv-cell.rv-hr { --c: var(--c-run); }
+:root[data-skin="sport"] .rv-cell .dv-heading { color: var(--c); }
+:root[data-skin="sport"] .rv-value, :root[data-skin="sport"] .rv-hr .rv-value { font-size: 34px; line-height: 0.9; }
+:root[data-skin="sport"] .rv-sleep-bar { height: 10px; }
+:root[data-skin="sport"] .rv-sleep-bar > div, :root[data-skin="sport"] .rv-swatch, :root[data-skin="sport"] .rv-bar { border-radius: 3px; }
+:root[data-skin="sport"] .rv-deep { background: var(--c-swim); }
+:root[data-skin="sport"] .rv-light { background: #9dbbbf; }
+:root[data-skin="sport"] .rv-rem { background: var(--c-bike); }
+:root[data-skin="sport"] .rv-awake { border: 0; box-shadow: inset 0 0 0 2px var(--muted); }
+:root[data-skin="sport"] .rv-bar.today { background: var(--c-other); }
+:root[data-skin="sport"] .rv-bar.missing { border: 2px dashed var(--rule); }
+
+/* Einstellungen (S5–S7) */
+:root[data-skin="sport"] .st-head { height: 64px; padding: 0 20px 0 12px; }
+:root[data-skin="sport"] .frame .st-back {
+  height: 44px; padding: 0 18px 0 14px !important; border-radius: 22px; background: var(--ink); color: var(--on-color);
+  font-size: 14px; letter-spacing: 0.02em;
+}
+:root[data-skin="sport"] .st-back span:first-child { font-size: 18px; }
+:root[data-skin="sport"] .st-main { grid-template-columns: 150px minmax(0, 1fr); column-gap: 8px; }
+:root[data-skin="sport"] .st-divider { display: none; }
+:root[data-skin="sport"] .st-tabs { gap: 6px; padding: 16px 0 16px 14px; }
+:root[data-skin="sport"] .frame .st-tabs button {
+  height: 48px; padding: 0 18px; border: 0; border-radius: 24px; font-size: 13px; letter-spacing: 0.08em;
+}
+:root[data-skin="sport"] .frame .st-tabs button[aria-current] { background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .st-admin { padding: 0 18px; color: var(--muted); }
+:root[data-skin="sport"] .st-body { gap: 10px; padding: 16px 20px 18px 8px; }
+:root[data-skin="sport"] .st-modern, :root[data-skin="sport"] .st-rule { display: none; }
+:root[data-skin="sport"] .st-kicker { color: var(--muted); }
+:root[data-skin="sport"] .st-kicker.gap { margin-top: 12px; }
+
+/* Karten: Überschrift und Inhalt in einer Fläche; Bedienelemente darin auf Kalk statt Papier. */
+:root[data-skin="sport"] .st-card { display: flex; flex-direction: column; padding: 14px 16px; border-radius: 16px; background: var(--paper); flex-shrink: 0; }
+:root[data-skin="sport"] .st-card .st-seg, :root[data-skin="sport"] .frame .st-card .st-stepper button:not(:disabled) { background: var(--bg); }
+:root[data-skin="sport"] .st-card .st-seg { margin-top: 7px; }
+:root[data-skin="sport"] .st-card .st-hint { margin-top: 10px; }
+
+/* Status (S5 und S5+: Sync läuft, Fehler, Offline) */
+:root[data-skin="sport"] .st-wifi { margin: 0; padding: 12px 14px 12px 18px; border-radius: 16px; background: var(--paper); }
+:root[data-skin="sport"] .st-bars span { border-radius: 2px; }
+:root[data-skin="sport"] .st-bars span.on { background: var(--ok); }
+:root[data-skin="sport"] .st-wifi-name { font-size: 19px; letter-spacing: -0.01em; }
+:root[data-skin="sport"] .st-card:has(.st-sources) { padding: 10px 18px 4px; }
+:root[data-skin="sport"] .st-kicker-row { padding-bottom: 8px; }
+:root[data-skin="sport"] .st-note { font-size: 11px; letter-spacing: 0.1em; }
+:root[data-skin="sport"] .st-sources { margin: 0; }
+:root[data-skin="sport"] .st-src { border-bottom: 0; border-top: 1px solid var(--rule); }
+:root[data-skin="sport"] .st-dot { border-radius: 5px; background: var(--ok); }
+:root[data-skin="sport"] .st-src.dim .st-src-name, :root[data-skin="sport"] .st-src.dim .st-src-value { font-weight: 700; }
+:root[data-skin="sport"] .frame .st-sync { height: 50px; padding: 0 24px; border-radius: 25px; background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .frame .st-sync.busy { background: none; color: var(--ink); border-color: var(--ink); }
+:root[data-skin="sport"] .frame .st-sync.off { background: none; color: var(--dim); border-color: var(--rule); }
+:root[data-skin="sport"] .st-sync span:last-child { font-weight: 700; letter-spacing: 0; }
+:root[data-skin="sport"] .st-sync:not(.busy):not(.off) span:last-child { opacity: 0.8; }
+
+/* Halten (S7+): Füllung deckend, die Beschriftung wird hell. */
+:root[data-skin="sport"] .frame .st-hold {
+  width: auto; min-width: 200px; padding: 0 22px; border-color: var(--ink); border-radius: 22px; --fill: var(--ink);
+}
+:root[data-skin="sport"] .frame .st-hold.warn { border-color: var(--warn); --fill: var(--warn); }
+:root[data-skin="sport"] .st-hold.holding .st-hold-label { color: var(--on-color); }
+:root[data-skin="sport"] .frame .st-hold.big { width: 100%; height: 60px; padding: 0 30px; border-radius: 30px; }
+:root[data-skin="sport"] .st-hold.big .st-hold-label { font-size: 17px; }
+:root[data-skin="sport"] .st-holds { margin: 0; }
+:root[data-skin="sport"] .st-hint { margin: 0; padding-left: 4px; }
+
+/* Anzeige (S6) */
+:root[data-skin="sport"] .st-seg { gap: 4px; padding: 4px; border: 0; border-radius: 24px; background: var(--paper); }
+:root[data-skin="sport"] .frame .st-seg button { height: 40px; border-radius: 20px; letter-spacing: 0; }
+:root[data-skin="sport"] .frame .st-seg button + button { border: 0; }
+:root[data-skin="sport"] .frame .st-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .st-card:has(.st-step-row) { padding: 8px 16px; }
+:root[data-skin="sport"] .st-card:has(.st-step-row) .st-kicker { padding-top: 6px; }
+:root[data-skin="sport"] .st-step-row { border: 0; }
+:root[data-skin="sport"] .st-step-label { font-weight: 800; }
+:root[data-skin="sport"] .st-stepper { gap: 6px; }
+:root[data-skin="sport"] .frame .st-stepper button { width: 44px; border: 0; border-radius: 22px; background: var(--paper); }
+:root[data-skin="sport"] .frame .st-stepper button:disabled { background: none; box-shadow: inset 0 0 0 2px var(--rule); }
+:root[data-skin="sport"] .st-step-value { width: 76px; }
+
+/* System (S7) */
+:root[data-skin="sport"] .st-facts {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 10px; border-radius: 16px; background: var(--paper);
+}
+:root[data-skin="sport"] .st-fact {
+  flex-direction: column; align-items: flex-start; gap: 3px; height: auto; padding: 12px 14px; border: 0; border-radius: 14px;
+  background: var(--bg);
+}
+:root[data-skin="sport"] .st-fact span:first-child { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+:root[data-skin="sport"] .st-fact span:last-child { font-size: 17px; }
+
+/* Einrichtung (S2) */
+:root[data-skin="sport"] .su-steps { display: flex; gap: 8px; padding: 22px 32px 0; }
+:root[data-skin="sport"] .su-step-bar { display: none; }
+:root[data-skin="sport"] .su-step-text {
+  align-items: center; height: 34px; padding: 0 14px; border: 2px solid var(--rule); border-radius: 17px;
+}
+:root[data-skin="sport"] .su-step-label { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+:root[data-skin="sport"] .su-step.on .su-step-text { border-color: var(--ink); background: var(--ink); }
+:root[data-skin="sport"] .su-step.on :is(.su-step-n, .su-step-label) { color: var(--on-color); }
+:root[data-skin="sport"] .su-body { padding: 0 32px 28px; }
+:root[data-skin="sport"] .su-title { font-size: 40px; line-height: 1.02; letter-spacing: -0.025em; }
+:root[data-skin="sport"] .su-qr { width: 200px; height: 200px; padding: 25px; border-radius: 20px; }
+
+/* Neustart / Aus (S8): dunkel */
+:root[data-skin="sport"] .frame[data-screen="power"] {
+  --bg: var(--ink); --ink: var(--on-color); --muted: #bdb2a3; --rule: rgba(255, 246, 234, 0.18); --rule-soft: var(--rule);
+}
+:root[data-skin="sport"] .pw-bar { width: 120px; height: 10px; border-radius: 5px; }
+:root[data-skin="sport"] .pw-track { height: 10px; margin: 0 36px 34px; border-radius: 5px; overflow: hidden; }
+:root[data-skin="sport"] .pw .rule { display: none; }
+
+/* Tagesansicht Sport (Entwurf S3+, eigenes Markup aus day.js) */
+.sportday { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 14px; padding: 14px 16px 14px 20px; min-height: 0; }
+.sd-main, .sd-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; }
+.sd-side { gap: 12px; }
+.sd-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.sportday .dv-clock { font-size: 28px; }
+.sd-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--muted); }
+.sd-muted { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+.sd-hero {
+  --c: var(--c-other); --c-text: var(--on-color);
+  display: flex; flex-direction: column; padding: 14px 18px 16px; border-radius: 16px; background: var(--c); color: var(--c-text);
+  flex-shrink: 0;
+}
+.sd-hero:not([data-sport]) { --c: var(--paper); --c-text: var(--ink); }
+.sd-hero[data-sport="footprints"] { --c: var(--c-run); }
+.sd-hero[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--ink); }
+.sd-hero[data-sport="waves"] { --c: var(--c-swim); }
+.sd-hero[data-sport="dumbbell"] { --c: var(--c-strength); }
+.sd-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.sd-sport { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; }
+.sd-done { height: 28px; line-height: 28px; padding: 0 12px; border-radius: 14px; background: var(--paper); color: var(--ink); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+.sd-title { margin-top: 8px; font-size: 30px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; hyphens: manual; overflow-wrap: anywhere; }
+.sd-title.long { font-size: 25px; }
+.sd-title.longer { font-size: 20px; }
+.sd-sub { margin-top: 3px; font-size: 14px; font-weight: 600; opacity: 0.85; }
+.sd-facts { display: flex; gap: 28px; margin-top: 14px; }
+.sd-hero .sd-label { color: inherit; opacity: 0.85; }
+.sd-fact, .sd-ex span + span, .sd-temp, .sd-hi { font-style: italic; font-stretch: 125%; font-weight: 900; letter-spacing: -0.03em; }
+.sd-fact { font-size: 23px; line-height: 1.1; }
+
+.sd-card { display: flex; flex-direction: column; padding: 12px 16px; border-radius: 16px; background: var(--paper); flex-shrink: 0; }
+.sd-card-head { display: flex; justify-content: space-between; padding-bottom: 6px; }
+.sd-ex { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 30px; border-top: 1px solid var(--rule); }
+.sd-ex span:first-child { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-ex span + span { font-size: 18px; white-space: nowrap; }
+.sd-text { font-size: 13px; font-weight: 600; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+
+.sd-more {
+  display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 16px; border-radius: 14px; background: #d8c3a0; flex-shrink: 0;
+}
+.sd-more .sd-label { color: var(--ink); }
+.sd-more-title { font-size: 15px; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-more-meta { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.sd-more-done { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+
+.sd-now { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 6px; }
+.sd-temp { font-size: 42px; line-height: 0.9; }
+.sd-now-label { font-size: 14px; font-weight: 800; }
+.sd-row { display: flex; align-items: center; gap: 10px; height: 26px; border-top: 1px solid var(--rule); min-width: 0; }
+.sd-week .sd-label { padding-bottom: 6px; }
+.sd-dow { width: 24px; flex-shrink: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
+.sd-row-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-hi { font-size: 17px; }
+.sd-lo { width: 28px; text-align: right; font-size: 12px; font-weight: 600; color: var(--muted); }
+.sd-dot { --c: transparent; width: 10px; height: 10px; flex-shrink: 0; border-radius: 3px; background: var(--c); }
+.sd-dot[data-sport] { --c: var(--c-other); }
+.sd-dot[data-sport="footprints"] { --c: var(--c-run); }
+.sd-dot[data-sport="bike"] { --c: var(--c-bike); }
+.sd-dot[data-sport="waves"] { --c: var(--c-swim); }
+.sd-dot[data-sport="dumbbell"] { --c: var(--c-strength); }

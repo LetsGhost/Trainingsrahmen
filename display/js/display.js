@@ -16,11 +16,12 @@ const SETUP_DONE_MS = 4000;
 // So lange muss man WLAN ändern, Neustart und Herunterfahren gedrückt halten.
 const HOLD_MS = 2000;
 
-// Entwicklungs-Parameter: ?theme=dark|light, ?now=2026-09-09T18:42 (verstellte Uhr) und
-// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|system): Ansicht offen, ohne Rücksprung.
+// Entwicklungs-Parameter: ?theme=dark|light, ?skin=modern|sport, ?now=2026-09-09T18:42 (verstellte Uhr) und
+// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|customize|system): Ansicht offen, ohne Rücksprung.
 // Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
+const urlSkin = params.get("skin");
 const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
 const urlDay = ["recovery", "settings"].includes(params.get("day")) ? params.get("day") : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
@@ -50,7 +51,7 @@ function isoWeek(d) {
 }
 
 // Einstellungen aus dem Admin-Bereich (über /events); fehlen sie, gilt alles als an.
-const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true, brightness: "high" };
+const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" };
 const shownWeather = () => (settings().showWeather ? state.weather : null);
 const shownRecovery = () => (settings().showRecovery ? state.plan?.recovery ?? [] : []);
 
@@ -61,6 +62,7 @@ function applyTheme(d, screen) {
   const admin = settings().theme === "auto" ? null : settings().theme;
   const override = urlTheme ?? state.dev?.theme ?? admin;
   document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
+  document.documentElement.dataset.skin = urlSkin ?? settings().skin ?? "modern";
 }
 
 function renderHead(d, dates) {
@@ -100,7 +102,7 @@ function renderSession(s) {
   const meta = [s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · ");
   const cls = (s.done ? " done" : "") + (s.unplanned ? " unplanned" : "");
   return `
-    <div class="session${cls}">
+    <div class="session${cls}" data-sport="${s.icon}"${s.min ? ` style="--min: ${s.min}"` : ""}>
       <div class="session-top">${icon(s.done ? "circle-check" : s.icon)}<span class="session-sport">${esc(s.sport)}</span></div>
       <div class="session-title">${esc(hyphenate(s.title))}</div>
       ${meta ? `<div class="session-meta">${esc(meta)}</div>` : ""}
@@ -182,7 +184,7 @@ function render() {
     const index = state.openDay;
     frame.innerHTML = renderDay({
       d, index, date: weekDates(d)[index], today: dowIndex(d), plan: state.plan, weather: shownWeather(), recovery: shownRecovery(),
-      session: state.openSession
+      session: state.openSession, sport: document.documentElement.dataset.skin === "sport"
     });
   } else {
     const dates = weekDates(d);

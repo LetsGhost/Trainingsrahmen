@@ -452,3 +452,6 @@ body {
 .pw-track { height: 6px; background: var(--rule-soft); }
 .pw-track div { height: 100%; width: 0; background: var(--fill); animation: pw-fill linear forwards; }
 @keyframes pw-fill { to { width: 100%; } }
+
+/* Karten-Gruppen der Einstellungen: nur im Theme Sport sichtbar (sport.css), hier ohne eigene Box. */
+.st-card { display: contents; }
