@@ -12,6 +12,8 @@ polkit.addRule(function (action, subject) {
     var verb = action.lookup("verb");
     var units = ["trainingsrahmen.service", "trainingsrahmen-kiosk.service", "trainingsrahmen-update.service", "trainingsrahmen-hotspot.service"];
     if (units.indexOf(unit) >= 0 && ["start", "stop", "restart"].indexOf(verb) >= 0) return polkit.Result.YES;
+    // Rückfallweg von „systemctl reboot/poweroff“, wenn der Aufruf über logind scheitert.
+    if ((unit === "reboot.target" || unit === "poweroff.target") && verb === "start") return polkit.Result.YES;
   }
   return polkit.Result.NOT_HANDLED;
 });

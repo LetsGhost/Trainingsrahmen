@@ -39,52 +39,53 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
 
 ## 0. Aufspielen
 
-- [ ] Vorher notieren: `git -C ~/trainingsrahmen rev-parse --short HEAD` (alter Stand für den Rollback-Test).
-- [ ] Aktuellen Stand per **Update-Knopf** im Admin-Panel installieren (testet gleich den Normalfall).
+- [x] Vorher notieren: `git -C ~/trainingsrahmen rev-parse --short HEAD` (alter Stand für den Rollback-Test).
+- [x] Aktuellen Stand per **Update-Knopf** im Admin-Panel installieren (testet gleich den Normalfall).
   - Erwartet: „Lade Update“ → „Führe Update-Skript aus“ → „Starte neu“ → Erfolg; das Display lädt von selbst neu.
-- [ ] Danach einmal `~/trainingsrahmen/scripts/install-services.sh` ausführen. Der Update-Knopf bringt geänderte Units nicht mit, hier betrifft das `Restart=on-failure` in der Hotspot-Unit.
-- [ ] 🤖 `systemctl cat trainingsrahmen-hotspot | grep Restart` zeigt `Restart=on-failure`.
+- [x] Danach einmal `~/trainingsrahmen/scripts/install-services.sh` ausführen. Der Update-Knopf bringt geänderte Units nicht mit, hier betrifft das `Restart=on-failure` in der Hotspot-Unit.
+- [x] 🤖 `systemctl cat trainingsrahmen-hotspot | grep Restart` zeigt `Restart=on-failure`.
 
 ## 1. Grundbetrieb (Regression)
 
-- [ ] Nach `sudo reboot`: Plymouth-Splash → Kiosk mit Wochenraster, ohne weißes Aufblitzen und ohne Mauszeiger.
-- [ ] 🤖 Danach `./scripts/pi-check.sh` → „Alles OK.“; Bootzeit, RAM und Temperatur unten eintragen.
-- [ ] 🤖 Zeit vom Einschalten bis zum Plan stoppen: ____ s.
-- [ ] 🤖 `free -m` nach 10 min: Speicher in Benutzung ____ MB, Swap ____ MB.
-- [ ] 🤖 `vcgencmd measure_temp` nach 30 min: ____ °C.
-- [ ] Tag antippen → Tagesansicht; „Weitere Einheiten“ antippen → Einheit groß; nach 60 s ohne Berührung zurück zum Plan.
-- [ ] Fußleiste antippen → Erholungs-Ansicht, Werte plausibel.
-- [ ] Wetter stimmt mit dem eingestellten Ort.
+- [x] Nach `sudo reboot`: Plymouth-Splash → Kiosk mit Wochenraster, ohne weißes Aufblitzen und ohne Mauszeiger.
+- [x] 🤖 Danach `./scripts/pi-check.sh` → „Alles OK.“; Bootzeit, RAM und Temperatur unten eintragen.
+  - Bootzeit 41,4 s (Kernel 4,5 s + Userspace 36,9 s), Commit `f21843c`, keine Unterspannung oder Drosselung.
+- [x] 🤖 Zeit vom Einschalten bis zum Plan stoppen: 59 s (Systemlaufzeit laut `pi-check.sh`).
+- [x] 🤖 `free -m` nach 10 min: Speicher in Benutzung 416 MB, Swap 77 MB, verfügbar 488 MB von 905 MB. (Zum Vergleich nach 1 min: 449 MB, Swap 1 MB.)
+- [x] 🤖 `vcgencmd measure_temp` nach 30 min: 44.0 °C. (Zum Vergleich nach 1 min: 49,4 °C.)
+- [x] Tag antippen → Tagesansicht; „Weitere Einheiten“ antippen → Einheit groß; nach 60 s ohne Berührung zurück zum Plan.
+- [x] Fußleiste antippen → Erholungs-Ansicht, Werte plausibel.
+- [x] Wetter stimmt mit dem eingestellten Ort.
 
 ## 2. Einstellungen am Rahmen (neu)
 
 Öffnen per Tipp auf das Sync-Symbol.
 
-- [ ] **Status:** WLAN-Name und Signal stimmen, jede Quelle mit Stand; „Jetzt synchronisieren“ dreht und aktualisiert die Zeit.
-- [ ] **Anzeige → Helligkeit:** Niedrig / Mittel / Hoch sind sichtbar verschieden. Nachts im dunklen Raum: Ist „Niedrig“ angenehm, nicht zu hell? Falls nicht, Werte in `daemon/system/pi.js` (`BRIGHTNESS`) anpassen.
-  - [ ] 🤖 `ls /sys/class/backlight/` und `cat /sys/class/backlight/*/max_brightness` notieren: ____
-  - [ ] Dimmt das Display stufenlos, oder kennt es nur an und aus?
-- [ ] **Anzeige → Theme und Ruhe-Fristen** ändern; die Werte stimmen danach im Admin-Panel.
+- [x] **Status:** WLAN-Name und Signal stimmen, jede Quelle mit Stand; „Jetzt synchronisieren“ dreht und aktualisiert die Zeit.
+- [x] **Anzeige → Helligkeit:** Niedrig / Mittel / Hoch sind sichtbar verschieden. Nachts im dunklen Raum: Ist „Niedrig“ angenehm, nicht zu hell? Falls nicht, Werte in `daemon/system/pi.js` (`BRIGHTNESS`) anpassen.
+  - [x] 🤖 `ls /sys/class/backlight/` und `cat /sys/class/backlight/*/max_brightness` notieren: `10-0045`, `max_brightness` 255
+  - [x] Dimmt das Display stufenlos, oder kennt es nur an und aus?
+- [x] **Anzeige → Theme und Ruhe-Fristen** ändern; die Werte stimmen danach im Admin-Panel.
 - [ ] **Halten-Knöpfe** (WLAN ändern, Neustart, Herunterfahren):
-  - [ ] Kurz tippen löst nichts aus, der Balken läuft zurück.
-  - [ ] 2 s halten löst aus (zuerst „Neustart“ testen).
-  - [ ] Während des Haltens vom Knopf wegrutschen → bricht ab.
-  - [ ] Beim langen Drücken erscheint **kein** Kontextmenü und keine Textauswahl.
-  - [ ] Mit zwei Fingern gleichzeitig auf Neustart und Herunterfahren → höchstens eine Aktion.
-- [ ] 60 s ohne Berührung → zurück zum Plan.
-- [ ] 🤖 (`remote`) Von einem anderen Gerät aus: `curl -X POST -H 'content-type: application/json' -d '{}' http://rahmen.local:8080/api/frame/sync` liefert einen Fehler (nur localhost erlaubt).
+  - [x] Kurz tippen löst nichts aus, der Balken läuft zurück.
+  - [x] 2 s halten löst aus (zuerst „Neustart“ testen).
+  - [x] Während des Haltens vom Knopf wegrutschen → bricht ab.
+  - [x] Beim langen Drücken erscheint **kein** Kontextmenü und keine Textauswahl.
+  - [x] Mit zwei Fingern gleichzeitig auf Neustart und Herunterfahren → höchstens eine Aktion.
+- [x] 60 s ohne Berührung → zurück zum Plan.
+- [x] 🤖 (`remote`) Von einem anderen Gerät aus: `curl -X POST -H 'content-type: application/json' -d '{}' http://rahmen.local:8080/api/frame/sync` liefert einen Fehler (nur localhost erlaubt).
 
 ## 3. Admin-Panel
 
-- [ ] Login, falsches Passwort fünfmal → 30 s gesperrt, danach geht es wieder.
-- [ ] **Fix Helligkeit:** Am Rahmen „Niedrig“ wählen, dann im Admin Theme oder ein Modul umschalten → die Helligkeit bleibt „Niedrig“.
-- [ ] Dienste: Trainingsplan (Server-URL und API-Key), Garmin- und AthletePT-Key speichern (falscher Key wird abgelehnt, richtiger gespeichert). Das Portal fragt diese Zugänge nicht mehr ab.
-- [ ] Slideshow: 2–3 Bilder hochladen; nach der Ruhe-Frist läuft die Slideshow mit Überblendung, danach geht das Display aus.
+- [x] Login, falsches Passwort fünfmal → 30 s gesperrt, danach geht es wieder.
+- [x] **Fix Helligkeit:** Am Rahmen „Niedrig“ wählen, dann im Admin Theme oder ein Modul umschalten → die Helligkeit bleibt „Niedrig“.
+- [x] Dienste: Trainingsplan (Server-URL und API-Key), Garmin- und AthletePT-Key speichern (falscher Key wird abgelehnt, richtiger gespeichert). Das Portal fragt diese Zugänge nicht mehr ab.
+- [x] Slideshow: 2–3 Bilder hochladen; nach der Ruhe-Frist läuft die Slideshow mit Überblendung, danach geht das Display aus.
 
 ## 4. Ruhe, PIR und Wecken
 
-- [ ] Fristen kurz stellen (z. B. 1 und 2 min), weggehen → Slideshow → Display aus.
-- [ ] Vor den Sensor treten → Plan sofort zurück. Still sitzen bleiben → Plan bleibt, keine Slideshow. Weggehen → Fristen laufen erst ab dann (plus Haltezeit des Radars).
+- [x] Fristen kurz stellen (z. B. 1 und 2 min), weggehen → Slideshow → Display aus.
+- [x] Vor den Sensor treten → Plan sofort zurück. Still sitzen bleiben → Plan bleibt, keine Slideshow. Weggehen → Fristen laufen erst ab dann (plus Haltezeit des Radars).
 - [ ] Im Zustand AUS antippen → weckt nur und öffnet keinen Tag.
 
 ## 5. WLAN und Hotspot
@@ -95,8 +96,8 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
 - [ ] Router aus, ohne Daemon-Neustart → „Offline · Stand HH:MM“, der letzte Plan bleibt sichtbar.
 - [ ] Über Nacht offline lassen (oder die Uhr über Mitternacht stellen) → **Fix Erholung:** Garmin-Werte von gestern erscheinen nach dem nächsten Neuladen nicht mehr als heute.
 - [ ] „WLAN ändern“ (am Rahmen halten) → Hotspot `Rahmen-XXXX` erscheint, QR-Code funktioniert.
-  - [ ] Mit Android verbinden → das Portal öffnet sich von selbst.
-  - [ ] Mit iPhone verbinden → das Portal öffnet sich von selbst.
+  - [x] Mit Android verbinden → das Portal öffnet sich von selbst.
+  - [x] Mit iPhone verbinden → das Portal öffnet sich von selbst.
   - [ ] Falsches WLAN-Passwort → nach etwa 30 s Hotspot mit Fehlermeldung zurück.
   - [ ] Das Portal zeigt nur WLAN und Passwort.
   - [ ] Richtiges Passwort → verbunden, Plan erscheint; Admin-Passwort und Zugänge unter „Dienste“ bleiben erhalten.
