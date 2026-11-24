@@ -185,6 +185,15 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     if (s.setup === SETUP.ADMIN) setSetup(SETUP.READY, { error: null });
   }
 
+  // Admin-Passwort vergessen (nur am Display): zurück nach SETUP_ADMIN, das Display zeigt wieder den Einmal-Code.
+  // Offline bleibt der Zustand; onlineState() führt nach dem Wiederverbinden nach SETUP_ADMIN.
+  function resetAdmin() {
+    config.admin = null;
+    saveConfig(config);
+    if (s.setup === SETUP.READY) setSetup(SETUP.ADMIN);
+    else changed();
+  }
+
   // Online ⇄ OFFLINE. Ohne Internet wird das gespeicherte WLAN neu verbunden.
   async function check() {
     if (checking || !connected()) return;
@@ -257,7 +266,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   system.events.on("presence", on => { present = on; activity(); });
 
   return {
-    boot, snapshot, activity, portalOpened, submit, adminCompleted, reset, check, force, setDeadlines, changed,
+    boot, snapshot, activity, portalOpened, submit, adminCompleted, resetAdmin, reset, check, force, setDeadlines, changed,
     adminCode: () => s.adminCode,
     on: emitter.on.bind(emitter)
   };

@@ -105,7 +105,7 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
 
 ## 6. Update und Rollback
 
-- [ ] **Bereits aktuell:** „Nach Updates suchen“ ohne neuen Commit → „Bereits aktuell“.
+- [x] **Bereits aktuell:** „Nach Updates suchen“ ohne neuen Commit → „Bereits aktuell“.
 - [ ] **Lokale Änderungen:** `./scripts/deploy.sh` vom PC, dann einen neuen Commit pushen und im Admin „Installieren“ → Abbruch „Lokale Änderungen auf dem Rahmen“, nichts verändert. Danach `./scripts/deploy.sh --restore`.
 - [ ] **Rollback:** Testbranch mit einem `scripts/update.sh`, das mit `exit 1` endet, pushen; im Admin den Branch einstellen und installieren → Meldung „Update-Skript fehlgeschlagen. Zurück auf dem vorherigen Stand“, `git rev-parse HEAD` zeigt den alten Commit, der Rahmen läuft normal.
 - [ ] Danach den Branch im Admin wieder auf `master` stellen.

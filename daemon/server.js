@@ -270,6 +270,7 @@ const FRAME_ACTIONS = {
   sync: () => sync.syncAll(),
   settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines }),
   "wifi-reset": () => frame.reset({ keepAdmin: true }),
+  "admin-reset": () => admin.resetPassword(),
   reboot: () => system.power("reboot"),
   poweroff: () => system.power("poweroff")
 };

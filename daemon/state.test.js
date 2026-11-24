@@ -40,6 +40,15 @@ test("Einrichtung nur mit WLAN; WLAN ändern behält die Zugänge", async t => {
   await frame.submit({ wifi: { ssid: "Heim", password: "pw" } });
   assert.equal(frame.snapshot().setup, SETUP.READY);
   assert.deepEqual(config.wifi, { ssid: "Heim", password: "pw" });
+  // Passwort vergessen: zurück nach SETUP_ADMIN mit neuem Einmal-Code, Zugänge bleiben.
+  frame.resetAdmin();
+  assert.equal(config.admin, null);
+  assert.equal(frame.snapshot().setup, SETUP.ADMIN);
+  assert.ok(frame.adminCode());
+  assert.equal(config.server, server);
+  config.admin = { salt: "s", hash: "h" };
+  frame.adminCompleted();
+  assert.equal(frame.snapshot().setup, SETUP.READY);
   await frame.reset({ keepAdmin: true });
   assert.equal(config.wifi, null);
   assert.equal(config.server, server);

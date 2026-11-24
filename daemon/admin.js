@@ -371,7 +371,13 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     return true;
   }
 
-  return { route, isAuthed, updateSettings };
+  // Passwort vergessen: alle Sitzungen beenden; das neue Passwort wird wie bei der Ersteinrichtung gesetzt.
+  function resetPassword() {
+    sessions.clear();
+    frame.resetAdmin();
+  }
+
+  return { route, isAuthed, updateSettings, resetPassword };
 }
 
 module.exports = { createAdmin, hashPassword, verifyPassword };

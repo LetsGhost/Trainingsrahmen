@@ -136,6 +136,8 @@ function renderSystem({ d, daemon, app }) {
   return `
     <div class="st-kicker st-modern">GERÄT</div>
     <div class="st-facts">${rows.map(([k, v]) => `<div class="st-fact"><span>${k}</span><span>${esc(v)}</span></div>`).join("")}</div>
+    <div class="st-kicker st-modern">ADMIN-BEREICH</div>
+    <div class="st-holds">${hold("admin-reset", "Passwort zurücksetzen", { warn: true })}</div>
     <div class="st-grow"></div>
     <div class="st-kicker st-modern">NEUSTART &amp; AUS</div>
     <div class="st-holds">${hold("reboot", "Neu starten", { big: true })}${hold("poweroff", "Herunterfahren", { big: true, warn: true })}</div>

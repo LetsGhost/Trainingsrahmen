@@ -312,7 +312,10 @@ async function power(action) {
   }
 }
 
-const HOLD_ACTIONS = { "wifi-reset": () => frameAction("wifi-reset").then(render), reboot: () => power("reboot"), poweroff: () => power("poweroff") };
+const HOLD_ACTIONS = {
+  "wifi-reset": () => frameAction("wifi-reset").then(render),
+  "admin-reset": () => frameAction("admin-reset").then(render),
+  reboot: () => power("reboot"), poweroff: () => power("poweroff") };
 
 // Halten: Füllung per CSS-Übergang; nach 2 s löst die Aktion aus, Loslassen vorher bricht ab.
 let holdTimer = null;

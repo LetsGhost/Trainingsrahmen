@@ -74,7 +74,7 @@ function showSetup() {
   app.innerHTML = authLayout(`
     <div class="field">
       <h1>Passwort festlegen</h1>
-      <div class="muted">Letzter Schritt der Einrichtung. Mit diesem Passwort meldest du dich künftig hier an.</div>
+      <div class="muted">Mit diesem Passwort meldest du dich künftig hier an.</div>
     </div>
     <div class="field"${code ? " hidden" : ""}>
       <label class="label" for="code">CODE VOM DISPLAY</label>
@@ -111,7 +111,8 @@ function showLogin() {
     ${passwordField("password", "PASSWORT", "current-password")}
     <button class="primary" id="submit"><span>Anmelden</span><span>→</span></button>
     <div class="msg" id="auth-msg"></div>
-    <div class="muted" style="font-size:12px">Sitzung bleibt 12 h aktiv</div>`);
+    <div class="muted" style="font-size:12px">Sitzung bleibt 12 h aktiv</div>
+    <div class="muted" style="font-size:12px">Passwort vergessen? Am Rahmen unter Einstellungen → System → Passwort zurücksetzen.</div>`);
   $("#password").focus();
   $("#auth").addEventListener("submit", async e => {
     e.preventDefault();
