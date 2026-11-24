@@ -86,7 +86,7 @@ Was ohne Hand und Auge geht, misst und prüft das Skript. Die mit 🤖 markierte
 
 - [x] Fristen kurz stellen (z. B. 1 und 2 min), weggehen → Slideshow → Display aus.
 - [x] Vor den Sensor treten → Plan sofort zurück. Still sitzen bleiben → Plan bleibt, keine Slideshow. Weggehen → Fristen laufen erst ab dann (plus Haltezeit des Radars).
-- [ ] Im Zustand AUS antippen → weckt nur und öffnet keinen Tag.
+- [x] Im Zustand AUS antippen → weckt nur und öffnet keinen Tag.
 
 ## 5. WLAN und Hotspot
 
