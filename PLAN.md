@@ -18,7 +18,7 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Einstellungen am Rahmen | Tipp auf das Sync-Symbol öffnet `Einstellungen.dc.html`: Tabs Status (WLAN, Quellen, Jetzt synchronisieren, WLAN ändern), Anzeige (Helligkeit 3 Stufen, Theme, Ruhe-Fristen), System (Software, Laufzeit, CPU, Neustart, Herunterfahren). Ohne Login, `POST /api/frame/*` nur von localhost; WLAN ändern, Neustart und Herunterfahren 2 s halten. 60 s ohne Berührung → zurück zum Plan |
 | Einrichtung | Hotspot `Rahmen-XXXX`; das Handy trägt im Portal nur das WLAN ein; danach führt ein QR-Code mit Einmal-Code in den Admin-Bereich, wo das Admin-Passwort festgelegt und unter „Dienste“ Server-URL und API-Key (optional AthletePT, Garmin) eingetragen werden |
 | Admin | Login und Panel unter `rahmen.local:8080/admin`, nur im Heimnetz; Passwort als scrypt-Hash, Sitzung 12 h; Knöpfe für Neustart und Herunterfahren des Pi (`systemctl reboot`/`poweroff`, erlaubt per polkit) |
-| Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (Standard `origin/master`), bei Neuem `git pull` und `scripts/update.sh` |
+| Updates | Git-Repo, nur per Knopf im Admin-Panel: `git fetch` eines festen Branches (fest `origin/production`), bei Neuem `git pull` und `scripts/update.sh` |
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | 24-GHz-Radar-Präsenzsensor (z. B. HLK-LD2410), OUT an einem GPIO-Pin |
 | Slideshow | Nur Bilder, Upload über das Admin-Panel |

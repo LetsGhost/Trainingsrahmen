@@ -25,7 +25,7 @@ const DEFAULTS = {
   // (beides nur in den Einstellungen am Rahmen)
   display: { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" },
   // Update-Knopf: von diesem Remote und Branch wird gezogen.
-  update: { remote: "origin", branch: "master" }
+  update: { remote: "origin", branch: "production" }
 };
 
 function load() {
@@ -35,7 +35,8 @@ function load() {
       ...DEFAULTS,
       ...saved,
       display: { ...DEFAULTS.display, ...saved.display },
-      update: { ...DEFAULTS.update, ...saved.update }
+      // Update-Quelle ist fest, alte gespeicherte Werte (z. B. master) zählen nicht.
+      update: { ...DEFAULTS.update }
     };
   } catch {
     return { ...DEFAULTS, display: { ...DEFAULTS.display }, update: { ...DEFAULTS.update } };

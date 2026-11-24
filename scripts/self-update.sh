@@ -11,7 +11,7 @@ set -uo pipefail
 APP_DIR="${FRAME_UPDATE_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 DATA_DIR="${FRAME_DATA:-$APP_DIR/data}"
 REMOTE="${FRAME_UPDATE_REMOTE:-origin}"
-BRANCH="${FRAME_UPDATE_BRANCH:-master}"
+BRANCH="${FRAME_UPDATE_BRANCH:-production}"
 HEALTH_URL="${FRAME_HEALTH_URL:-http://localhost:8080/health}"
 RESTART_CMD="${FRAME_RESTART_CMD:-systemctl restart trainingsrahmen.service}"
 HEALTH_TIMEOUT_S=30

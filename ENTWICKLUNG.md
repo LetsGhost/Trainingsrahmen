@@ -78,7 +78,7 @@ Der Daemon holt den Plan alle 10 min (`GET {url}/data` mit `x-api-key`) und das 
 
 ## Update per Knopf
 
-Admin-Panel → „Software“: „Nach Updates suchen“ macht `git fetch` von `config.update` (Standard `origin/master`) und listet neue Commits; „Installieren“ startet `scripts/self-update.sh`. Das zieht, führt `scripts/update.sh` aus, startet den Daemon neu und wartet, bis `/health` den neuen Commit meldet. Sonst geht es zurück auf den vorherigen Commit.
+Admin-Panel → „Software“: „Nach Updates suchen“ macht `git fetch` von `config.update` (fest `origin/production`) und listet neue Commits; „Installieren“ startet `scripts/self-update.sh`. Das zieht, führt `scripts/update.sh` aus, startet den Daemon neu und wartet, bis `/health` den neuen Commit meldet. Sonst geht es zurück auf den vorherigen Commit.
 
 - Schritte, die ein Update braucht, gehören in `scripts/update.sh`. Endet es mit Fehler, wird zurückgerollt.
 - In der Entwicklung verweigert der Daemon „Installieren“, solange `FRAME_UPDATE_DIR` nicht auf einen Test-Klon zeigt. So zieht ein Klick nie in dieses Arbeitsverzeichnis.
