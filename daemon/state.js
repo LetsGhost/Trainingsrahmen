@@ -85,29 +85,17 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     };
   }
 
-  // waking: Das Display wird gerade weich eingeschaltet (rund 1 s, system/pi.js). Solange wird nichts gemeldet, sonst liefe
-  // die Aufwach-Animation im Dunkeln ab; danach geht der aktuelle Stand in einem Zug raus.
-  let waking = false;
-  const changed = () => {
-    if (!waking) emitter.emit("change", snapshot());
-  };
+  const changed = () => emitter.emit("change", snapshot());
 
   // --- Ruhe ---
 
-  // Gibt zurück, ob sich etwas geändert hat. soft: weich aufwachen (Radar); sonst sofort (Tipp).
-  function setRest(next, soft = false) {
+  // Gibt zurück, ob sich etwas geändert hat.
+  function setRest(next) {
     if (s.rest === next) return false;
     const wasOff = s.rest === REST.OFF;
     s.rest = next;
     if (next === REST.OFF) system.setBacklight(false);
-    else if (wasOff && !soft) system.setBacklight(true);
-    else if (wasOff) {
-      waking = true;
-      Promise.resolve(system.setBacklight(true, true)).catch(() => {}).finally(() => {
-        waking = false;
-        changed();
-      });
-    }
+    else if (wasOff) system.setBacklight(true);
     return true;
   }
 
@@ -131,11 +119,10 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     }
   }
 
-  // Touch am Display oder Bewegung am PIR. soft: Der Radar sieht einen schon von Weitem, da darf das Aufwachen
-  // eine Sekunde dauern und weich sein; ein Tipp muss sofort Bild geben.
-  function activity(soft = false) {
+  // Touch am Display oder Bewegung am PIR.
+  function activity() {
     if (!operating()) return;
-    if (setRest(REST.ACTIVE, soft)) changed();
+    if (setRest(REST.ACTIVE)) changed();
     scheduleRest();
   }
 
@@ -277,7 +264,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     if (night === was || !operating()) return;
     // Ohne Präsenz laufen die Fristen schon; neu starten würde das Ausschalten nur verschieben.
     if (night && radar) scheduleRest();
-    else if (radar) activity(true);
+    else if (radar) activity();
   }
 
   function setNight(next) {
@@ -307,7 +294,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   system.events.on("motion", activity); // Mock/Dev-Leiste
   system.events.on("presence", on => {
     radar = on;
-    if (!night) activity(true);
+    if (!night) activity();
   });
   setInterval(checkNight, MIN).unref?.();
 

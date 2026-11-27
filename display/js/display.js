@@ -194,7 +194,6 @@ function render() {
 }
 
 function draw(d, screen) {
-  const woke = frame.dataset.screen === "off" && screen !== "off";
   applyTheme(d, screen);
   frame.dataset.screen = screen;
   if (screen !== "slideshow") stopSlideshow();
@@ -225,7 +224,6 @@ function draw(d, screen) {
     const dates = weekDates(d);
     frame.innerHTML = renderHead(d, dates) + `<div class="rule"></div>` + renderWeek(d, dates) + `<div class="rule"></div>` + renderFoot();
   }
-  if (woke) motion.wake(frame).then(flushRender);
 }
 
 // null, solange der Daemon noch keinen Stand hat (404).

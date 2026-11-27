@@ -195,12 +195,3 @@ export async function fade(frame, _src, apply) {
     anim(old, [{ opacity: 1 }, { opacity: 0 }], 900, EASE)
   ]));
 }
-
-// Aufwachen aus AUS: Schwarz blendet aus, der Inhalt wächst minimal auf.
-export async function wake(frame) {
-  const black = surface(3, "#000");
-  await run(frame, [black], () => Promise.all([
-    anim(black, [{ opacity: 1 }, { opacity: 0 }], 600, EASE),
-    anim(frame, [{ transform: "scale(.985)" }, { transform: "none" }], 600, EASE_OUT)
-  ]));
-}
