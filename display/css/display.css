@@ -215,6 +215,8 @@ body {
 
 /* AUS: Backlight ist aus; am PC bleibt der Rahmen schwarz. */
 .frame[data-screen="off"] { background: #000; }
+/* Einrichtung in den Farben von Boot-Splash und Update-Screen: schwarz, nur Graustufen, kein Akzent. */
+.frame[data-screen="setup"] { --bg: #111; --ink: #ededed; --accent: #ededed; --muted: #8a8a8a; --rule: #3a3a3a; --rule-soft: #3a3a3a; --on-ink: #111; }
 
 /* Tagesansicht (Layout 1B) */
 .dayview { flex: 1; display: grid; grid-template-columns: 470px 2px 1fr; min-height: 0; }
