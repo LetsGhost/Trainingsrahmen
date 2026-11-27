@@ -1,5 +1,5 @@
 /* Theme „Sport · ganz neu“ (Trainingsrahmen in Holz.dc, S1–S8). Gleiches Markup wie Modern, nur umgestylt;
-   aktiv mit <html data-skin="sport">. Immer hell: Für die Nacht gibt es in der Vorlage keine Variante.
+   aktiv mit <html data-skin="sport">. Hell laut Vorlage; die dunkle Variante (data-theme="dark") ist daraus abgeleitet.
    Kalk-Weiß als Fläche, jede Sportart in ihrer Erdfarbe, große Zahlen kursiv und breit, runde Formen. */
 
 /* Archivo als variable Schrift (Breite 62–125 %, kursiv), Google Fonts, SIL Open Font License 1.1. */
@@ -48,6 +48,38 @@
   --c-swim: #2f6470;
   --c-strength: #5e6b2e;
   --c-other: #7a5230;
+  --swim-light: #9dbbbf;
+  --more-bg: #d8c3a0;
+  /* Schrift auf Flächen in --ink bzw. auf Senf (Rad); --on-color bleibt die helle Schrift auf den Sportfarben. */
+  --on-ink: var(--on-color);
+  --on-bike: #1f1b16;
+}
+
+:root[data-skin="sport"][data-theme="dark"] {
+  --bg: #1c1915;
+  --ink: #f2ebdd;
+  --paper: #27231e;
+  --accent: #c2552f;
+  --accent-ink: #c2552f;
+  --rule: rgba(242, 235, 221, 0.14);
+  --rule-soft: rgba(242, 235, 221, 0.14);
+  --muted: #a89d8f;
+  --sub: #a89d8f;
+  --label: #a89d8f;
+  --today-date: var(--on-ink);
+  --bar: #5a4e40;
+  --ok: #8a9a48;
+  --warn: #c2552f;
+  --warn-fill: #c2552f;
+  --dim: #6f665b;
+  --c-run: #c2552f;
+  --c-bike: #d6a03a;
+  --c-swim: #3a7a87;
+  --c-strength: #6f7e36;
+  --c-other: #8d6139;
+  --swim-light: #7fa5ab;
+  --more-bg: #4a3f31;
+  --on-ink: #1c1915;
 }
 
 :root[data-skin="sport"] .frame { font-family: "Archivo Sport", "Archivo", system-ui, sans-serif; }
@@ -90,8 +122,8 @@
 :root[data-skin="sport"] .day-head { justify-content: center; align-items: center; height: 28px; flex-shrink: 0; border-radius: 14px; }
 :root[data-skin="sport"] .day-dow { font-size: 12px; letter-spacing: 0.08em; }
 :root[data-skin="sport"] .day-date { font-size: 12px; }
-:root[data-skin="sport"] .day.today .day-head { background: var(--ink); color: var(--on-color); }
-:root[data-skin="sport"] .day.today .day-dow { color: var(--on-color); }
+:root[data-skin="sport"] .day.today .day-head { background: var(--ink); color: var(--on-ink); }
+:root[data-skin="sport"] .day.today .day-dow { color: var(--on-ink); }
 :root[data-skin="sport"] .day-bar { display: none; }
 
 :root[data-skin="sport"] .session {
@@ -109,7 +141,7 @@
   min-height: clamp(55px, calc(44px + var(--min, 45) * 0.65px), 160px);
 }
 :root[data-skin="sport"] .session[data-sport="footprints"] { --c: var(--c-run); }
-:root[data-skin="sport"] .session[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--ink); }
+:root[data-skin="sport"] .session[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--on-bike); }
 :root[data-skin="sport"] .session[data-sport="waves"] { --c: var(--c-swim); }
 :root[data-skin="sport"] .session[data-sport="dumbbell"] { --c: var(--c-strength); }
 :root[data-skin="sport"] .session-top { color: inherit; }
@@ -165,7 +197,7 @@
 
 /* Erholung (S4) */
 :root[data-skin="sport"] .rv-top { height: 64px; padding: 0 20px 0 12px; border-bottom: 1px solid var(--rule); }
-:root[data-skin="sport"] .rv-back { width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .rv-back { width: 44px; height: 44px; border: 0; border-radius: 22px; background: var(--ink); color: var(--on-ink); }
 :root[data-skin="sport"] .rv-title { font-size: 22px; text-transform: uppercase; }
 :root[data-skin="sport"] .recoveryview { grid-template-columns: 330px minmax(0, 1fr); gap: 18px; padding: 16px 18px 18px 22px; }
 :root[data-skin="sport"] .rv-main { padding: 0; border: 0; }
@@ -174,7 +206,7 @@
 :root[data-skin="sport"] .rv-big { font-size: 150px; line-height: 0.8; }
 :root[data-skin="sport"] .rv-verdict {
   align-self: flex-start; height: 28px; line-height: 28px; padding: 0 12px; margin-top: 16px; border-radius: 14px;
-  background: var(--ink); color: var(--on-color); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--ink); color: var(--on-ink); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
 }
 :root[data-skin="sport"] .rv-text { padding: 0; border: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--ink); }
 :root[data-skin="sport"] .rv-battery { border: 0; }
@@ -189,7 +221,7 @@
 :root[data-skin="sport"] .rv-sleep-bar { height: 10px; }
 :root[data-skin="sport"] .rv-sleep-bar > div, :root[data-skin="sport"] .rv-swatch, :root[data-skin="sport"] .rv-bar { border-radius: 3px; }
 :root[data-skin="sport"] .rv-deep { background: var(--c-swim); }
-:root[data-skin="sport"] .rv-light { background: #9dbbbf; }
+:root[data-skin="sport"] .rv-light { background: var(--swim-light); }
 :root[data-skin="sport"] .rv-rem { background: var(--c-bike); }
 :root[data-skin="sport"] .rv-awake { border: 0; box-shadow: inset 0 0 0 2px var(--muted); }
 :root[data-skin="sport"] .rv-bar.today { background: var(--c-other); }
@@ -198,7 +230,7 @@
 /* Einstellungen (S5–S7) */
 :root[data-skin="sport"] .st-head { height: 64px; padding: 0 20px 0 12px; }
 :root[data-skin="sport"] .frame .st-back {
-  height: 44px; padding: 0 18px 0 14px !important; border-radius: 22px; background: var(--ink); color: var(--on-color);
+  height: 44px; padding: 0 18px 0 14px !important; border-radius: 22px; background: var(--ink); color: var(--on-ink);
   font-size: 14px; letter-spacing: 0.02em;
 }
 :root[data-skin="sport"] .st-back span:first-child { font-size: 18px; }
@@ -208,7 +240,7 @@
 :root[data-skin="sport"] .frame .st-tabs button {
   height: 48px; padding: 0 18px; border: 0; border-radius: 24px; font-size: 13px; letter-spacing: 0.08em;
 }
-:root[data-skin="sport"] .frame .st-tabs button[aria-current] { background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .frame .st-tabs button[aria-current] { background: var(--ink); color: var(--on-ink); }
 :root[data-skin="sport"] .st-admin { padding: 0 18px; color: var(--muted); }
 :root[data-skin="sport"] .st-body { gap: 10px; padding: 16px 20px 18px 8px; }
 :root[data-skin="sport"] .st-modern, :root[data-skin="sport"] .st-rule { display: none; }
@@ -233,7 +265,7 @@
 :root[data-skin="sport"] .st-src { border-bottom: 0; border-top: 1px solid var(--rule); }
 :root[data-skin="sport"] .st-dot { border-radius: 5px; background: var(--ok); }
 :root[data-skin="sport"] .st-src.dim .st-src-name, :root[data-skin="sport"] .st-src.dim .st-src-value { font-weight: 700; }
-:root[data-skin="sport"] .frame .st-sync { height: 50px; padding: 0 24px; border-radius: 25px; background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .frame .st-sync { height: 50px; padding: 0 24px; border-radius: 25px; background: var(--ink); color: var(--on-ink); }
 :root[data-skin="sport"] .frame .st-sync.busy { background: none; color: var(--ink); border-color: var(--ink); }
 :root[data-skin="sport"] .frame .st-sync.off { background: none; color: var(--dim); border-color: var(--rule); }
 :root[data-skin="sport"] .st-sync span:last-child { font-weight: 700; letter-spacing: 0; }
@@ -244,7 +276,7 @@
   width: auto; min-width: 200px; padding: 0 22px; border-color: var(--ink); border-radius: 22px; --fill: var(--ink);
 }
 :root[data-skin="sport"] .frame .st-hold.warn { border-color: var(--warn); --fill: var(--warn); }
-:root[data-skin="sport"] .st-hold.holding .st-hold-label { color: var(--on-color); }
+:root[data-skin="sport"] .st-hold.holding .st-hold-label { color: var(--on-ink); }
 :root[data-skin="sport"] .frame .st-hold.big { width: 100%; height: 60px; padding: 0 30px; border-radius: 30px; }
 :root[data-skin="sport"] .st-hold.big .st-hold-label { font-size: 17px; }
 :root[data-skin="sport"] .st-holds { margin: 0; }
@@ -254,7 +286,7 @@
 :root[data-skin="sport"] .st-seg { gap: 4px; padding: 4px; border: 0; border-radius: 24px; background: var(--paper); }
 :root[data-skin="sport"] .frame .st-seg button { height: 40px; border-radius: 20px; letter-spacing: 0; }
 :root[data-skin="sport"] .frame .st-seg button + button { border: 0; }
-:root[data-skin="sport"] .frame .st-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-color); }
+:root[data-skin="sport"] .frame .st-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
 :root[data-skin="sport"] .st-card:has(.st-step-row) { padding: 8px 16px; }
 :root[data-skin="sport"] .st-card:has(.st-step-row) .st-kicker { padding-top: 6px; }
 :root[data-skin="sport"] .st-step-row { border: 0; }
@@ -283,14 +315,14 @@
 }
 :root[data-skin="sport"] .su-step-label { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 :root[data-skin="sport"] .su-step.on .su-step-text { border-color: var(--ink); background: var(--ink); }
-:root[data-skin="sport"] .su-step.on :is(.su-step-n, .su-step-label) { color: var(--on-color); }
+:root[data-skin="sport"] .su-step.on :is(.su-step-n, .su-step-label) { color: var(--on-ink); }
 :root[data-skin="sport"] .su-body { padding: 0 32px 28px; }
 :root[data-skin="sport"] .su-title { font-size: 40px; line-height: 1.02; letter-spacing: -0.025em; }
 :root[data-skin="sport"] .su-qr { width: 200px; height: 200px; padding: 25px; border-radius: 20px; }
 
-/* Neustart / Aus (S8): dunkel */
+/* Neustart / Aus (S8): in beiden Themes dunkel, daher feste Werte statt Tokens */
 :root[data-skin="sport"] .frame[data-screen="power"] {
-  --bg: var(--ink); --ink: var(--on-color); --muted: #bdb2a3; --rule: rgba(255, 246, 234, 0.18); --rule-soft: var(--rule);
+  --bg: #1f1b16; --ink: #fff6ea; --muted: #bdb2a3; --rule: rgba(255, 246, 234, 0.18); --rule-soft: var(--rule);
 }
 :root[data-skin="sport"] .pw-bar { width: 120px; height: 10px; border-radius: 5px; }
 :root[data-skin="sport"] .pw-track { height: 10px; margin: 0 36px 34px; border-radius: 5px; overflow: hidden; }
@@ -312,7 +344,7 @@
 }
 .sd-hero:not([data-sport]) { --c: var(--paper); --c-text: var(--ink); }
 .sd-hero[data-sport="footprints"] { --c: var(--c-run); }
-.sd-hero[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--ink); }
+.sd-hero[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--on-bike); }
 .sd-hero[data-sport="waves"] { --c: var(--c-swim); }
 .sd-hero[data-sport="dumbbell"] { --c: var(--c-strength); }
 .sd-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
@@ -335,7 +367,7 @@
 .sd-text { font-size: 13px; font-weight: 600; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 
 .sd-more {
-  display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 16px; border-radius: 14px; background: #d8c3a0; flex-shrink: 0;
+  display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 16px; border-radius: 14px; background: var(--more-bg); flex-shrink: 0;
 }
 .sd-more .sd-label { color: var(--ink); }
 .sd-more-title { font-size: 15px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
