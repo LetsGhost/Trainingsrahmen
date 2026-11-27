@@ -273,7 +273,7 @@ async function handleDebug(req, res) {
 // Ohne Admin-Login, dafür nur vom Display auf dem Pi (localhost). Gefährliches bestätigt das Display durch 2 s Halten.
 const FRAME_ACTIONS = {
   sync: () => sync.syncAll(),
-  settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines, sensor: body.sensor }),
+  settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines, sensor: body.sensor, night: body.night }),
   "wifi-reset": () => frame.reset({ keepAdmin: true }),
   "admin-reset": () => admin.resetPassword(),
   reboot: () => system.power("reboot"),

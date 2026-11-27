@@ -42,6 +42,13 @@ function validate({ wifi } = {}) {
   return { wifi: { ssid, password: String(wifi.password ?? "") } };
 }
 
+// Liegt die Stunde von now in der Nachtruhe { from, to }? from > to geht über Mitternacht.
+function isNight(night, now = new Date()) {
+  if (night?.from == null) return false;
+  const h = now.getHours();
+  return night.from > night.to ? h >= night.from || h < night.to : h >= night.from && h < night.to;
+}
+
 function createFrame({ system, config, saveConfig, hasImages }) {
   const emitter = new EventEmitter();
   // connectingTo: WLAN-Name, solange nach dem Absenden verbunden wird.
@@ -51,7 +58,10 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     adminCode: null
   };
   let restTimers = [];
-  let present = false;
+  // radar: Pegel des Sensors. In der Nachtruhe zählt er nicht, damit das Display im Schlaf nicht angeht.
+  let radar = false;
+  let night = isNight(config.night);
+  const present = () => radar && !night;
   let retryTimer = null;
   let checkTimer = null;
   let checking = false;
@@ -70,6 +80,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin },
       display: config.display,
       sensor: config.sensor,
+      night: config.night,
       system: system.status()
     };
   }
@@ -96,7 +107,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   function scheduleRest() {
     clearRestTimers();
     // Solange der Radar jemanden sieht, laufen keine Fristen; sie starten erst, wenn er wieder geht.
-    if (!operating() || present) return;
+    if (!operating() || present()) return;
     const toSlideshow = config.slideshowAfterMin * MIN;
     const toOff = config.offAfterMin * MIN;
     // Ohne Bilder geht das Display nach der ersten Frist direkt aus.
@@ -245,6 +256,22 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     changed();
   }
 
+  // Beginn der Nachtruhe: Fristen neu starten, auch wenn der Radar gerade jemanden sieht.
+  // Ende: wer dann da ist, weckt das Display wie sonst auch.
+  function checkNight() {
+    const was = night;
+    night = isNight(config.night);
+    if (night === was || !operating()) return;
+    if (night) scheduleRest();
+    else if (radar) activity();
+  }
+
+  function setNight(next) {
+    config.night = next;
+    checkNight();
+    changed();
+  }
+
   // --- Nur für die Dev-Leiste ---
 
   // Ein erzwungener verbundener Zustand verbindet auch das (Mock-)WLAN, sonst stellt die
@@ -264,13 +291,17 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   }
 
   system.events.on("motion", activity); // Mock/Dev-Leiste
-  system.events.on("presence", on => { present = on; activity(); });
+  system.events.on("presence", on => {
+    radar = on;
+    if (!night) activity();
+  });
+  setInterval(checkNight, MIN).unref?.();
 
   return {
-    boot, snapshot, activity, portalOpened, submit, adminCompleted, resetAdmin, reset, check, force, setDeadlines, changed,
+    boot, snapshot, activity, portalOpened, submit, adminCompleted, resetAdmin, reset, check, force, setDeadlines, setNight, changed,
     adminCode: () => s.adminCode,
     on: emitter.on.bind(emitter)
   };
 }
 
-module.exports = { createFrame, validate, validateAthletept, SETUP };
+module.exports = { createFrame, validate, validateAthletept, isNight, SETUP };

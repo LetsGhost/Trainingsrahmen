@@ -126,7 +126,6 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       garmin: { active: Boolean(config.garmin), apiKey: maskKey(config.garmin?.apiKey) },
       location: config.location,
       display: config.display,
-      sensor: config.sensor,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin }
     };
   }
@@ -180,6 +179,12 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       }
       next.deadlines = { slideshowAfterMin, offAfterMin };
     }
+    if (input.night) {
+      const { from, to } = { ...config.night, ...input.night };
+      const hour = h => Number.isInteger(h) && h >= 0 && h <= 23;
+      if (!(from === null || hour(from)) || !hour(to) || from === to) throw new FrameError("INVALID", "Nachtruhe ungültig");
+      next.night = { from, to };
+    }
     // Erst in den Sensor schreiben; antwortet er nicht, bleibt alles beim Alten.
     if (input.sensor) {
       next.sensor = validateSensor({ ...config.sensor, ...input.sensor });
@@ -196,6 +201,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
     if (next.deadlines) frame.setDeadlines(next.deadlines);
     if (next.sensor) config.sensor = next.sensor;
+    if (next.night) frame.setNight(next.night);
     saveConfig(config);
     if (next.server || "athletept" in next) sync.syncPlan();
     // Beim Entfernen den Plan neu holen, damit das Display ohne die Garmin-Werte neu zeichnet.
@@ -328,7 +334,11 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
 
     if (action === "settings" && method === "GET") http.sendJson(res, 200, settings());
-    else if (action === "settings" && method === "POST") respond(res, async () => updateSettings(await http.readJson(req)));
+    else if (action === "settings" && method === "POST") respond(res, async () => {
+      // Sensor und Nachtruhe stellt nur der Rahmen selbst ein (FRAME_ACTIONS in server.js).
+      const { sensor, night, ...rest } = await http.readJson(req);
+      return updateSettings(rest);
+    });
     else if (action === "status" && method === "GET") http.sendJson(res, 200, status());
     else if (action === "sync" && method === "POST") respond(res, async () => { await sync.syncAll(); return status(); });
     else if (action === "geocode" && method === "GET") {

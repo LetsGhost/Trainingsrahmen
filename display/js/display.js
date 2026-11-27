@@ -2,7 +2,7 @@ import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
 import { renderSetup } from "./setup.js";
-import { renderSettings, renderPower, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES } from "./settings.js";
+import { renderSettings, renderPower, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
@@ -178,7 +178,7 @@ function render() {
     frame.innerHTML = renderSettings({
       d, tab: state.settingsTab, daemon: state.daemon, sync: state.sync, app: state.app, syncing: state.syncing, notice: state.notice,
       settings: settings(), deadlines: state.daemon?.deadlines ?? { slideshowAfterMin: 5, offAfterMin: 30 },
-      sensor: sensorSettings(), sensorLive: state.sensorLive
+      sensor: sensorSettings(), sensorLive: state.sensorLive, night: nightSettings()
     });
   }
   else if (screen === "slideshow") showSlideshow(frame, d);
@@ -353,6 +353,7 @@ frame.addEventListener("pointermove", e => {
 frame.addEventListener("contextmenu", e => e.preventDefault());
 
 const sensorSettings = () => state.daemon?.sensor ?? { gates: 6, sensitivity: "mid" };
+const nightSettings = () => state.daemon?.night ?? { from: 22, to: 7 };
 
 // Nur das Live-Feld neu schreiben: ein ganzes render() pro Sekunde wäre auf dem Pi unnötig teuer.
 let sensorTimer = null;
@@ -374,6 +375,12 @@ function pollSensor(on) {
 }
 
 function changeSetting(el) {
+  if (el.dataset.step === "nightFrom" || el.dataset.step === "nightTo") {
+    const night = { ...nightSettings() };
+    const [key, steps] = el.dataset.step === "nightFrom" ? ["from", NIGHT_FROM] : ["to", NIGHT_TO];
+    night[key] = steps[Math.min(steps.length - 1, Math.max(0, steps.indexOf(night[key]) + Number(el.dataset.dir)))];
+    return frameAction("settings", { night }).then(render);
+  }
   if (el.dataset.set === "sensitivity" || el.dataset.step === "gates") {
     const sensor = { ...sensorSettings() };
     if (el.dataset.set) sensor.sensitivity = el.dataset.value;

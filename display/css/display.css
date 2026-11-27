@@ -436,6 +436,8 @@ body {
 .st-stepper { display: flex; align-items: center; flex-shrink: 0; }
 .frame .st-stepper button { width: 48px; height: 44px; border: 2px solid var(--ink); font-size: 22px; font-weight: 700; line-height: 1; }
 .frame .st-stepper button:disabled { border-color: var(--rule-soft); color: var(--dim); cursor: default; }
+.st-steppers { display: flex; gap: 12px; }
+.st-steppers .st-step-value { width: 72px; font-size: 18px; }
 .st-step-value { width: 86px; text-align: center; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
 
 .st-facts { display: flex; flex-direction: column; margin-top: 4px; }

@@ -85,15 +85,18 @@ function segment(key, value, options) {
     `<button type="button" aria-pressed="${v === value}" data-set="${key}" data-value="${v}">${label}</button>`).join("")}</div>`;
 }
 
-function stepper(key, label, sub, text, canDown, canUp) {
-  return `
-    <div class="st-step-row">
-      <div><div class="st-step-label">${label}</div><div class="st-step-sub">${sub}</div></div>
+const stepButtons = (key, text, canDown, canUp) => `
       <div class="st-stepper">
         <button type="button" aria-label="Weniger" data-step="${key}" data-dir="-1"${canDown ? "" : " disabled"}>−</button>
         <div class="st-step-value">${text}</div>
         <button type="button" aria-label="Mehr" data-step="${key}" data-dir="1"${canUp ? "" : " disabled"}>+</button>
-      </div>
+      </div>`;
+
+function stepper(key, label, sub, text, canDown, canUp, buttons = stepButtons(key, text, canDown, canUp)) {
+  return `
+    <div class="st-step-row">
+      <div><div class="st-step-label">${label}</div><div class="st-step-sub">${sub}</div></div>
+      ${buttons}
     </div>`;
 }
 
@@ -124,8 +127,14 @@ export function renderSensorLive(live) {
   return `<span class="st-dot${mark}"></span><div class="st-wifi-text"><div class="st-wifi-name${mark === " warn" ? " warn" : ""}">${title}</div><div class="st-wifi-sub">${sub}</div></div>`;
 }
 
-function renderSensor({ sensor, sensorLive }) {
+// Nachtruhe in vollen Stunden; „Ab“ hat ganz unten „Aus“. Die Bereiche überlappen nie, from ≠ to ist also sicher.
+export const NIGHT_FROM = [null, 19, 20, 21, 22, 23, 0, 1], NIGHT_TO = [4, 5, 6, 7, 8, 9, 10];
+const clock = h => `${String(h).padStart(2, "0")}:00`;
+
+function renderSensor({ sensor, sensorLive, night }) {
   const { gates, sensitivity } = sensor;
+  const fi = NIGHT_FROM.indexOf(night.from), ti = NIGHT_TO.indexOf(night.to);
+  const off = night.from === null;
   return `
     <div class="st-card">
       <div class="st-kicker">LIVE</div>
@@ -137,7 +146,13 @@ function renderSensor({ sensor, sensorLive }) {
       ${stepper("gates", "Erkennt bis", "Abstand vom Rahmen", meters(gates), gates > MIN_GATES, gates < MAX_GATES)}
       <div class="st-kicker gap">EMPFINDLICHKEIT</div>
       ${segment("sensitivity", sensitivity, [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
-      <div class="st-hint">Zum Testen vor den Rahmen stellen und den Abstand ändern. Hoch erkennt auch still Sitzende sicherer.</div>
+    </div>
+    <div class="st-rule tight"></div>
+    <div class="st-card">
+      ${stepper("night", "Nachtruhe", "Radar aus, nur Berührung weckt", "", false, false, `<div class="st-steppers">
+        ${stepButtons("nightFrom", off ? "Aus" : clock(night.from), fi > 0, fi < NIGHT_FROM.length - 1)}
+        ${off ? "" : stepButtons("nightTo", clock(night.to), ti > 0, ti < NIGHT_TO.length - 1)}
+      </div>`)}
     </div>`;
 }
 

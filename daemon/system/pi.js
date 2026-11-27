@@ -114,6 +114,13 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
   const events = new EventEmitter();
   const hw = { hotspot: null, wifi: null, backlight: true, ip: null, signal: null };
   const backlight = findBacklight();
+  let level = "high";
+  const writeBrightness = () => {
+    const max = Number(readFile(path.join(backlight, "max_brightness"))) || 255;
+    // Waveshare-Treiber (10-0045) ignoriert bl_power teils; erst brightness 0 macht das Licht wirklich aus.
+    const value = hw.backlight ? Math.max(1, Math.round(max * BRIGHTNESS[level])) : 0;
+    fs.writeFileSync(path.join(backlight, "brightness"), String(value));
+  };
   const portalPort = process.env.FRAME_PORTAL_PORT || port;
   // Zuletzt erfolgreich angelegtes WLAN; gleiche Daten → nur neu verbinden statt neu anlegen.
   let saved = null;
@@ -315,17 +322,18 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
       if (!backlight) return;
       try {
         fs.writeFileSync(path.join(backlight, "bl_power"), on ? "0" : "4");
+        writeBrightness();
       } catch (err) {
         console.error(`Backlight: ${err.message}`);
       }
     },
 
     // Anteil von max_brightness; shortcut: Stufen geschätzt, am Pi nachmessen, ob „Niedrig“ nachts nicht zu hell ist.
-    async setBrightness(level) {
+    async setBrightness(next) {
+      level = next;
       if (!backlight) return;
       try {
-        const max = Number(readFile(path.join(backlight, "max_brightness"))) || 255;
-        fs.writeFileSync(path.join(backlight, "brightness"), String(Math.max(1, Math.round(max * BRIGHTNESS[level]))));
+        writeBrightness();
       } catch (err) {
         console.error(`Helligkeit: ${err.message}`);
       }

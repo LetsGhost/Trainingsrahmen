@@ -26,6 +26,8 @@ const DEFAULTS = {
   display: { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" },
   // Radar (HLK-LD2410C): gates = Reichweite in Toren zu 0,75 m (1–8); sensitivity: "low" | "mid" | "high"
   sensor: { gates: 6, sensitivity: "mid" },
+  // Nachtruhe: von from bis to Uhr (volle Stunden) zählt der Radar nicht, nur Touch weckt; from: null = aus.
+  night: { from: 22, to: 7 },
   // Update-Knopf: von diesem Remote und Branch wird gezogen.
   update: { remote: "origin", branch: "production" }
 };
@@ -38,11 +40,12 @@ function load() {
       ...saved,
       display: { ...DEFAULTS.display, ...saved.display },
       sensor: { ...DEFAULTS.sensor, ...saved.sensor },
+      night: { ...DEFAULTS.night, ...saved.night },
       // Update-Quelle ist fest, alte gespeicherte Werte (z. B. master) zählen nicht.
       update: { ...DEFAULTS.update }
     };
   } catch {
-    return { ...DEFAULTS, display: { ...DEFAULTS.display }, sensor: { ...DEFAULTS.sensor }, update: { ...DEFAULTS.update } };
+    return { ...DEFAULTS, display: { ...DEFAULTS.display }, sensor: { ...DEFAULTS.sensor }, night: { ...DEFAULTS.night }, update: { ...DEFAULTS.update } };
   }
 }
 
