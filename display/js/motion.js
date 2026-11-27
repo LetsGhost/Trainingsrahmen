@@ -54,14 +54,35 @@ const surface = (z, background) => {
   return layer(d, z);
 };
 
-// Alles im Screen außer dem geteilten Element und seinen Vorfahren, so grob wie möglich.
-function fxTargets(root, shared) {
-  return [...root.children].flatMap(c => (c === shared ? [] : shared && c.contains(shared) ? fxTargets(c, shared) : [c]));
-}
-
 // Geteiltes Element nur, wenn Quelle und Ziel dasselbe zeigen (z. B. keine Erholungszahl → kein Flug).
 const pair = (a, b) => (a && b && a.textContent.trim() === b.textContent.trim() ? [a, b] : [null, null]);
+// Transform, das Text im Rechteck b auf Rechteck a legt (Ursprung oben links).
 const flip = (a, b) => `translate(${a.x - b.x}px, ${a.y - b.y}px) scale(${a.h / b.h})`;
+
+function textRect(frame, el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  return rel(frame, range);
+}
+
+// Das geteilte Element fliegt als Kopie über allem; so blendet seine Umgebung (z. B. die Wetter-Kachel im Sport-Design)
+// mit dem übrigen Screen aus. Gemessen wird am Text selbst, nicht an der Box: Die große Zahl hat eine viel engere
+// Zeilenhöhe als die kleine, über die Boxen gerechnet landete sie zu groß und versetzt.
+const TEXT_STYLE = ["color", "fontFamily", "fontSize", "fontWeight", "fontStyle", "fontStretch", "fontVariationSettings", "letterSpacing"];
+function flyer(frame, el) {
+  const cs = getComputedStyle(el), r = textRect(frame, el);
+  const wrap = layer(document.createElement("div"), 4);
+  wrap.style.position = "relative";
+  const s = wrap.appendChild(document.createElement("span"));
+  s.textContent = el.textContent.trim();
+  TEXT_STYLE.forEach(p => (s.style[p] = cs[p]));
+  Object.assign(s.style, { position: "absolute", left: `${r.x}px`, top: `${r.y}px`, whiteSpace: "nowrap", transformOrigin: "0 0" });
+  const got = textRect(frame, s);
+  s.style.left = `${2 * r.x - got.x}px`;
+  s.style.top = `${2 * r.y - got.y}px`;
+  el.style.visibility = "hidden";
+  return { wrap, s, r };
+}
 const rectTransform = r => `translate(${r.x}px, ${r.y}px) scale(${r.w / W}, ${r.h / H})`;
 
 async function run(frame, layers, work) {
@@ -89,19 +110,22 @@ export async function open(frame, src, apply) {
   const morph = surface(2, getComputedStyle(frame).backgroundColor);
   frame.style.zIndex = 3;
   frame.style.background = "transparent";
-  await run(frame, [base, old, morph], () => {
+  // a im Stil der Woche, b darüber im Stil des Ziels; b blendet ein, damit z. B. die Farbe weich wechselt.
+  const a = to && flyer(frame, from), b = to && flyer(frame, to);
+  await run(frame, [base, old, morph, ...(to ? [a.wrap, b.wrap] : [])], async () => {
     const jobs = [
       anim(morph, [{ transform: rectTransform(r) }, { transform: "none" }], 300, EASE_OUT),
       anim(old, [{ opacity: 1 }, { opacity: 0 }], 160, EASE),
-      ...fxTargets(frame, to).map(e => anim(e, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], 220, EASE_OUT, 140))
+      ...[...frame.children].map(e => anim(e, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], 220, EASE_OUT, 140))
     ];
     if (to) {
-      from.style.visibility = "hidden";
-      to.style.transformOrigin = "0 0";
-      jobs.push(anim(to, [{ transform: flip(rel(frame, from), rel(frame, to)) }, { transform: "none" }], 340, EASE_OUT)
-        .finally(() => (to.style.transformOrigin = "")));
+      jobs.push(
+        anim(a.s, [{ transform: "none" }, { transform: flip(b.r, a.r) }], 340, EASE_OUT),
+        anim(b.s, [{ transform: flip(a.r, b.r), opacity: 0 }, { transform: "none", opacity: 1 }], 340, EASE_OUT)
+      );
     }
-    return Promise.all(jobs);
+    await Promise.all(jobs);
+    if (to) to.style.visibility = "";
   });
 }
 
@@ -118,19 +142,22 @@ export async function close(frame, src, apply) {
   const base = surface(0, getComputedStyle(frame).backgroundColor);
   const morph = surface(2, background);
   frame.style.zIndex = 1;
-  await run(frame, [base, old, morph], () => {
+  // a im Stil der Woche, b darüber im Stil des Screens; b blendet aus.
+  const a = to && flyer(frame, from), b = to && flyer(frame, to);
+  await run(frame, [base, old, morph, ...(to ? [a.wrap, b.wrap] : [])], async () => {
     const jobs = [
-      ...fxTargets(old, to).map(e => anim(e, [{ opacity: 1 }, { opacity: 0 }], 120, EASE_IN)),
+      ...[...old.children].map(e => anim(e, [{ opacity: 1 }, { opacity: 0 }], 120, EASE_IN)),
       anim(morph, [{ transform: "none", opacity: 1 }, { transform: rectTransform(r), opacity: 1 }, { transform: rectTransform(r), opacity: 0 }], 340, EASE),
       anim(frame, [{ opacity: 0 }, { opacity: 1 }], 220, EASE, 120)
     ];
     if (to) {
-      from.style.visibility = "hidden";
-      to.style.transformOrigin = "0 0";
-      jobs.push(anim(to, [{ transform: "none" }, { transform: flip(rel(frame, from), rel(frame, to)) }], 300, EASE)
-        .finally(() => (from.style.visibility = "")));
+      jobs.push(
+        anim(a.s, [{ transform: flip(b.r, a.r) }, { transform: "none" }], 300, EASE),
+        anim(b.s, [{ transform: "none", opacity: 1 }, { transform: flip(a.r, b.r), opacity: 0 }], 300, EASE)
+      );
     }
-    return Promise.all(jobs);
+    await Promise.all(jobs);
+    if (to) from.style.visibility = "";
   });
 }
 
