@@ -22,7 +22,7 @@ Designvorlagen: `Trainingsrahmen.dc.html` (Layouts 2A/2B, 1B, 1D, 1E) und `Einri
 | Ruhe | Plan → Slideshow → Display aus; Bewegung oder Touch führt zurück zum Plan |
 | Sensor | 24-GHz-Radar-Präsenzsensor (z. B. HLK-LD2410), OUT an einem GPIO-Pin |
 | Slideshow | Nur Bilder, Upload über das Admin-Panel |
-| Boot-Bildschirm | Plymouth-Theme mit Splash 4A (dunkel, `scripts/boot/`), Balken läuft während des Bootens, Bild bleibt bis zum Kiosk; eingerichtet mit `scripts/setup-bootscreen.sh` (auch aus `setup-pi.sh`) |
+| Boot-Bildschirm | Plymouth-Theme mit Boot-Screen 5B (P.M.-Monogramm, `scripts/boot/`), drei Punkte laufen während des Bootens, Bild bleibt bis zum Kiosk; eingerichtet mit `scripts/setup-bootscreen.sh` (auch aus `setup-pi.sh`) |
 | Installation | Pi OS Lite, User `admin`, Repo unter `~/trainingsrahmen`, eingerichtet mit `scripts/setup-pi.sh` |
 | Demo | `scripts/demo.sh on`: ohne Einrichtung im Plan, Testdaten aus `fixtures/`, eigene Daten unter `data/demo/` |
 | Werkseinstellung | `scripts/factory-reset.sh` löscht `data/` und die WLAN-Verbindungen des Rahmens |

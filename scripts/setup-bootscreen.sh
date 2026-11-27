@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Richtet den Boot-Bildschirm ein: Plymouth-Theme „trainingsrahmen“ (Splash 4A, dunkel, mit laufendem Balken)
+# Richtet den Boot-Bildschirm ein: Plymouth-Theme „trainingsrahmen“ (Boot-Screen 5B, Monogramm mit laufenden Punkten)
 # statt Regenbogen und Kernel-Text. Das Bild bleibt stehen, bis der Kiosk das Display übernimmt.
 # Ruft scripts/setup-pi.sh auf; kann auch allein und gefahrlos mehrfach laufen. Gilt nach dem Neustart.
 #
@@ -27,8 +27,9 @@ sudo mkdir -p "$THEME_DIR"
 sudo install -m 0644 \
   "$DIR/scripts/boot/$THEME.plymouth" \
   "$DIR/scripts/boot/$THEME.script" \
-  "$DIR/scripts/boot/splash.png" \
-  "$DIR/scripts/boot/bar.png" \
+  "$DIR/scripts/boot/splash-1.png" \
+  "$DIR/scripts/boot/splash-2.png" \
+  "$DIR/scripts/boot/splash-3.png" \
   "$THEME_DIR/"
 
 step "Firmware: kein Regenbogen, Initramfs an (config.txt)"

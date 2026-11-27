@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=Trainingsrahmen
-Description=Boot-Splash 4A (dunkel) mit laufendem Balken
+Description=Boot-Screen 5B (Monogramm + laufende Punkte)
 ModuleName=script
 
 [script]
