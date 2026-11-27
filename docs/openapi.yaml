@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info:
+  title: Trainingsrahmen – Trainingsplan-Schnittstelle
+  version: "1.0"
+  description: |
+    Diese Schnittstelle muss die eigene Software (das „Sport-Analytics-Backend“) bereitstellen,
+    damit der Trainingsrahmen den Wochenplan anzeigen kann. Der Rahmen ist dabei der **Client**:
+    er ruft den Server ab, der Server schickt nichts von sich aus.
+
+    **Ablauf am Rahmen**
+    - Server-URL und API-Key werden im Admin-Bereich unter „Dienste“ eingetragen. Beim Speichern
+      ruft der Rahmen `GET /data` einmal zur Prüfung auf.
+    - Danach holt er den Plan alle 10 Minuten, solange er online ist, und sofort nach dem Verbinden.
+    - Timeout je Abruf: 10 s. Ein fehlgeschlagener Abruf lässt den zuletzt gespeicherten Stand stehen.
+    - Eingetragen werden kann die Basis-URL (`https://example.de`) oder die volle Adresse
+      (`https://example.de/data`); beides führt zu `…/data`.
+
+    **Woche**
+    Der Rahmen zeigt immer Montag bis Sonntag der laufenden Woche. Die Antwort beschreibt also
+    „die aktuelle Woche“; ein Datum wird nicht ausgewertet.
+
+    **Zusatzquellen am Rahmen** (nicht Teil dieser Schnittstelle, nur zur Einordnung)
+    - AthletePT: Einheiten werden ergänzt. Gleiche Einheiten (gleicher Tag, Titel beginnt gleich)
+      bleiben wie vom Server; nur leere Felder werden aufgefüllt.
+    - Garmin: liefert `recovery`-Werte mit Vorrang vor dem Server und setzt `done`/`unplanned`
+      anhand der tatsächlich absolvierten Aktivitäten.
+servers:
+  - url: https://{host}
+    description: Im Admin-Bereich eingetragene Server-URL
+    variables:
+      host:
+        default: example.de
+security:
+  - apiKey: []
+paths:
+  /data:
+    get:
+      summary: Wochenplan und Erholungswerte abrufen
+      description: "Der Rahmen sendet `Accept: application/json` und den Header `x-api-key`."
+      responses:
+        "200":
+          description: |
+            Gültiges JSON mit einem Array `trainingsweek`. Fehlt es, zählt der Abruf als
+            fehlgeschlagen („Antwort enthält keinen Wochenplan“).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanResponse"
+              examples:
+                vollständig:
+                  summary: Alle Felder
+                  value:
+                    trainingsweek:
+                      - day: Montag
+                        training:
+                          - type: running
+                            title: Dauerlauf 1
+                            time: "06:45"
+                            duration: 55
+                            intensity: RPE 4
+                            description: Locker im Grundlagenbereich, Puls unter 145.
+                      - day: Mittwoch
+                        training:
+                          - type: weightLifting
+                            title: Plan A - Unterkörper
+                            time: "18:30"
+                            duration: 60
+                            intensity: RPE 7
+                            description: Kniebeuge 4 × 6, Hip Thrust 3 × 10, Plank 3 × 60 s.
+                      - day: Sonntag
+                        training:
+                          - type: weightLifting
+                            title: Ganzkörper
+                            duration: 50
+                          - type: running
+                            title: Recoveryrun
+                            duration: 30
+                    recovery:
+                      score: 78
+                      sleepMinutes: 432
+                      hrv: 62
+                      restingHr: 48
+                minimal:
+                  summary: Nur Pflichtfelder
+                  value:
+                    trainingsweek:
+                      - day: Montag
+                        training:
+                          - type: running
+                            title: Dauerlauf 1
+                leer:
+                  summary: Woche ohne Training
+                  value:
+                    trainingsweek: []
+        "401":
+          description: Key ungültig. Der Rahmen zeigt „Server lehnt den API-Key ab“ (403 genauso).
+        "403":
+          description: Wie 401.
+        default:
+          description: Jeder andere Status gilt als Serverfehler („Server antwortet mit <Status>“).
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    PlanResponse:
+      type: object
+      required: [trainingsweek]
+      properties:
+        trainingsweek:
+          type: array
+          description: |
+            Ein Eintrag pro Wochentag. Tage ohne Training dürfen fehlen (Anzeige „Ruhetag“).
+            Kommt ein Tag mehrfach vor, werden seine Einheiten zusammengelegt.
+            Einträge mit unbekanntem `day` werden ignoriert.
+          items:
+            $ref: "#/components/schemas/Day"
+        recovery:
+          $ref: "#/components/schemas/Recovery"
+      additionalProperties: true
+    Day:
+      type: object
+      required: [day]
+      properties:
+        day:
+          type: string
+          description: Deutscher Wochentag; Groß-/Kleinschreibung und Leerzeichen am Rand egal.
+          enum: [Montag, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag, Sonntag]
+        training:
+          type: array
+          description: Einheiten des Tages in Anzeigereihenfolge. Ab drei Einheiten wird die Spalte kompakt.
+          items:
+            $ref: "#/components/schemas/Training"
+    Training:
+      type: object
+      required: [type, title]
+      properties:
+        type:
+          type: string
+          description: |
+            Sportart, bestimmt Icon und Beschriftung. Jeder andere Wert wird als „SONSTIGES“ angezeigt.
+            - `running` → LAUFEN
+            - `biking` → RADFAHREN
+            - `swimming` → SCHWIMMEN
+            - `weightLifting` → KRAFT
+          example: running
+        title:
+          type: string
+          description: Name der Einheit. Lange Titel werden getrennt und nach 3–4 Zeilen abgeschnitten.
+          example: Dauerlauf 1
+        time:
+          type: string
+          description: Startzeit, wird unverändert angezeigt. Empfohlen `HH:MM`.
+          example: "06:45"
+        duration:
+          type: integer
+          minimum: 1
+          description: |
+            Dauer in Minuten. Anzeige „45 min“, ab 120 „3 h 00“. Fließt in die Wochensumme ein.
+            0, negative Werte oder Nicht-Zahlen werden ignoriert.
+          example: 55
+        intensity:
+          type: string
+          description: Belastung, Freitext, wird unverändert angezeigt.
+          example: RPE 4
+        description:
+          type: string
+          description: |
+            Freitext für die Tagesansicht. Hat er die Form `Übung Sätze × Wdh., …`, wird er als
+            Übungstabelle (ÜBUNG / SÄTZE / WDH.) dargestellt:
+            - Übungen durch Komma getrennt, ein Punkt am Ende ist erlaubt.
+            - Je Übung `Name <Zahl> × <Wiederholungen>` mit dem Zeichen `×` (U+00D7), nicht `x`.
+            - Bei `weightLifting` reicht eine Übung, sonst braucht es mindestens zwei.
+            Alles andere erscheint als normaler Text.
+          example: Kniebeuge 4 × 6, Hip Thrust 3 × 10, Plank 3 × 60 s.
+        done:
+          type: object
+          readOnly: true
+          description: Setzt der Rahmen aus Garmin-Aktivitäten. Nicht vom Server senden.
+          properties:
+            duration: { type: integer, description: Minuten }
+            distance: { type: number, description: Kilometer }
+        unplanned:
+          type: boolean
+          readOnly: true
+          description: Setzt der Rahmen für Garmin-Aktivitäten ohne geplante Einheit. Nicht vom Server senden.
+    Recovery:
+      type: object
+      description: |
+        Optional. Alle Felder sind einzeln optional; fehlende Werte werden einfach nicht angezeigt.
+        Ist Garmin am Rahmen eingerichtet, überschreiben dessen Werte die gleichnamigen Felder vom Server.
+        Zahlen müssen echte JSON-Zahlen sein, keine Strings.
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: |
+            Erholungswert. Einschätzung: ab 75 „Gut erholt“, ab 50 „Teilweise erholt“,
+            ab 25 „Wenig erholt“, darunter „Erschöpft“. Ohne score: „Keine Erholungsdaten“.
+        sleepMinutes:
+          type: integer
+          description: Schlafdauer der letzten Nacht in Minuten (ab 420 gilt als „gut geschlafen“).
+        hrv:
+          type: integer
+          description: HRV der letzten Nacht in ms.
+        restingHr:
+          type: integer
+          description: Ruhepuls in bpm.
+        batteryNow:
+          type: integer
+          description: Aktueller Energiewert (0–100); `score` wird daneben als „morgens“ gezeigt.
+        sleepDeep: { type: integer, description: Tiefschlaf in Minuten }
+        sleepLight: { type: integer, description: Leichtschlaf in Minuten }
+        sleepRem: { type: integer, description: REM-Schlaf in Minuten }
+        sleepAwake: { type: integer, description: Wachphasen in Minuten }
+        hrvWeekly:
+          type: integer
+          description: HRV-Durchschnitt der letzten 7 Tage in ms.
+        hrvStatus:
+          type: string
+          enum: [BALANCED, UNBALANCED, LOW, POOR]
+          description: LOW, POOR und UNBALANCED führen zum Hinweis „HRV außerhalb des Normalbereichs“.
+        hrvHistory:
+          type: array
+          description: HRV-Verlauf für das Diagramm, die letzten 7 Tage, ältester zuerst.
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date, example: "2026-11-27" }
+              hrv: { type: integer, nullable: true, description: "ms, null wenn kein Wert" }
+        restingHrWeekly:
+          type: integer
+          description: Ruhepuls-Durchschnitt der letzten 7 Tage; der Rahmen zeigt die Abweichung.
