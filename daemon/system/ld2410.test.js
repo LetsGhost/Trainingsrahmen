@@ -15,6 +15,14 @@ test("Befehle wie im Hi-Link-Handbuch", () => {
   assert.deepEqual(end, hex("fdfcfbfa 0200 fe00 04030201"));
 });
 
+test("0,75 m: 2 Tore, Tor 2 taub", () => {
+  const cmds = configCommands({ gates: 1, sensitivity: "mid" });
+  assert.equal(cmds.length, 5);
+  assert.deepEqual(cmds[1], hex("fdfcfbfa 1400 6000 0000 02000000 0100 02000000 0200 05000000 04030201"));
+  assert.deepEqual(cmds[3], hex("fdfcfbfa 1400 6400 0000 02000000 0100 64000000 0200 64000000 04030201"));
+  assert.equal(configCommands({ gates: 2, sensitivity: "mid" }).length, 4);
+});
+
 test("Messwerte: in Stücken, mit Müll davor", () => {
   const sensor = createSensor(() => {});
   const stream = Buffer.concat([hex("00 f4 13 37"), REPORT]);
@@ -45,5 +53,6 @@ test("configure: ohne Antwort Fehler, danach Konfigurationsmodus verlassen", asy
 test("validateSensor", () => {
   assert.deepEqual(validateSensor({ gates: 6, sensitivity: "low" }), { gates: 6, sensitivity: "low" });
   assert.throws(() => validateSensor({ gates: 9, sensitivity: "low" }), /Reichweite/);
+  assert.throws(() => validateSensor({ gates: 0, sensitivity: "low" }), /Reichweite/);
   assert.throws(() => validateSensor({ gates: 4, sensitivity: "max" }), /Empfindlichkeit/);
 });

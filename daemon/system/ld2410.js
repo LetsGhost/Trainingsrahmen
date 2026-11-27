@@ -9,10 +9,13 @@ const CMD_TAIL = Buffer.from([0x04, 0x03, 0x02, 0x01]);
 const REP_HEAD = Buffer.from([0xf4, 0xf3, 0xf2, 0xf1]);
 const REP_TAIL = Buffer.from([0xf8, 0xf7, 0xf6, 0xf5]);
 
-// Ein Entfernungstor („Gate“) ist 0,75 m breit; einstellbar sind 2–8 Tore, also 1,5–6 m.
+// Ein Entfernungstor („Gate“) ist 0,75 m breit; der Sensor nimmt 2–8 Tore (1,5–6 m). Kürzer (1 Tor = 0,75 m)
+// geht über 2 Tore, bei denen die überzähligen Tore die Schwelle 100 bekommen und damit praktisch nichts melden.
 const GATE_M = 0.75;
-const MIN_GATES = 2;
+const MIN_GATES = 1;
+const SENSOR_MIN_GATES = 2;
 const MAX_GATES = 8;
+const DEAF = 100;
 // Nachlaufzeit im Sensor; die Ruhe-Fristen des Rahmens kommen obendrauf, daher kurz.
 const HOLD_S = 5;
 // Schwellwert der Energie (0–100) für alle Tore: kleiner = empfindlicher. Werkseinstellung liegt bei 15–50.
@@ -45,13 +48,18 @@ function validateSensor(input) {
   return { gates, sensitivity: input.sensitivity };
 }
 
-// Konfigurationsmodus an, Reichweite + Nachlaufzeit, Schwellen für alle Tore (0xFFFF), Konfigurationsmodus aus.
+// Konfigurationsmodus an, Reichweite + Nachlaufzeit, Schwellen für alle Tore (0xFFFF), bei kurzer Reichweite
+// die überzähligen Tore taub, Konfigurationsmodus aus.
 function configCommands({ gates, sensitivity }) {
   const s = SENSITIVITY[sensitivity];
+  const max = Math.max(gates, SENSOR_MIN_GATES);
+  const deaf = [];
+  for (let g = gates + 1; g <= max; g++) deaf.push(command(0x0064, params([[0, g], [1, DEAF], [2, DEAF]])));
   return [
     command(0x00ff, Buffer.from([0x01, 0x00])),
-    command(0x0060, params([[0, gates], [1, gates], [2, HOLD_S]])),
+    command(0x0060, params([[0, max], [1, max], [2, HOLD_S]])),
     command(0x0064, params([[0, 0xffff], [1, s.moving], [2, s.still]])),
+    ...deaf,
     command(0x00fe)
   ];
 }

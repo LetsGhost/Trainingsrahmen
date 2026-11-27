@@ -308,7 +308,7 @@ function renderDisplay() {
           <div class="setting-name">Reichweite</div>
           <div class="setting-hint">Abstand vom Rahmen, bis zu dem jemand zählt</div>
         </div>
-        <select class="num" id="sensor-gates">${[2, 3, 4, 5, 6, 7, 8].map(g =>
+        <select class="num" id="sensor-gates">${[1, 2, 3, 4, 5, 6, 7, 8].map(g =>
           `<option value="${g}"${g === s.sensor.gates ? " selected" : ""}>${(g * 0.75).toLocaleString("de-DE")} m</option>`).join("")}
         </select>
       </div>

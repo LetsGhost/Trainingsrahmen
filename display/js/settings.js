@@ -4,7 +4,7 @@ import { hhmm, esc } from "./util.js";
 
 export const TABS = [["status", "STATUS"], ["display", "ANZEIGE"], ["sensor", "SENSOR"], ["customize", "ANPASSEN"], ["system", "SYSTEM"]];
 // Radar-Reichweite in Toren zu 0,75 m (wie daemon/system/ld2410.js).
-export const MIN_GATES = 2, MAX_GATES = 8;
+export const MIN_GATES = 1, MAX_GATES = 8;
 export const meters = gates => `${(gates * 0.75).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} m`;
 const SOURCES = [["plan", "Sport-Analytics"], ["athletept", "AthletePT"], ["garmin", "Garmin"], ["weather", "Wetter"]];
 // Raster der Stepper; Grenzen wie im Admin (Slideshow 1–120, Display aus danach bis 600).
