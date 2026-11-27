@@ -104,8 +104,8 @@ function message(level) {
   if (level === "public") return JSON.stringify({ frame: { setup: f.setup, connecting: f.connecting, error: f.error } });
   if (level !== "local") f.adminCode = null;
   // app.commit: Das Display lädt neu, wenn nach einem Update ein anderer Stand läuft.
-  // bootAt: für „Läuft seit“ im Einstellungs-Screen.
-  const app = { commit: updater.commit(), demo: DEMO, bootAt: Date.now() - os.uptime() * 1000 };
+  // bootAt: für „Läuft seit“ im Einstellungs-Screen. update: Meldung des laufenden Updates (Update-Screen) oder null.
+  const app = { commit: updater.commit(), demo: DEMO, bootAt: Date.now() - os.uptime() * 1000, update: updater.running() };
   return JSON.stringify({ frame: f, sync: sync.status(), app, dev: DEV ? { ...dev, sim } : null });
 }
 
@@ -116,6 +116,8 @@ function broadcast() {
 
 frame.on("change", broadcast);
 sync.on("change", broadcast);
+// shortcut: endet das Skript ohne Abschlussmeldung, bleibt der Update-Screen bis zum nächsten Broadcast nach RUNNING_STALE_MS stehen.
+updater.watch(broadcast);
 
 // Kommentarzeile hält die Verbindung offen, falls ein Proxy sie sonst schließt.
 setInterval(() => { for (const res of clients.keys()) res.write(": ping\n\n"); }, 25000);

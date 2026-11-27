@@ -209,6 +209,21 @@ export function renderSettings(p) {
 }
 
 // Vollbild nach Neustart/Herunterfahren, im Stil des Boot-Splash.
+// Meldungen aus scripts/self-update.sh → Schritt 1 Laden, 2 Installieren, 3 Neustart; beim Rückfall Ring auf Schritt 2.
+const UPDATE_STEPS = { "Führe Update-Skript aus": 2, "Starte neu": 3 };
+export function renderUpdate(message) {
+  const failed = message.startsWith("Fehler");
+  const step = failed ? 2 : UPDATE_STEPS[message] ?? 1;
+  const status = failed ? "Update fehlgeschlagen" : ["Update wird geladen", "Update wird installiert", "Fertig · startet neu"][step - 1];
+  const dot = i => (failed && i === step ? " failed" : i < step || (i === step && !failed) ? " on" : "");
+  return `
+    <div class="up" aria-label="Update wird installiert">
+      <div class="up-mark" role="img" aria-label="P. M."><div class="up-bar"></div><div class="up-letters"><div>P</div><div>M</div></div></div>
+      <div class="up-dots" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="${step}">${[1, 2, 3].map(i => `<span class="up-dot${dot(i)}"></span>`).join("")}</div>
+      <div class="up-status" aria-live="polite">${status}</div>
+    </div>`;
+}
+
 export function renderPower(action) {
   const reboot = action === "reboot";
   return `

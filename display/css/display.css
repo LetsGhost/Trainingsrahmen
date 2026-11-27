@@ -511,5 +511,16 @@ body {
 .pw-track div { height: 100%; width: 0; background: var(--fill); animation: pw-fill linear forwards; }
 @keyframes pw-fill { to { width: 100%; } }
 
+/* Update-Screen (Vorlage update-6a, ohne Fußzeile): immer schwarz wie der Boot-Splash. */
+.up { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; background: #111; color: #ededed; }
+.up-mark { display: flex; align-items: stretch; gap: 11px; }
+.up-bar { width: 4px; background: currentColor; }
+.up-letters { display: flex; flex-direction: column; gap: 7px; font-size: 26px; font-weight: 800; line-height: 0.74; padding-top: 1px; }
+.up-dots { display: flex; gap: 8px; }
+.up-dot { width: 6px; height: 6px; border-radius: 50%; background: #3a3a3a; }
+.up-dot.on { background: #ededed; }
+.up-dot.failed { background: transparent; box-shadow: inset 0 0 0 1.5px #8a8a8a; }
+.up-status { font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8a8a; }
+
 /* Karten-Gruppen der Einstellungen: nur im Theme Sport sichtbar (sport.css), hier ohne eigene Box. */
 .st-card { display: contents; }

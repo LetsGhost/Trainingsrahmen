@@ -54,6 +54,12 @@ function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
 
     status: () => ({ ...config.update, commit, lastRun: lastRun(), running: isRunning() }),
 
+    // Meldung des laufenden Updates fürs Display, sonst null.
+    running: () => (isRunning() ? lastRun().message : null),
+
+    // self-update.sh schreibt update.json selbst; der Daemon merkt das nur per Polling.
+    watch: cb => fs.watchFile(statusFile, { interval: 1000 }, cb),
+
     // Neue Commits auf dem Branch, neueste zuerst.
     async check() {
       const { remote, branch } = config.update;

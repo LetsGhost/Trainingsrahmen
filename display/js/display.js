@@ -3,7 +3,7 @@ import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
 import { renderWeather } from "./weather.js";
 import { renderSetup } from "./setup.js";
-import { renderSettings, renderPower, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
+import { renderSettings, renderPower, renderUpdate, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
@@ -156,6 +156,7 @@ const setupDone = () => Date.now() < state.setupDoneUntil;
 
 function screenFor(f) {
   if (state.power) return "power";
+  if (state.app?.update) return "update";
   if (isSetup(f) || setupDone()) return "setup";
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
@@ -175,6 +176,7 @@ function render() {
   if (screen !== "slideshow") stopSlideshow();
   pollSensor(screen === "settings" && state.settingsTab === "sensor");
   if (screen === "power") frame.innerHTML = renderPower(state.power);
+  else if (screen === "update") frame.innerHTML = renderUpdate(state.app.update);
   else if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
   else if (screen === "settings") {
     frame.innerHTML = renderSettings({
