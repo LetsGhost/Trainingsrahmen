@@ -404,7 +404,7 @@ function handle(req, res) {
   if (pathname === "/events") return openEvents(req, res);
   // commit: damit self-update.sh nach dem Neustart prüfen kann, ob der neue Stand läuft.
   // display: Der Kiosk-Browser hängt an /events; scripts/kiosk.sh startet ihn neu, wenn das ausbleibt.
-  // ok: Kiosk hängt am Display und der Radar antwortet. screen nur zur Info, aus ist im Ruhemodus normal.
+  // ok: Kiosk hängt am Display und der Radar antwortet (nur Info; self-update.sh prüft display). screen nur zur Info, aus ist im Ruhemodus normal.
   if (pathname === "/health") {
     const display = [...clients.values()].includes("local");
     const sensor = system.sensor().online;

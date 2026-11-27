@@ -323,7 +323,7 @@ function renderDisplay() {
     <div class="msg" id="sensor-msg"></div>`;
 
   const saveSensor = async change => {
-    if (!(await save({ sensor: { ...state.settings.sensor, ...change } }, "sensor-msg"))) renderDisplay();
+    if (!(await save({ sensor: change }, "sensor-msg"))) renderDisplay();
   };
   $("#sensor-gates").addEventListener("change", e => saveSensor({ gates: Number(e.target.value) }));
   const sensitivity = $('[data-toggle="sensitivity"]');
@@ -354,18 +354,18 @@ function renderDisplay() {
     }
   });
 
-  // brightness/skin: undefined fällt beim JSON weg; der Daemon behält dann die am Rahmen eingestellten Werte.
+  // Nur das geänderte Feld; der Daemon behält die übrigen, auch die am Rahmen eingestellten.
   document.querySelectorAll('[data-toggle="theme"]').forEach(t => t.addEventListener("click", async e => {
     const value = e.target.dataset.value;
     if (value === undefined) return;
-    if (await save({ display: { ...state.settings.display, brightness: undefined, skin: undefined, theme: value } }, "display-msg")) {
+    if (await save({ display: { theme: value } }, "display-msg")) {
       t.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
     }
   }));
   document.querySelectorAll("[data-switch]").forEach(b => b.addEventListener("click", async () => {
     const key = b.dataset.switch;
     const on = !state.settings.display[key];
-    if (await save({ display: { ...state.settings.display, brightness: undefined, skin: undefined, [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
+    if (await save({ display: { [key]: on } }, "display-msg")) b.setAttribute("aria-pressed", on);
   }));
 
   $("#rest-form").addEventListener("submit", e => {

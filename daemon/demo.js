@@ -54,4 +54,4 @@ function withDemoNetwork(base) {
   };
 }
 
-module.exports = { seedConfig, withDemoNetwork, DEMO_PASSWORD };
+module.exports = { seedConfig, withDemoNetwork };

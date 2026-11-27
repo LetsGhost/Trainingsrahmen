@@ -273,4 +273,4 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   };
 }
 
-module.exports = { createFrame, validate, validateAthletept, SETUP, REST };
+module.exports = { createFrame, validate, validateAthletept, SETUP };

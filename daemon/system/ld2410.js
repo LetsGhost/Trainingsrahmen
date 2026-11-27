@@ -11,7 +11,6 @@ const REP_TAIL = Buffer.from([0xf8, 0xf7, 0xf6, 0xf5]);
 
 // Ein Entfernungstor („Gate“) ist 0,75 m breit; der Sensor nimmt 2–8 Tore (1,5–6 m). Kürzer (1 Tor = 0,75 m)
 // geht über 2 Tore, bei denen die überzähligen Tore die Schwelle 100 bekommen und damit praktisch nichts melden.
-const GATE_M = 0.75;
 const MIN_GATES = 1;
 const SENSOR_MIN_GATES = 2;
 const MAX_GATES = 8;
@@ -155,4 +154,4 @@ function createSensor(write) {
   };
 }
 
-module.exports = { createSensor, createParser, configCommands, command, validateSensor, GATE_M, MIN_GATES, MAX_GATES };
+module.exports = { createSensor, configCommands, validateSensor, MIN_GATES, MAX_GATES };

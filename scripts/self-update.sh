@@ -28,7 +28,8 @@ status() {
   mv "$STATUS_FILE.tmp" "$STATUS_FILE"
 }
 
-# Wartet, bis der Daemon antwortet und den erwarteten Commit meldet.
+# Wartet, bis der Daemon antwortet, das Display verbunden ist und der erwartete Commit läuft.
+# display statt ok: ok verlangt auch den Radar, ein fehlender Sensor soll kein Update zurückrollen.
 healthy() {
   node -e '
     const [url, commit, timeoutS] = process.argv.slice(1);
@@ -37,7 +38,7 @@ healthy() {
       while (Date.now() < until) {
         try {
           const h = await (await fetch(url, { signal: AbortSignal.timeout(2000) })).json();
-          if (h.ok && h.commit === commit) process.exit(0);
+          if (h.display && h.commit === commit) process.exit(0);
         } catch {}
         await new Promise(r => setTimeout(r, 1000));
       }

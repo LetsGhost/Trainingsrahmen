@@ -164,10 +164,8 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       next.location = { name: String(name).trim(), lat: Number(lat), lon: Number(lon) };
     }
     if (input.display) {
-      const { theme, showWeather, showRecovery } = input.display;
-      // Das Admin-Panel schickt keine Helligkeit mit; dann bleibt die bisherige.
-      const brightness = input.display.brightness ?? config.display.brightness;
-      const skin = input.display.skin ?? config.display.skin;
+      // Fehlende Felder bleiben, wie sie sind; so überschreiben sich Rahmen und Admin nicht gegenseitig.
+      const { theme, showWeather, showRecovery, brightness, skin } = { ...config.display, ...input.display };
       if (!["auto", "light", "dark"].includes(theme)) throw new FrameError("INVALID", "Erscheinungsbild ungültig");
       if (!["low", "mid", "high"].includes(brightness)) throw new FrameError("INVALID", "Helligkeit ungültig");
       if (!["modern", "sport"].includes(skin)) throw new FrameError("INVALID", "Theme ungültig");
@@ -184,7 +182,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
     // Erst in den Sensor schreiben; antwortet er nicht, bleibt alles beim Alten.
     if (input.sensor) {
-      next.sensor = validateSensor(input.sensor);
+      next.sensor = validateSensor({ ...config.sensor, ...input.sensor });
       await system.configureSensor(next.sensor);
     }
 
@@ -388,4 +386,4 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
   return { route, isAuthed, updateSettings, resetPassword };
 }
 
-module.exports = { createAdmin, hashPassword, verifyPassword };
+module.exports = { createAdmin, hashPassword };
