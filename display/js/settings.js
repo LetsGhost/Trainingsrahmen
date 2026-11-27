@@ -92,7 +92,7 @@ const stepButtons = (key, text, canDown, canUp) => `
         <button type="button" aria-label="Mehr" data-step="${key}" data-dir="1"${canUp ? "" : " disabled"}>+</button>
       </div>`;
 
-function stepper(key, label, sub, text, canDown, canUp, buttons = stepButtons(key, text, canDown, canUp)) {
+function stepper(label, sub, buttons) {
   return `
     <div class="st-step-row">
       <div><div class="st-step-label">${label}</div><div class="st-step-sub">${sub}</div></div>
@@ -112,9 +112,10 @@ function renderDisplay({ settings, deadlines }) {
     <div class="st-rule tight"></div>
     <div class="st-card">
     <div class="st-kicker">RUHE-FRISTEN</div>
-    ${stepper("slideshowAfterMin", "Slideshow nach", "ohne Berührung", minutes(slide), stepDown(slide) !== undefined,
-      (stepUp(slide) ?? Infinity) < off && stepUp(slide) <= SLIDESHOW_MAX)}
-    ${stepper("offAfterMin", "Display aus nach", "immer später als die Slideshow", minutes(off), (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX)}
+    ${stepper("Slideshow nach", "ohne Berührung", stepButtons("slideshowAfterMin", minutes(slide), stepDown(slide) !== undefined,
+      (stepUp(slide) ?? Infinity) < off && stepUp(slide) <= SLIDESHOW_MAX))}
+    ${stepper("Display aus nach", "immer später als die Slideshow",
+      stepButtons("offAfterMin", minutes(off), (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX))}
     </div>`;
 }
 
@@ -143,13 +144,13 @@ function renderSensor({ sensor, sensorLive, night }) {
     <div class="st-rule tight"></div>
     <div class="st-card">
       <div class="st-kicker">REICHWEITE</div>
-      ${stepper("gates", "Erkennt bis", "Abstand vom Rahmen", meters(gates), gates > MIN_GATES, gates < MAX_GATES)}
+      ${stepper("Erkennt bis", "Abstand vom Rahmen", stepButtons("gates", meters(gates), gates > MIN_GATES, gates < MAX_GATES))}
       <div class="st-kicker gap">EMPFINDLICHKEIT</div>
       ${segment("sensitivity", sensitivity, [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
     </div>
     <div class="st-rule tight"></div>
     <div class="st-card">
-      ${stepper("night", "Nachtruhe", "Radar aus, nur Berührung weckt", "", false, false, `<div class="st-steppers">
+      ${stepper("Nachtruhe", "Radar aus, nur Berührung weckt", `<div class="st-steppers">
         ${stepButtons("nightFrom", off ? "Aus" : clock(night.from), fi > 0, fi < NIGHT_FROM.length - 1)}
         ${off ? "" : stepButtons("nightTo", clock(night.to), ti > 0, ti < NIGHT_TO.length - 1)}
       </div>`)}

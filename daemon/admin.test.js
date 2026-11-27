@@ -56,6 +56,15 @@ test("Admin: Einmal-Code, Sperre nach 5 Fehlversuchen, Sitzung, Teil-Einstellung
   assert.equal(s.display.showWeather, true, "fehlendes Feld bleibt an");
   assert.equal((await post("/api/admin/settings", { display: { theme: "pink" } }, cookie)).status, 400);
 
+  // Sensor und Nachtruhe nur am Rahmen: Der Admin-Weg verwirft sie, der Rahmen prüft die Nachtruhe.
+  assert.equal((await post("/api/admin/settings", { night: { from: 1, to: 5 }, sensor: { gates: 2 } }, cookie)).status, 200);
+  const stored = () => JSON.parse(fs.readFileSync(path.join(data, "config.json"), "utf8"));
+  assert.deepEqual(stored().night, { from: 22, to: 7 });
+  assert.equal(stored().sensor.gates, 6);
+  assert.equal((await post("/api/frame/settings", { night: { from: 5, to: 5 } })).status, 400);
+  assert.equal((await post("/api/frame/settings", { night: { from: 1, to: 5 } })).status, 200);
+  assert.deepEqual(stored().night, { from: 1, to: 5 });
+
   // Richtiges Passwort setzt den Zähler zurück; danach sperren 5 falsche auch das richtige.
   assert.equal((await post("/api/admin/login", { password: "geheim123" })).status, 200);
   for (let i = 0; i < 5; i++) assert.equal((await post("/api/admin/login", { password: "falsch" })).status, 403);

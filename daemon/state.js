@@ -262,7 +262,8 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     const was = night;
     night = isNight(config.night);
     if (night === was || !operating()) return;
-    if (night) scheduleRest();
+    // Ohne Präsenz laufen die Fristen schon; neu starten würde das Ausschalten nur verschieben.
+    if (night && radar) scheduleRest();
     else if (radar) activity();
   }
 
