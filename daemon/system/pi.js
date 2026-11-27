@@ -106,8 +106,8 @@ function ipAddress() {
 const BRIGHTNESS = { low: 0.2, mid: 0.55, high: 1 };
 // Nach dem Einschalten des Ausgangs ignoriert das Panel Helligkeitswerte eine Weile und übernimmt danach nur den
 // letzten. Am Pi gemessen: nach 0,3 s noch zu früh, nach 2 s fährt es weich hoch. Erst dann hochfahren.
-// shortcut: 2 s ist der einzige getestete Wert; kürzer (1 s?) am Pi ausprobieren, das verkürzt das Aufwachen.
-const PANEL_READY_MS = 2000;
+// shortcut: 1 s ist ungetestet; springt das Licht wieder, zurück auf 2000.
+const PANEL_READY_MS = 1000;
 // Hochfahren über die Dauer der Aufwach-Animation im Display (motion.js, 600 ms).
 const RAMP_MS = 600, RAMP_STEPS = 12;
 
