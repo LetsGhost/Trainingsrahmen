@@ -2,6 +2,10 @@
 // Hat der Tag mehrere Einheiten, ist die erste groß, die übrigen stehen darunter als Liste.
 import { DOW_LONG, DOW_SHORT, pad, hhmm, esc, icon, hyphenate } from "./util.js";
 
+// Kopfzeile in Satzschreibung: „Heute · Mittwoch 09.09.“
+const dayKicker = (index, today, date) =>
+  `${index === today ? "Heute · " : ""}${DOW_LONG[index][0]}${DOW_LONG[index].slice(1).toLowerCase()} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.`;
+
 function titleSize(title) {
   if (title.length > 50) return " longer";
   if (title.length > 28) return " long";
@@ -61,7 +65,7 @@ function renderMain(main, more) {
     ${main.description ? renderDescription(main.description, main.icon === "dumbbell") : ""}
     ${more.length ? `
       <div class="dv-more">
-        <div class="dv-label">WEITERE EINHEITEN · ANTIPPEN FÜR DETAILS</div>
+        <div class="dv-label plain">Weitere Einheiten · antippen für Details</div>
         ${more.map(([i, s]) => renderRow("", s, i)).join("")}
       </div>` : ""}`;
 }
@@ -106,7 +110,7 @@ export function renderDay({ d, date, index, today, plan, weather, recovery, sess
     <section class="dayview">
       <div class="dv-main">
         <div class="dv-top">
-          <div class="kicker">${isToday ? "HEUTE · " : ""}${DOW_LONG[index]} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.</div>
+          <div class="kicker">${dayKicker(index, today, date)}</div>
           <div class="dv-clock">${hhmm(d)}</div>
         </div>
         <div class="dv-rule"></div>
@@ -142,7 +146,7 @@ function sportHero(main) {
     <div class="sd-hero" data-sport="${main.icon}">
       <div class="sd-hero-top">
         <span class="sd-sport">${esc(main.sport)}${main.unplanned ? " · UNGEPLANT" : ""}</span>
-        ${main.done ? `<span class="sd-done">✓ ERLEDIGT · ${esc(main.done.toUpperCase())}</span>` : ""}
+        ${main.done ? `<span class="sd-done">${icon("circle-check")}Erledigt · ${esc(main.done)}</span>` : ""}
       </div>
       <div class="sd-title${titleSize(title)}">${esc(hyphenate(title))}</div>
       ${sub ? `<div class="sd-sub">${esc(sub)}</div>` : ""}
@@ -168,7 +172,7 @@ function sportMore(more) {
       <span class="sd-label">AUCH HEUTE</span>
       <span class="sd-more-title">${esc(s.title)}</span>
       <span class="sd-more-meta">${esc([s.time, s.unplanned ? s.done : s.dur].filter(Boolean).join(" · "))}</span>
-      ${s.done ? `<span class="sd-more-done">✓ ERLEDIGT</span>` : ""}
+      ${s.done ? `<span class="sd-more-done">${icon("circle-check")}Erledigt</span>` : ""}
     </div>`).join("");
 }
 
@@ -193,7 +197,7 @@ function sportWeek(plan, index) {
       <div class="sd-row">
         <span class="sd-dow">${DOW_SHORT[index + 1 + k]}</span>
         <span class="sd-dot"${s ? ` data-sport="${s.icon}"` : ""}></span>
-        <span class="sd-row-title${s ? "" : " sd-muted"}">${esc(s ? s.title : "Ruhetag")}</span>
+        <span class="sd-row-title${s ? "" : " sd-muted"}">${esc(s ? splitTitle(s.title)[0] : "Ruhetag")}</span>
         <span class="sd-muted">${esc(s?.dur ?? "")}</span>
       </div>`;
   });
@@ -212,7 +216,7 @@ function renderSportDay({ d, date, index, today, plan, weather, session }) {
     <section class="sportday">
       <div class="sd-main">
         <div class="sd-top">
-          <div class="kicker">${index === today ? "HEUTE · " : ""}${DOW_LONG[index]} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.</div>
+          <div class="kicker">${dayKicker(index, today, date)}</div>
           <div class="dv-clock">${hhmm(d)}</div>
         </div>
         ${sportHero(main)}

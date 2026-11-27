@@ -83,7 +83,7 @@ function renderHead(d, dates) {
   return `
     <header class="head">
       <div class="head-left">
-        <div class="kicker">WOCHE ${isoWeek(d)} · ${range} · ${count} EINHEITEN${state.plan?.total ? ` · ${esc(state.plan.total.toUpperCase())}` : ""}</div>
+        <div class="kicker">Woche ${isoWeek(d)} · ${range} · ${count} Einheiten${state.plan?.total ? ` · ${esc(state.plan.total)}` : ""}</div>
         <div class="clock-row">
           <div class="clock">${hhmm(d)}</div>
           <div class="date">

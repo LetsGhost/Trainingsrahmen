@@ -22,7 +22,7 @@ function hold(action, label, { big = false, warn = false } = {}) {
     <button type="button" class="st-hold${big ? " big" : ""}${warn ? " warn" : ""}" data-hold="${action}">
       <span class="st-hold-fill"></span>
       <span class="st-hold-label">${label}</span>
-      <span class="st-hold-hint">2 S HALTEN</span><span class="st-hold-hint on">GEDRÜCKT HALTEN</span>
+      <span class="st-hold-hint">2 s halten</span><span class="st-hold-hint on">gedrückt halten</span>
     </button>`;
 }
 

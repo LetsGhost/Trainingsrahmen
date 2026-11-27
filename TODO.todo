@@ -1,1 +1,26 @@
-- Passwort reset
+Sofort:
+- TESTPLAN-PI.md:111 sagt „master“, Updater zieht nur noch von „production“
+- Passwort reset: Halten-Knopf am Rahmen → zurück auf SETUP_ADMIN, Display zeigt neuen Einmal-Code
+
+Vor v1:
+- WLAN-Stromsparen aus (wifi.powersave=2)
+- Logs ins RAM (journald Storage=volatile)
+- Tests für daemon/admin.js (Login, Sitzung, Einmal-Code, Sperre, Reset)
+- scripts/update.sh ruft install-services.sh nicht auf → Units/polkit kommen per Update nie auf den Pi
+- Aktuellen Stand am Pi testen (TESTPLAN-PI.md)
+
+Nach v1:
+- Login-Sperre pro IP statt global
+- /api/plan und /events liefern HRV, Schlaf, SSID, IP ohne Login → entscheiden
+- Daemon als eigener User ohne sudo
+- server.js:280 FRAME_ACTIONS[name] mit Object.hasOwn
+- server.js:168 readJson > 64 KB: Promise bleibt hängen
+- /health meldet immer ok
+- package.json "type": "module"
+- Slideshow-Race (display/js/slideshow.js)
+- Read-only-Root
+- Messungen (RAM, Startzeit) in ENTWICKLUNG.md eintragen
+
+Ideen:
+- Backup/Restore von Einstellungen und Slides
+- Hinweis bei nicht synchronisierter Uhr (Pi ohne RTC)

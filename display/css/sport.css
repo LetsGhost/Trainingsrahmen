@@ -115,7 +115,7 @@
 :root[data-skin="sport"] .session-top { color: inherit; }
 :root[data-skin="sport"] .session:not(.done) .session-top .icon { display: none; }
 :root[data-skin="sport"] .session-sport { color: inherit; opacity: 0.9; letter-spacing: 0.1em; }
-:root[data-skin="sport"] .session-title { font-size: 13px; font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; }
+:root[data-skin="sport"] .session-title { font-size: 13px; font-weight: 700; line-height: 1.12; letter-spacing: 0; }
 :root[data-skin="sport"] .session-meta { margin-top: auto; font-size: 11px; letter-spacing: 0; color: inherit; }
 :root[data-skin="sport"] .session.done .session-top .icon { color: inherit; }
 :root[data-skin="sport"] .session.unplanned { background: none; color: var(--ink); border: 2px dashed var(--c); }
@@ -129,7 +129,7 @@
   border: 2px dashed var(--rule); border-radius: 12px;
 }
 :root[data-skin="sport"] .rest .icon { display: none; }
-:root[data-skin="sport"] .rest-label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; }
+:root[data-skin="sport"] .rest-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; }
 
 /* Fußzeile: Erholungswerte als Pillen */
 :root[data-skin="sport"] .foot { border-top: 1px solid var(--rule); padding: 10px 14px 12px 14px; }
@@ -140,7 +140,7 @@
   border-radius: 20px; background: var(--paper);
 }
 :root[data-skin="sport"] .recovery-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
-:root[data-skin="sport"] .recovery-value { font-size: 19px; }
+:root[data-skin="sport"] .recovery-value { font-size: 19px; white-space: nowrap; }
 :root[data-skin="sport"] .frame .sync {
   height: 40px; padding: 0 14px; margin: 0 0 0 auto; border-radius: 20px; background: var(--paper);
   font-size: 11px; letter-spacing: 0.02em;
@@ -180,7 +180,7 @@
 :root[data-skin="sport"] .rv-battery { border: 0; }
 :root[data-skin="sport"] .rv-side { gap: 10px; }
 :root[data-skin="sport"] .rv-cell, :root[data-skin="sport"] .rv-cell + .rv-cell {
-  --c: var(--c-other); padding: 14px 16px; border: 0; border-left: 6px solid var(--c); border-radius: 16px; background: var(--paper);
+  --c: var(--c-other); padding: 14px 16px; border: 0; border-radius: 16px; background: var(--paper);
 }
 :root[data-skin="sport"] .rv-cell:not(.rv-hrv):not(.rv-hr) { --c: var(--c-swim); }
 :root[data-skin="sport"] .rv-cell.rv-hr { --c: var(--c-run); }
@@ -258,7 +258,7 @@
 :root[data-skin="sport"] .st-card:has(.st-step-row) { padding: 8px 16px; }
 :root[data-skin="sport"] .st-card:has(.st-step-row) .st-kicker { padding-top: 6px; }
 :root[data-skin="sport"] .st-step-row { border: 0; }
-:root[data-skin="sport"] .st-step-label { font-weight: 800; }
+:root[data-skin="sport"] .st-step-label { font-weight: 700; }
 :root[data-skin="sport"] .st-stepper { gap: 6px; }
 :root[data-skin="sport"] .frame .st-stepper button { width: 44px; border: 0; border-radius: 22px; background: var(--paper); }
 :root[data-skin="sport"] .frame .st-stepper button:disabled { background: none; box-shadow: inset 0 0 0 2px var(--rule); }
@@ -272,7 +272,7 @@
   flex-direction: column; align-items: flex-start; gap: 3px; height: auto; padding: 12px 14px; border: 0; border-radius: 14px;
   background: var(--bg);
 }
-:root[data-skin="sport"] .st-fact span:first-child { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+:root[data-skin="sport"] .st-fact span:first-child { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 :root[data-skin="sport"] .st-fact span:last-child { font-size: 17px; }
 
 /* Einrichtung (S2) */
@@ -281,7 +281,7 @@
 :root[data-skin="sport"] .su-step-text {
   align-items: center; height: 34px; padding: 0 14px; border: 2px solid var(--rule); border-radius: 17px;
 }
-:root[data-skin="sport"] .su-step-label { font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+:root[data-skin="sport"] .su-step-label { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 :root[data-skin="sport"] .su-step.on .su-step-text { border-color: var(--ink); background: var(--ink); }
 :root[data-skin="sport"] .su-step.on :is(.su-step-n, .su-step-label) { color: var(--on-color); }
 :root[data-skin="sport"] .su-body { padding: 0 32px 28px; }
@@ -302,7 +302,7 @@
 .sd-side { gap: 12px; }
 .sd-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 4px; }
 .sportday .dv-clock { font-size: 28px; }
-.sd-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; color: var(--muted); }
+.sd-label { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: var(--muted); }
 .sd-muted { font-size: 12px; font-weight: 600; color: var(--muted); }
 
 .sd-hero {
@@ -316,9 +316,9 @@
 .sd-hero[data-sport="waves"] { --c: var(--c-swim); }
 .sd-hero[data-sport="dumbbell"] { --c: var(--c-strength); }
 .sd-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
-.sd-sport { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; }
-.sd-done { height: 28px; line-height: 28px; padding: 0 12px; border-radius: 14px; background: var(--paper); color: var(--ink); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
-.sd-title { margin-top: 8px; font-size: 30px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; hyphens: manual; overflow-wrap: anywhere; }
+.sd-sport { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; }
+.sd-done { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px; background: var(--paper); color: var(--ink); font-size: 12px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.sd-title { margin-top: 8px; font-size: 30px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; hyphens: manual; overflow-wrap: anywhere; }
 .sd-title.long { font-size: 25px; }
 .sd-title.longer { font-size: 20px; }
 .sd-sub { margin-top: 3px; font-size: 14px; font-weight: 600; opacity: 0.85; }
@@ -330,7 +330,7 @@
 .sd-card { display: flex; flex-direction: column; padding: 12px 16px; border-radius: 16px; background: var(--paper); flex-shrink: 0; }
 .sd-card-head { display: flex; justify-content: space-between; padding-bottom: 6px; }
 .sd-ex { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 30px; border-top: 1px solid var(--rule); }
-.sd-ex span:first-child { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-ex span:first-child { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-ex span + span { font-size: 18px; white-space: nowrap; }
 .sd-text { font-size: 13px; font-weight: 600; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 
@@ -338,17 +338,17 @@
   display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 16px; border-radius: 14px; background: #d8c3a0; flex-shrink: 0;
 }
 .sd-more .sd-label { color: var(--ink); }
-.sd-more-title { font-size: 15px; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-more-title { font-size: 15px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-more-meta { font-size: 12px; font-weight: 600; white-space: nowrap; }
-.sd-more-done { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+.sd-more-done { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
 
 .sd-now { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 6px; }
 .sd-temp { font-size: 42px; line-height: 0.9; }
-.sd-now-label { font-size: 14px; font-weight: 800; }
+.sd-now-label { font-size: 14px; font-weight: 700; }
 .sd-row { display: flex; align-items: center; gap: 10px; height: 26px; border-top: 1px solid var(--rule); min-width: 0; }
 .sd-week .sd-label { padding-bottom: 6px; }
-.sd-dow { width: 24px; flex-shrink: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
-.sd-row-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-dow { width: 24px; flex-shrink: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--muted); }
+.sd-row-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-hi { font-size: 17px; }
 .sd-lo { width: 28px; text-align: right; font-size: 12px; font-weight: 600; color: var(--muted); }
 .sd-dot { --c: transparent; width: 10px; height: 10px; flex-shrink: 0; border-radius: 3px; background: var(--c); }
@@ -357,3 +357,4 @@
 .sd-dot[data-sport="bike"] { --c: var(--c-bike); }
 .sd-dot[data-sport="waves"] { --c: var(--c-swim); }
 .sd-dot[data-sport="dumbbell"] { --c: var(--c-strength); }
+.sd-done .icon, .sd-more-done .icon { width: 12px; height: 12px; stroke-width: 2; }
