@@ -62,6 +62,8 @@ const backend = createBackend({ dev: DEV || DEMO, sim, fixture: () => path.join(
   athleteptFixture: path.join(FIXTURE_DIR, "athletept.json"), garminFixture: path.join(FIXTURE_DIR, "garmin.json")
 });
 system.setBrightness(config.display.brightness);
+// Der Zustand startet in AKTIV. Lief der Daemon vorher in AUS (z. B. Update in der Ruhe), sind Ausgang und Licht noch aus.
+system.setBacklight(true);
 const slides = createSlides(configStore.DATA_DIR);
 const updater = createUpdater({ dev: DEV, rootDir: ROOT, baseDir: configStore.BASE_DIR, dataDir: configStore.DATA_DIR, config, port: PORT });
 const frame = createFrame({
