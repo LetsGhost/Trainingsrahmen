@@ -38,9 +38,13 @@ const CONNECTIVITY_URL = "http://connectivitycheck.gstatic.com/generate_204";
 // Ohne leicht verwechselbare Zeichen, falls jemand das Hotspot-Passwort abtippt.
 const PASSWORD_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
 
-function run(cmd, args, timeout = (CONNECT_TIMEOUT_S + 15) * 1000) {
+// Ausgang und Wayland-Socket von cage (Kiosk läuft unter demselben User wie der Daemon).
+const DISPLAY_OUTPUT = process.env.FRAME_DISPLAY_OUTPUT || "DSI-1";
+const WAYLAND_ENV = { ...process.env, XDG_RUNTIME_DIR: `/run/user/${process.getuid?.()}`, WAYLAND_DISPLAY: "wayland-0" };
+
+function run(cmd, args, timeout = (CONNECT_TIMEOUT_S + 15) * 1000, env = process.env) {
   return new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout }, (err, stdout, stderr) => {
+    execFile(cmd, args, { timeout, env }, (err, stdout, stderr) => {
       if (err) {
         err.stderr = String(stderr);
         reject(err);
@@ -319,6 +323,12 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
     // Ohne Backlight unter /sys (z. B. HDMI-Display) bleibt nur das schwarze Bild des Displays im Zustand AUS.
     async setBacklight(on) {
       hw.backlight = on;
+      // Der Waveshare-Treiber glimmt bei brightness 0 noch; erst den Ausgang in cage abzuschalten macht das Panel ganz dunkel.
+      // Beim Einschalten zuerst den Ausgang, danach die Helligkeit, falls der Treiber sie beim Aktivieren zurücksetzt.
+      const output = () => run("wlr-randr", ["--output", DISPLAY_OUTPUT, on ? "--on" : "--off"], 5000, WAYLAND_ENV)
+        .catch(err => console.error(`Display-Ausgang: ${err.message}`));
+      if (on) await output();
+      else output();
       if (!backlight) return;
       // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness 0 trotzdem geschrieben werden.
       try {
