@@ -35,7 +35,11 @@ function ghost(frame, z) {
   g.removeAttribute("id");
   g.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
   g.classList.add("mx-ghost");
-  return layer(g, z);
+  layer(g, z);
+  // cloneNode übernimmt keine Scroll-Position; sonst spränge eine gewischte Tagesansicht beim Schließen nach oben.
+  const from = frame.querySelectorAll("*"), to = g.querySelectorAll("*");
+  from.forEach((e, i) => e.scrollTop && (to[i].scrollTop = e.scrollTop));
+  return g;
 }
 
 // Kopie anlegen, dann den neuen Screen zeichnen. null, wenn er derselbe bleibt (z. B. Tag ohne geladenen Plan).

@@ -193,7 +193,23 @@ function render() {
   draw(d, screen);
 }
 
+// Wischbare Spalten der Tagesansicht. Ihre Position übersteht das Neuzeichnen (Uhr jede Minute, Daemon-Updates),
+// solange derselbe Tag mit derselben Einheit offen bleibt.
+const SCROLLERS = ".dv-main, .dv-side, .sd-main, .sd-side";
+let shownView = null;
+
 function draw(d, screen) {
+  const view = `${screen}:${state.openDay}:${state.openSession}`;
+  const scroll = view === shownView ? [...frame.querySelectorAll(SCROLLERS)].map(e => e.scrollTop) : [];
+  shownView = view;
+  try {
+    drawScreen(d, screen);
+  } finally {
+    frame.querySelectorAll(SCROLLERS).forEach((e, i) => (e.scrollTop = scroll[i] ?? 0));
+  }
+}
+
+function drawScreen(d, screen) {
   applyTheme(d, screen);
   frame.dataset.screen = screen;
   if (screen !== "slideshow") stopSlideshow();
@@ -302,10 +318,20 @@ let dayTimer = null;
 function openDay(index, session = 0) {
   state.openDay = index;
   state.openSession = session;
-  clearTimeout(dayTimer);
-  dayTimer = setTimeout(() => closeDay(true, true), DAY_VIEW_MS);
+  restartDayTimer();
   render();
 }
+
+function restartDayTimer() {
+  clearTimeout(dayTimer);
+  dayTimer = setTimeout(() => closeDay(true, true), DAY_VIEW_MS);
+}
+
+// Wischen zählt als Berührung: die 60 s bis zum Rücksprung neu starten. Nicht über „scroll“, das feuert auch, wenn
+// draw() die Position nach dem Neuzeichnen zurücksetzt; dann käme der Rücksprung nie.
+["touchmove", "wheel"].forEach(type => frame.addEventListener(type, () => {
+  if (state.openDay !== null) restartDayTimer();
+}, { passive: true }));
 
 // Wovon aus der Woche ein Screen aufgeht und wohin er zurückschrumpft; shared fliegt als geteiltes Element nach target.
 function sourceFor(open) {
