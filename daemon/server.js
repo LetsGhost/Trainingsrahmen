@@ -433,6 +433,8 @@ function handle(req, res) {
   }
 
   const rel = pathname === "/" || pathname === "/display" ? "index.html" : pathname.replace(/^\/+/, "");
+  // Die Rahmen-UI nur für den Kiosk am Pi (im Dev auch fürs Handy); andere landen im Admin. CSS/Fonts bleiben offen, Admin und Portal nutzen sie.
+  if (rel === "index.html" && !DEV && !isLocal(req)) return redirect(res, inSetup() ? system.portalUrl() : "/admin");
   sendStatic(res, DISPLAY_DIR, rel);
 }
 
