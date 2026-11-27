@@ -332,29 +332,34 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
     },
 
     // Ohne Backlight unter /sys (z. B. HDMI-Display) bleibt nur das schwarze Bild des Displays im Zustand AUS.
+    // Einschalten löst auf, sobald der Ausgang wieder Bild hat; das Hochfahren läuft dann noch 600 ms weiter,
+    // gleichzeitig mit der Aufwach-Animation, die state.js erst jetzt auslöst.
     async setBacklight(on) {
       hw.backlight = on;
       // Der Waveshare-Treiber glimmt bei brightness 0 noch; erst den Ausgang in cage abzuschalten macht das Panel ganz dunkel.
-      // Beim Einschalten zuerst den Ausgang, danach die Helligkeit, falls der Treiber sie beim Aktivieren zurücksetzt.
+      // Er setzt die Helligkeit beim Aktivieren nicht zurück (am Pi geprüft), sie steht also noch auf 0.
       const output = () => run("wlr-randr", ["--output", DISPLAY_OUTPUT, on ? "--on" : "--off"], 5000, WAYLAND_ENV)
         .catch(err => console.error(`Display-Ausgang: ${err.message}`));
       if (on) await output();
       else output();
       if (!backlight) return;
       // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness trotzdem geschrieben werden.
-      const brightness = on ? rampUp : async () => writeBrightness();
       try {
         if (on) fs.writeFileSync(path.join(backlight, "bl_power"), "0");
       } catch (err) {
         console.error(`Backlight bl_power: ${err.message}`);
       }
+      if (on) {
+        rampUp().catch(err => console.error(`Backlight brightness: ${err.message}`));
+        return;
+      }
       try {
-        await brightness();
+        writeBrightness();
       } catch (err) {
         console.error(`Backlight brightness: ${err.message}`);
       }
       try {
-        if (!on) fs.writeFileSync(path.join(backlight, "bl_power"), "4");
+        fs.writeFileSync(path.join(backlight, "bl_power"), "4");
       } catch (err) {
         console.error(`Backlight bl_power: ${err.message}`);
       }

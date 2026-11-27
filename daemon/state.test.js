@@ -80,6 +80,36 @@ test("Radar: Fristen ruhen, solange jemand da ist", async t => {
   assert.equal(frame.snapshot().rest, "AUS");
 });
 
+test("Aufwachen wird erst gemeldet, wenn das Display wieder Bild hat", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  let lightOn;
+  const system = {
+    events: new EventEmitter(),
+    connectWifi: async () => { throw new Error("kein WLAN"); },
+    checkInternet: async () => false,
+    readCpuTemp: async () => null,
+    setBacklight: on => (on ? new Promise(resolve => (lightOn = resolve)) : undefined),
+    portalUrl: () => null,
+    adminUrl: () => null,
+    status: () => ({})
+  };
+  const config = { wifi: { ssid: "x" }, slideshowAfterMin: 1, offAfterMin: 1 };
+  const frame = createFrame({ system, config, saveConfig: () => {}, hasImages: () => false });
+  await frame.boot();
+  t.mock.timers.tick(60 * 1000);
+  assert.equal(frame.snapshot().rest, "AUS");
+  // Die Verbindungsprüfungen aus dem Vorspulen erst auslaufen lassen; sie melden sonst selbst.
+  await new Promise(resolve => setImmediate(resolve));
+  const seen = [];
+  frame.on("change", snap => seen.push(snap.rest));
+  frame.activity();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(seen, []);
+  lightOn();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(seen, ["AKTIV"]);
+});
+
 test("Hotspot: Fehlstart wird nach 30 s wiederholt", async t => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   t.mock.method(console, "error", () => {});
