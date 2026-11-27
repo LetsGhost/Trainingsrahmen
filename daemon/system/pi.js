@@ -320,11 +320,16 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
     async setBacklight(on) {
       hw.backlight = on;
       if (!backlight) return;
+      // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness 0 trotzdem geschrieben werden.
       try {
-        fs.writeFileSync(path.join(backlight, "bl_power"), on ? "0" : "4");
         writeBrightness();
       } catch (err) {
-        console.error(`Backlight: ${err.message}`);
+        console.error(`Backlight brightness: ${err.message}`);
+      }
+      try {
+        fs.writeFileSync(path.join(backlight, "bl_power"), on ? "0" : "4");
+      } catch (err) {
+        console.error(`Backlight bl_power: ${err.message}`);
       }
     },
 
