@@ -93,13 +93,15 @@ frame.on("change", f => {
 const LOCAL = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const isLocal = req => LOCAL.has(req.socket.remoteAddress);
 
-// res → lokal ja/nein
+// res → "local" (Display am Pi), "admin" (angemeldet) oder "public" (z. B. Handy im Portal)
 const clients = new Map();
 let displaySeen = false;
 
-function message(local) {
+function message(level) {
   const f = frame.snapshot();
-  if (!local) f.adminCode = null;
+  // Ohne Login nur, was das Portal braucht: keine SSID, IP, Gesundheitsdaten oder Hotspot-Passwort.
+  if (level === "public") return JSON.stringify({ frame: { setup: f.setup, connecting: f.connecting, error: f.error } });
+  if (level !== "local") f.adminCode = null;
   // app.commit: Das Display lädt neu, wenn nach einem Update ein anderer Stand läuft.
   // bootAt: für „Läuft seit“ im Einstellungs-Screen.
   const app = { commit: updater.commit(), demo: DEMO, bootAt: Date.now() - os.uptime() * 1000 };
@@ -107,8 +109,8 @@ function message(local) {
 }
 
 function broadcast() {
-  const data = { true: `data: ${message(true)}\n\n`, false: `data: ${message(false)}\n\n` };
-  for (const [res, local] of clients) res.write(data[local]);
+  const data = {};
+  for (const [res, level] of clients) res.write(data[level] ??= `data: ${message(level)}\n\n`);
 }
 
 frame.on("change", broadcast);
@@ -123,13 +125,15 @@ function openEvents(req, res) {
     "Cache-Control": "no-store",
     Connection: "keep-alive"
   });
-  res.write(`retry: 2000\ndata: ${message(isLocal(req))}\n\n`);
+  // shortcut: Level gilt für die ganze Verbindung, auch wenn die Admin-Session währenddessen abläuft.
+  const level = isLocal(req) ? "local" : admin.isAuthed(req) ? "admin" : "public";
+  res.write(`retry: 2000\ndata: ${message(level)}\n\n`);
   // Einmal pro Boot ins Journal: scripts/pi-check.sh misst daraus die Zeit vom Einschalten bis zum Plan.
   if (isLocal(req) && !displaySeen) {
     displaySeen = true;
     console.log(`Display verbunden nach ${Math.round(os.uptime())} s Systemlaufzeit`);
   }
-  clients.set(res, isLocal(req));
+  clients.set(res, level);
   req.on("close", () => clients.delete(res));
 }
 
@@ -165,7 +169,8 @@ function readJson(req) {
     let body = "";
     req.on("data", chunk => {
       body += chunk;
-      if (body.length > 64 * 1024) req.destroy();
+      // Mit Fehler, sonst kommt weder "end" noch "error" und das Promise bleibt offen.
+      if (body.length > 64 * 1024) req.destroy(new FrameError("TOO_LARGE", "Anfrage ist zu groß"));
     });
     req.on("end", () => {
       try { resolve(body ? JSON.parse(body) : {}); } catch (err) { reject(err); }
@@ -252,7 +257,7 @@ async function handleDebug(req, res) {
   } catch {
     return sendJson(res, 400, { error: "Ungültiges JSON" });
   }
-  const action = DEBUG_ACTIONS[body.action];
+  const action = Object.hasOwn(DEBUG_ACTIONS, body.action) && DEBUG_ACTIONS[body.action];
   if (!action) return sendJson(res, 404, { error: `Unbekannte Aktion: ${body.action}` });
   try {
     await action(body);
@@ -277,7 +282,8 @@ const FRAME_ACTIONS = {
 
 async function handleFrameAction(req, res, name) {
   if (!isLocal(req)) return sendJson(res, 403, { error: "Nur am Rahmen" });
-  const action = FRAME_ACTIONS[name];
+  // hasOwn: sonst liefern "constructor" & Co. geerbte Funktionen von Object.prototype.
+  const action = Object.hasOwn(FRAME_ACTIONS, name) && FRAME_ACTIONS[name];
   if (!action) return sendJson(res, 404, { error: "Unbekannt" });
   try {
     await action(await readJson(req));
@@ -398,9 +404,11 @@ function handle(req, res) {
   if (pathname === "/events") return openEvents(req, res);
   // commit: damit self-update.sh nach dem Neustart prüfen kann, ob der neue Stand läuft.
   // display: Der Kiosk-Browser hängt an /events; scripts/kiosk.sh startet ihn neu, wenn das ausbleibt.
+  // ok: Kiosk hängt am Display und der Radar antwortet. screen nur zur Info, aus ist im Ruhemodus normal.
   if (pathname === "/health") {
-    const display = [...clients.values()].some(local => local);
-    return sendJson(res, 200, { ok: true, commit: updater.commit(), demo: DEMO, display });
+    const display = [...clients.values()].includes("local");
+    const sensor = system.sensor().online;
+    return sendJson(res, 200, { ok: display && sensor, commit: updater.commit(), demo: DEMO, display, sensor, screen: system.status().backlight });
   }
   if (pathname.startsWith("/api/frame/") && req.method === "POST") return handleFrameAction(req, res, pathname.slice("/api/frame/".length));
   if (pathname === "/api/activity" && req.method === "POST") {
@@ -409,6 +417,7 @@ function handle(req, res) {
   }
   // Letzter Stand aus dem Sync; Plan im Server-Format (übersetzt wird im Display), Wetter schon übersetzt.
   if (pathname === "/api/plan" || pathname === "/api/weather") {
+    if (!isLocal(req) && !admin.isAuthed(req)) return sendJson(res, 401, { error: "Nicht angemeldet" });
     const data = pathname === "/api/plan" ? sync.plan() : sync.weather();
     return data ? sendJson(res, 200, data) : sendJson(res, 404, { error: "Noch kein Stand" });
   }

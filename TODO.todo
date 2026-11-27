@@ -16,10 +16,8 @@ Nach v1:
 - server.js:280 FRAME_ACTIONS[name] mit Object.hasOwn
 - server.js:168 readJson > 64 KB: Promise bleibt hängen
 - /health meldet immer ok
-- package.json "type": "module"
 - Slideshow-Race (display/js/slideshow.js)
 - Read-only-Root
-- Messungen (RAM, Startzeit) in ENTWICKLUNG.md eintragen
 
 Ideen:
 - Backup/Restore von Einstellungen und Slides

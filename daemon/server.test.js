@@ -23,4 +23,6 @@ test("kaputtes %-Escape: 400, Daemon läuft weiter", async t => {
   }
   assert.equal((await fetch(url("/%E0"))).status, 400);
   assert.equal((await fetch(url("/health"))).status, 200);
+  // Geerbte Object.prototype-Schlüssel sind keine Aktionen.
+  assert.equal((await fetch(url("/api/frame/constructor"), { method: "POST" })).status, 404);
 });
