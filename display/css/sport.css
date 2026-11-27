@@ -60,7 +60,7 @@
   --ink: #f2ebdd;
   --paper: #27231e;
   --accent: #c2552f;
-  --accent-ink: #c2552f;
+  --accent-ink: #d86a40;
   --rule: rgba(242, 235, 221, 0.14);
   --rule-soft: rgba(242, 235, 221, 0.14);
   --muted: #a89d8f;
@@ -69,7 +69,7 @@
   --today-date: var(--on-ink);
   --bar: #5a4e40;
   --ok: #8a9a48;
-  --warn: #c2552f;
+  --warn: #d86a40;
   --warn-fill: #c2552f;
   --dim: #6f665b;
   --c-run: #c2552f;
@@ -217,6 +217,9 @@
 :root[data-skin="sport"] .rv-cell:not(.rv-hrv):not(.rv-hr) { --c: var(--c-swim); }
 :root[data-skin="sport"] .rv-cell.rv-hr { --c: var(--c-run); }
 :root[data-skin="sport"] .rv-cell .dv-heading { color: var(--c); }
+/* Dunkel: die Sportfarben sind als 11-px-Schrift auf Karte/Grund zu schwach (2,9–3,9:1), daher zur Schrift hin aufgehellt. */
+:root[data-skin="sport"][data-theme="dark"] .rv-score .dv-heading { color: color-mix(in srgb, var(--c-strength) 70%, var(--ink)); }
+:root[data-skin="sport"][data-theme="dark"] .rv-cell .dv-heading { color: color-mix(in srgb, var(--c) 70%, var(--ink)); }
 :root[data-skin="sport"] .rv-value, :root[data-skin="sport"] .rv-hr .rv-value { font-size: 34px; line-height: 0.9; }
 :root[data-skin="sport"] .rv-sleep-bar { height: 10px; }
 :root[data-skin="sport"] .rv-sleep-bar > div, :root[data-skin="sport"] .rv-swatch, :root[data-skin="sport"] .rv-bar { border-radius: 3px; }

@@ -163,7 +163,7 @@ function renderCustomize({ settings }) {
     <div class="st-card">
       <div class="st-kicker">THEME</div>
       ${segment("skin", settings.skin ?? "modern", [["modern", "Modern"], ["sport", "Sport"]])}
-      <div class="st-hint">Sport: Kalk-Weiß, jede Sportart in ihrer Farbe. Immer hell.</div>
+      <div class="st-hint">Sport: Kalk-Weiß, jede Sportart in ihrer Farbe. Hell/Dunkel unter Anzeige.</div>
     </div>`;
 }
 
