@@ -233,6 +233,7 @@ npm run demo                      # am PC
 - AthletePT und Garmin sind eingetragen und kommen ebenfalls aus `fixtures/`: zusätzliche Einheiten, Häkchen und ungeplante Einheiten (nur bis heute, also gegen Ende der Woche am meisten), Tipp auf die Fußleiste öffnet die Erholungs-Ansicht. Gilt nur für neu angelegte Demo-Daten; bestehende mit `--fresh` (am PC `data/demo/` löschen) neu anlegen.
 - WLAN, Hotspot und Internet werden nur gespielt (`daemon/demo.js`); Backlight, PIR und CPU-Temperatur sind echt. „WLAN ändern“ im Admin-Bereich führt durch die Einrichtung, das Portal liegt dann unter der normalen LAN-Adresse.
 - Admin-Passwort `demo1234`.
+- Admin → System: „Demo zurücksetzen“ (= `demo.sh on --fresh`) und „Demo beenden“ (= `demo.sh off`). Eine Werkseinstellung gibt es dort im Demo-Modus nicht.
 - Einstellungen, Cache und Bilder liegen unter `data/demo/`, die echte Einrichtung bleibt unberührt. Der Schalter steht als `FRAME_DEMO=1` in `data/frame.env`.
 
 ## Werkseinstellung
@@ -242,6 +243,8 @@ npm run demo                      # am PC
 ```
 
 Löscht `data/` komplett (WLAN, Server, Admin-Passwort, Cache, Slideshow-Bilder, Demo-Schalter, Update-Status), die WLAN-Verbindungen `rahmen-wifi` und `rahmen-hotspot` in NetworkManager und das Kiosk-Profil, dann startet der Daemon in der Einrichtung. Code und Pi OS bleiben. Am PC löscht es nur `data/`; der Daemon muss dann von Hand neu starten. Die Werkseinstellung der Dev-Leiste setzt dagegen nur WLAN, Server und Passwort zurück.
+
+Dasselbe Skript startet der Knopf „Werkseinstellung“ im Admin-Bereich (System). Weil das Skript den Daemon stoppt, läuft es über die eigene Unit `trainingsrahmen-reset.service` (`daemon/reset.js` schreibt Skript und Argumente nach `data/reset.env`). Ohne systemd (PC) beendet sich der Daemon nach dem Skript.
 
 ## Messwerte vom Pi
 

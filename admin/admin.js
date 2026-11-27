@@ -503,6 +503,7 @@ function renderSystem() {
       <button class="secondary" data-action="wifi-reset">WLAN ändern</button>
       <button class="secondary" data-action="reboot">Neu starten</button>
       <button class="secondary" data-action="poweroff">Herunterfahren</button>
+      <span class="row wrap" id="reset-actions"></span>
     </div>
     <div class="msg" id="action-msg"></div>
     <div class="kicker-row">PASSWORT ÄNDERN</div>
@@ -560,6 +561,12 @@ function renderStatus() {
     issue.querySelector("[data-goto]")?.addEventListener("click", () => { state.tab = "services"; renderMain(); });
   }
 
+  const resets = $("#reset-actions");
+  if (resets) resets.innerHTML = s.demo
+    ? `<button class="secondary" data-action="demo-fresh">Demo zurücksetzen</button>
+       <button class="secondary" data-action="demo-off">Demo beenden</button>`
+    : `<button class="secondary" data-action="factory">Werkseinstellung</button>`;
+
   const list = $("#status");
   if (list) list.innerHTML = [
     ["WLAN", s.wifi ? `${s.wifi}${s.signal ? ` · ${s.signal} dBm` : ""}` : "–"],
@@ -580,9 +587,9 @@ async function refreshStatus() {
 }
 
 // Danach ist der Rahmen nicht mehr erreichbar; das Panel weicht einer Abschlussseite.
-const power = (action, question, title, text) => async () => {
+const power = (action, question, title, text, body = {}) => async () => {
   if (!confirm(question)) return;
-  const r = await api(action, { method: "POST", body: {} });
+  const r = await api(action, { method: "POST", body });
   if (!r.ok) return setMsg("action-msg", r.error);
   clearInterval(statusTimer);
   app.innerHTML = authLayout(`<div class="field"><h1>${title}</h1><div class="muted">${text}</div></div>`);
@@ -609,7 +616,23 @@ const ACTIONS = {
     "Rahmen startet neu", "Lade diese Seite in etwa einer Minute neu."),
   poweroff: power("poweroff",
     "Rahmen wirklich herunterfahren? Einschalten geht danach nur, indem du den Strom kurz trennst.",
-    "Rahmen fährt herunter", "Den Strom erst trennen, wenn die grüne LED am Pi nicht mehr blinkt.")
+    "Rahmen fährt herunter", "Den Strom erst trennen, wenn die grüne LED am Pi nicht mehr blinkt."),
+  factory: power("reset",
+    "Rahmen wirklich auf Werkseinstellung zurücksetzen?\n\n" +
+    "Gelöscht werden: WLAN, Server- und Dienst-Zugänge (AthletePT, Garmin), Admin-Passwort, Anzeige-Einstellungen, " +
+    "Slideshow-Bilder und der gespeicherte Plan. Die Software bleibt.\n\n" +
+    "Danach trennt sich der Rahmen vom Heimnetz, diese Seite ist nicht mehr erreichbar und die Einrichtung beginnt " +
+    "auf dem Display von vorn. Das lässt sich nicht rückgängig machen.",
+    "Rahmen wird zurückgesetzt", "Die Einrichtung startet gleich auf dem Display.", { kind: "factory" }),
+  "demo-fresh": power("reset",
+    "Demo wirklich zurücksetzen?\n\nAlle Änderungen in der Demo (Einstellungen, Bilder, Passwort) werden gelöscht und " +
+    "die Demo startet mit den Testdaten neu. Die echte Einrichtung bleibt unberührt.",
+    "Demo startet neu", "Lade diese Seite in etwa einer halben Minute neu. Passwort: demo1234", { kind: "demo-fresh" }),
+  "demo-off": power("reset",
+    "Demo-Modus wirklich beenden?\n\nDer Rahmen startet mit der echten Einrichtung neu. Ist er noch nicht eingerichtet, " +
+    "öffnet er seinen Hotspot und die Einrichtung beginnt auf dem Display; diese Seite ist dann nicht mehr erreichbar. " +
+    "Die Demo-Daten bleiben gespeichert.",
+    "Demo wird beendet", "Folge den Schritten auf dem Display oder melde dich mit dem echten Passwort neu an.", { kind: "demo-off" })
 };
 
 // --- Update per Knopf ---

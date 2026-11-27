@@ -15,6 +15,7 @@ const { FrameError } = require("./errors");
 const { createSlides } = require("./slides");
 const { createAdmin } = require("./admin");
 const { createUpdater } = require("./updater");
+const { createReset } = require("./reset");
 const demo = require("./demo");
 
 const PORT = process.env.PORT || 8080;
@@ -205,6 +206,8 @@ const admin = createAdmin({
   backend,
   updater,
   system,
+  reset: createReset({ rootDir: ROOT, baseDir: configStore.BASE_DIR, demo: DEMO }),
+  demo: DEMO,
   dataDir: configStore.DATA_DIR,
   http: { sendJson, sendStatic, readJson, readBody, ADMIN_DIR }
 });

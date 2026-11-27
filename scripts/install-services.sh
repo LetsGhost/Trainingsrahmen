@@ -30,7 +30,7 @@ render() {
 
 chmod +x "$DIR"/scripts/*.sh
 
-for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service trainingsrahmen-touch.service trainingsrahmen-hotspot.service; do
+for unit in trainingsrahmen.service trainingsrahmen-kiosk.service trainingsrahmen-update.service trainingsrahmen-touch.service trainingsrahmen-hotspot.service trainingsrahmen-reset.service; do
   render "$DIR/scripts/systemd/$unit" "/etc/systemd/system/$unit" 0644
 done
 sudo mkdir -p /etc/polkit-1/rules.d

@@ -1,0 +1,14 @@
+# Werkseinstellung und Demo-Schalter aus dem Admin-Bereich (daemon/reset.js), unabhängig vom Daemon, weil die
+# Skripte ihn stoppen bzw. neu starten. Skript und Argumente schreibt der Daemon nach data/reset.env.
+# Darf der User laut scripts/system/trainingsrahmen.rules (polkit). @USER@ und @DIR@ setzt scripts/install-services.sh ein.
+# Logs: journalctl -u trainingsrahmen-reset
+
+[Unit]
+Description=Trainingsrahmen Werkseinstellung / Demo per Knopf
+
+[Service]
+Type=oneshot
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=@DIR@/data/reset.env
+ExecStart=/bin/bash @DIR@/scripts/${FRAME_RESET_SCRIPT} $FRAME_RESET_ARGS

@@ -62,7 +62,7 @@ function createSessionStore(file) {
   };
 }
 
-function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater, system, dataDir, http }) {
+function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater, system, reset, demo = false, dataDir, http }) {
   fs.mkdirSync(dataDir, { recursive: true });
   const sessions = createSessionStore(path.join(dataDir, "sessions.json"));
   let failures = 0;
@@ -228,7 +228,8 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       cpuTemp: f.cpuTemp,
       diskUsedPercent: disk,
       sync: sync.status(),
-      slides: slides.count()
+      slides: slides.count(),
+      demo
     };
   }
 
@@ -368,6 +369,8 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       respond(res, () => system.power(action));
     } else if (action === "wifi-reset" && method === "POST") {
       respond(res, async () => { await frame.reset({ keepAdmin: true }); });
+    } else if (action === "reset" && method === "POST") {
+      respond(res, async () => { reset((await http.readJson(req)).kind); });
     } else if (action === "slides" && method === "GET") {
       http.sendJson(res, 200, { slides: slides.list(), max: slides.MAX_SLIDES });
     } else if (action === "slides" && method === "POST") {
