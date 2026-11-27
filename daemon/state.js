@@ -89,16 +89,13 @@ function createFrame({ system, config, saveConfig, hasImages }) {
 
   // --- Ruhe ---
 
-  // lightOn: löst auf, sobald das Display nach AUS wieder Bild hat.
-  let lightOn = Promise.resolve();
-
   // Gibt zurück, ob sich etwas geändert hat.
   function setRest(next) {
     if (s.rest === next) return false;
     const wasOff = s.rest === REST.OFF;
     s.rest = next;
     if (next === REST.OFF) system.setBacklight(false);
-    else if (wasOff) lightOn = Promise.resolve(system.setBacklight(true)).catch(() => {});
+    else if (wasOff) system.setBacklight(true);
     return true;
   }
 
@@ -125,9 +122,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
   // Touch am Display oder Bewegung am PIR.
   function activity() {
     if (!operating()) return;
-    const wasOff = s.rest === REST.OFF;
-    // Aus AUS erst melden, wenn das Display wieder Bild hat; sonst läuft die Aufwach-Animation im Dunkeln ab.
-    if (setRest(REST.ACTIVE)) (wasOff ? lightOn.then(changed) : changed());
+    if (setRest(REST.ACTIVE)) changed();
     scheduleRest();
   }
 

@@ -184,7 +184,7 @@ export async function sheetDown(frame, _src, apply) {
   ]));
 }
 
-// Auto-Zurück nach 60 s: Woche blendet langsam über den aktuellen Screen.
+// Auto-Zurück nach 60 s und Slideshow an/aus: der neue Screen blendet langsam über den alten.
 export async function fade(frame, _src, apply) {
   const old = swap(frame, 1, apply);
   if (!old) return;

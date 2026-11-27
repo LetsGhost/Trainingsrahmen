@@ -184,6 +184,16 @@ function render() {
   }
   const d = now();
   const screen = screenFor(state.daemon);
+  const from = frame.dataset.screen;
+  // Slideshow kommt und geht weich, ob per Frist, Radar oder Tipp; nicht nach AUS, da ist das Licht ohnehin weg.
+  if (from && from !== screen && screen !== "off" && (from === "slideshow" || screen === "slideshow")) {
+    motion.fade(frame, null, () => draw(d, screen)).then(flushRender);
+    return;
+  }
+  draw(d, screen);
+}
+
+function draw(d, screen) {
   const woke = frame.dataset.screen === "off" && screen !== "off";
   applyTheme(d, screen);
   frame.dataset.screen = screen;
