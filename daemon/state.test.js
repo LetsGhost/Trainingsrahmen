@@ -80,7 +80,7 @@ test("Radar: Fristen ruhen, solange jemand da ist", async t => {
   assert.equal(frame.snapshot().rest, "AUS");
 });
 
-test("Aufwachen wird erst gemeldet, wenn das Display wieder Bild hat", async t => {
+test("Radar weckt weich (Meldung erst mit Bild), Tipp sofort", async t => {
   t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
   let lightOn;
   const system = {
@@ -101,12 +101,19 @@ test("Aufwachen wird erst gemeldet, wenn das Display wieder Bild hat", async t =
   await new Promise(resolve => setImmediate(resolve));
   const seen = [];
   frame.on("change", snap => seen.push(snap.rest));
-  frame.activity();
+  system.events.emit("presence", true);
   frame.changed(); // auch andere Meldungen (z. B. Verbindungsprüfung) warten
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(seen, []);
   lightOn();
   await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(seen, ["AKTIV"]);
+
+  system.events.emit("presence", false);
+  t.mock.timers.tick(60 * 1000);
+  assert.equal(frame.snapshot().rest, "AUS");
+  seen.length = 0;
+  frame.activity();
   assert.deepEqual(seen, ["AKTIV"]);
 });
 

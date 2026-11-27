@@ -336,10 +336,11 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
     },
 
     // Ohne Backlight unter /sys (z. B. HDMI-Display) bleibt nur das schwarze Bild des Displays im Zustand AUS.
-    // Aufwachen (aus → an) löst erst auf, wenn das Panel bereit ist; dann startet das Hochfahren, und state.js meldet
-    // „wach“ ans Display, dessen Aufwach-Animation so gleichzeitig läuft.
-    async setBacklight(on) {
-      const waking = on && !hw.backlight;
+    // soft (Radar): Aufwachen löst erst auf, wenn das Panel bereit ist; dann startet das Hochfahren, und state.js meldet
+    // „wach“ ans Display, dessen Aufwach-Animation so gleichzeitig läuft. Ohne soft (Tipp) sofort volle Helligkeit;
+    // das Panel übernimmt sie, sobald es bereit ist.
+    async setBacklight(on, soft = false) {
+      const waking = soft && on && !hw.backlight;
       hw.backlight = on;
       // Der Waveshare-Treiber glimmt bei brightness 0 noch; erst den Ausgang in cage abzuschalten macht das Panel ganz dunkel.
       const output = () => run("wlr-randr", ["--output", DISPLAY_OUTPUT, on ? "--on" : "--off"], 5000, WAYLAND_ENV)
