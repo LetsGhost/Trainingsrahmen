@@ -33,6 +33,10 @@ body {
   overflow: hidden;
 }
 
+/* Übergänge (js/motion.js): Kopien des alten Screens und Flächen liegen in derselben Grid-Zelle wie der Rahmen. */
+.frame, .mx-layer { grid-area: 1 / 1; }
+.mx-layer { width: 800px; height: 480px; pointer-events: none; transform-origin: 0 0; }
+
 .rule { height: 2px; background: var(--rule); }
 
 /* Kopfzeile */

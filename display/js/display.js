@@ -5,6 +5,7 @@ import { renderWeather } from "./weather.js";
 import { renderSetup } from "./setup.js";
 import { renderSettings, renderPower, renderUpdate, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
+import * as motion from "./motion.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
 const NIGHT_START = 22, NIGHT_END = 6;
@@ -166,11 +167,24 @@ function screenFor(f) {
   return state.openDay === "recovery" ? "recovery" : "day";
 }
 
+let renderAfterMotion = false;
+const flushRender = () => {
+  if (!renderAfterMotion) return;
+  renderAfterMotion = false;
+  render();
+};
+
 function render() {
   // Ein neues innerHTML während des Haltens würde den Knopf samt Füllung ersetzen.
   if (holdTimer) return;
+  // Mitten in einem Übergang neu zu zeichnen würde ihn zerreißen; danach wird nachgeholt.
+  if (motion.busy()) {
+    renderAfterMotion = true;
+    return;
+  }
   const d = now();
   const screen = screenFor(state.daemon);
+  const woke = frame.dataset.screen === "off" && screen !== "off";
   applyTheme(d, screen);
   frame.dataset.screen = screen;
   if (screen !== "slideshow") stopSlideshow();
@@ -201,6 +215,7 @@ function render() {
     const dates = weekDates(d);
     frame.innerHTML = renderHead(d, dates) + `<div class="rule"></div>` + renderWeek(d, dates) + `<div class="rule"></div>` + renderFoot();
   }
+  if (woke) motion.wake(frame).then(flushRender);
 }
 
 // null, solange der Daemon noch keinen Stand hat (404).
@@ -280,15 +295,38 @@ function openDay(index, session = 0) {
   state.openDay = index;
   state.openSession = session;
   clearTimeout(dayTimer);
-  dayTimer = setTimeout(closeDay, DAY_VIEW_MS);
+  dayTimer = setTimeout(() => closeDay(true, true), DAY_VIEW_MS);
   render();
 }
 
-function closeDay(rerender = true) {
+// Wovon aus der Woche ein Screen aufgeht und wohin er zurückschrumpft; shared fliegt als geteiltes Element nach target.
+function sourceFor(open) {
+  if (open === "weather") return { box: ".weather", shared: ".weather-temp", target: ".wv-temp, .sw-temp" };
+  if (open === "recovery") return { box: ".recovery-item:first-child", shared: ".recovery-item:first-child .recovery-value", target: ".rv-big" };
+  return { box: `[data-day="${open}"]` };
+}
+
+async function animate(transition, open, apply) {
+  if (motion.busy()) return apply();
+  await transition(frame, sourceFor(open), apply);
+  flushRender();
+}
+
+function openAnimated(index) {
+  animate(index === "settings" ? motion.sheetUp : motion.open, index, () => openDay(index));
+}
+
+// auto: nach 60 s ohne Tipp langsam überblenden statt zur Quelle zurückzuschrumpfen.
+function closeDay(rerender = true, auto = false) {
   clearTimeout(dayTimer);
   if (state.openDay === null) return;
-  state.openDay = null;
-  if (rerender) render();
+  const open = state.openDay;
+  const apply = () => {
+    state.openDay = null;
+    if (rerender) render();
+  };
+  if (!rerender || !["day", "recovery", "weather", "settings"].includes(frame.dataset.screen)) return apply();
+  animate(auto ? motion.fade : open === "settings" ? motion.sheetDown : motion.close, open, apply);
 }
 
 // --- Einstellungs-Screen ---
@@ -416,6 +454,7 @@ function settingsClick(e) {
 }
 
 frame.addEventListener("click", e => {
+  if (motion.busy()) return;
   if (frame.dataset.screen === "settings") return settingsClick(e);
   const session = e.target.closest("[data-session]");
   if (frame.dataset.screen === "day" && session) return openDay(state.openDay, Number(session.dataset.session));
@@ -425,10 +464,10 @@ frame.addEventListener("click", e => {
   if (e.target.closest("[data-settings]")) {
     state.settingsTab = "status";
     state.notice = null;
-    openDay("settings");
-  } else if (day) openDay(Number(day.dataset.day));
-  else if (e.target.closest(".recovery")) openDay("recovery");
-  else if (e.target.closest(".weather")) openDay("weather");
+    openAnimated("settings");
+  } else if (day) openAnimated(Number(day.dataset.day));
+  else if (e.target.closest(".recovery")) openAnimated("recovery");
+  else if (e.target.closest(".weather")) openAnimated("weather");
 });
 
 render();
