@@ -204,6 +204,7 @@ Wie bei der Slotmaschine: Repo auf dem Pi klonen, ein Skript richtet alles ein. 
 |---|---|
 | `FRAME_ROTATION=90` | Bild drehen (`normal`, `90`, `180`, `270`). Touch dreht nicht mit; dafür wie bei der Slotmaschine eine udev-Regel mit `LIBINPUT_CALIBRATION_MATRIX` anlegen |
 | `FRAME_PIR_PIN=17` | GPIO für OUT des Radar-Präsenzsensors (Standard 17, `off` schaltet ab); `FRAME_PIR_CHIP` Standard `gpiochip0` |
+| `FRAME_SENSOR_UART=/dev/serial0` | UART des Radars (TX/RX an GPIO 15/14) für Reichweite, Empfindlichkeit und Live-Wert; `off` schaltet das Einstellen ab |
 | `FRAME_CHROMIUM_FLAGS="--disable-gpu"` | zusätzliche Chromium-Flags |
 | `FRAME_HIDE_CURSOR=0` | Mauszeiger sichtbar |
 

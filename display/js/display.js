@@ -2,7 +2,7 @@ import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
 import { renderSetup } from "./setup.js";
-import { renderSettings, renderPower, stepUp, stepDown } from "./settings.js";
+import { renderSettings, renderPower, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
@@ -17,7 +17,7 @@ const SETUP_DONE_MS = 4000;
 const HOLD_MS = 2000;
 
 // Entwicklungs-Parameter: ?theme=dark|light, ?skin=modern|sport, ?now=2026-09-09T18:42 (verstellte Uhr) und
-// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|customize|system): Ansicht offen, ohne Rücksprung.
+// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|sensor|customize|system): Ansicht offen, ohne Rücksprung.
 // Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
@@ -31,10 +31,12 @@ const frame = document.getElementById("frame");
 // openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht, "settings" für die Einstellungen
 // oder null. setupDoneUntil: bis dahin steht 3C.
 // settingsTab, syncing, notice: Einstellungs-Screen. power: "reboot" | "poweroff", sobald ausgelöst (Vollbild bis zum Aus).
+// sensorLive: letzter Wert aus /api/sensor, nur abgefragt, solange der Tab SENSOR offen ist.
 const state = {
   plan: null, weather: null, daemon: null, sync: null, dev: null, app: null, openDay: urlDay, openSession: 0, setupDoneUntil: 0,
-  settingsTab: params.get("tab") ?? "status", syncing: false, notice: null, power: null
+  settingsTab: params.get("tab") ?? "status", syncing: false, notice: null, power: null, sensorLive: null
 };
+const SENSOR_POLL_MS = 1000;
 
 const now = () => new Date(Date.now() + (urlClockOffset ?? state.dev?.clockOffsetMs ?? 0));
 
@@ -174,9 +176,11 @@ function render() {
   else if (screen === "settings") {
     frame.innerHTML = renderSettings({
       d, tab: state.settingsTab, daemon: state.daemon, sync: state.sync, app: state.app, syncing: state.syncing, notice: state.notice,
-      settings: settings(), deadlines: state.daemon?.deadlines ?? { slideshowAfterMin: 5, offAfterMin: 30 }
+      settings: settings(), deadlines: state.daemon?.deadlines ?? { slideshowAfterMin: 5, offAfterMin: 30 },
+      sensor: sensorSettings(), sensorLive: state.sensorLive
     });
   }
+  pollSensor(screen === "settings" && state.settingsTab === "sensor");
   else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
   else if (screen === "recovery") frame.innerHTML = renderRecovery({ d, r: state.plan.recoveryRaw });
@@ -348,7 +352,34 @@ frame.addEventListener("pointermove", e => {
 // Long-Press öffnet in Chromium sonst das Kontextmenü und bricht das Halten ab.
 frame.addEventListener("contextmenu", e => e.preventDefault());
 
+const sensorSettings = () => state.daemon?.sensor ?? { gates: 6, sensitivity: "mid" };
+
+// Nur das Live-Feld neu schreiben: ein ganzes render() pro Sekunde wäre auf dem Pi unnötig teuer.
+let sensorTimer = null;
+function pollSensor(on) {
+  if (!on) {
+    clearInterval(sensorTimer);
+    sensorTimer = null;
+    state.sensorLive = null;
+    return;
+  }
+  if (sensorTimer) return;
+  const tick = async () => {
+    state.sensorLive = (await getJson("/api/sensor")) ?? { online: false };
+    const el = document.getElementById("st-live");
+    if (el && sensorTimer) el.innerHTML = renderSensorLive(state.sensorLive);
+  };
+  sensorTimer = setInterval(tick, SENSOR_POLL_MS);
+  tick();
+}
+
 function changeSetting(el) {
+  if (el.dataset.set === "sensitivity" || el.dataset.step === "gates") {
+    const sensor = { ...sensorSettings() };
+    if (el.dataset.set) sensor.sensitivity = el.dataset.value;
+    else sensor.gates = Math.min(MAX_GATES, Math.max(MIN_GATES, sensor.gates + Number(el.dataset.dir)));
+    return frameAction("settings", { sensor }).then(render);
+  }
   if (el.dataset.set) {
     return frameAction("settings", { display: { ...settings(), [el.dataset.set]: el.dataset.value } }).then(render);
   }

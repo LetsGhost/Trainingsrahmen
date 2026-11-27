@@ -8,6 +8,7 @@ const path = require("path");
 const { FrameError } = require("./errors");
 const { writeAtomic } = require("./config");
 const { SETUP, validateAthletept } = require("./state");
+const { validateSensor } = require("./system/ld2410");
 
 const COOKIE = "rahmen_session";
 const SESSION_MS = 12 * 60 * 60 * 1000;
@@ -125,6 +126,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       garmin: { active: Boolean(config.garmin), apiKey: maskKey(config.garmin?.apiKey) },
       location: config.location,
       display: config.display,
+      sensor: config.sensor,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin }
     };
   }
@@ -180,6 +182,11 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       }
       next.deadlines = { slideshowAfterMin, offAfterMin };
     }
+    // Erst in den Sensor schreiben; antwortet er nicht, bleibt alles beim Alten.
+    if (input.sensor) {
+      next.sensor = validateSensor(input.sensor);
+      await system.configureSensor(next.sensor);
+    }
 
     if (next.server) config.server = next.server;
     if ("athletept" in next) config.athletept = next.athletept;
@@ -190,6 +197,7 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
       system.setBrightness(next.display.brightness);
     }
     if (next.deadlines) frame.setDeadlines(next.deadlines);
+    if (next.sensor) config.sensor = next.sensor;
     saveConfig(config);
     if (next.server || "athletept" in next) sync.syncPlan();
     // Beim Entfernen den Plan neu holen, damit das Display ohne die Garmin-Werte neu zeichnet.

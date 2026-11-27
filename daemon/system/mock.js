@@ -23,6 +23,7 @@ function lanAddress() {
 module.exports = function createMockAdapter({ sim, port }) {
   const events = new EventEmitter();
   const hw = { hotspot: null, wifi: null, backlight: true };
+  let lastMotion = 0;
 
   return {
     name: "mock",
@@ -79,8 +80,21 @@ module.exports = function createMockAdapter({ sim, port }) {
       return Math.round((46 + Math.random() * 4) * 10) / 10;
     },
 
+    async configureSensor(settings) {
+      await delay(300);
+      hw.sensor = settings;
+    },
+
+    // Nach „Bewegung“ in der Dev-Leiste 15 s erkannt, in wechselndem Abstand innerhalb der Reichweite.
+    sensor() {
+      const present = Date.now() - lastMotion < 15000;
+      const maxCm = (hw.sensor?.gates ?? 6) * 75;
+      return { online: true, present, distanceCm: present ? Math.round(maxCm * (0.3 + 0.4 * Math.random())) : null };
+    },
+
     // Nur im Mock: die Dev-Leiste löst Bewegung aus.
     triggerMotion() {
+      lastMotion = Date.now();
       events.emit("motion");
     },
 

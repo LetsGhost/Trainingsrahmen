@@ -1,5 +1,6 @@
 // Echter Adapter für den Pi: WLAN über NetworkManager (nmcli), Hotspot über hostapd + dnsmasq
-// (scripts/systemd/trainingsrahmen-hotspot.service), Radar-Präsenzsensor über gpiomon (libgpiod),
+// (scripts/systemd/trainingsrahmen-hotspot.service), Radar-Präsenzsensor über gpiomon (libgpiod), seine Einstellungen
+// über die serielle Schnittstelle (scripts/ld2410-bridge.py, Protokoll in ld2410.js),
 // Backlight über /sys/class/backlight, CPU-Temperatur aus /sys/class/thermal.
 // Die Rechte dafür (nmcli ohne root, Backlight schreiben, GPIO lesen) richtet scripts/setup-pi.sh ein.
 // Noch nicht auf echter Hardware geprüft (Phase 2 und 5).
@@ -12,11 +13,17 @@ const path = require("path");
 const readline = require("readline");
 const { FrameError } = require("../errors");
 const { BASE_DIR } = require("../config");
+const ld2410 = require("./ld2410");
 
 const IFACE = process.env.FRAME_WIFI_IFACE || "wlan0";
 // FRAME_PIR_PIN=off schaltet den Sensor ab.
 const PIR_CHIP = process.env.FRAME_PIR_CHIP || "gpiochip0";
 const PIR_PIN = process.env.FRAME_PIR_PIN || "17";
+// UART des Radars (TX/RX an GPIO 15/14); FRAME_SENSOR_UART=off schaltet das Einstellen ab.
+const SENSOR_UART = process.env.FRAME_SENSOR_UART || "/dev/serial0";
+const SENSOR_BRIDGE = path.join(__dirname, "..", "..", "scripts", "ld2410-bridge.py");
+// Ohne Messwert so lange gilt der Sensor als nicht erreichbar (er schickt rund 10 pro Sekunde).
+const SENSOR_STALE_MS = 3000;
 // Nicht über NetworkManager: Der kündigt im AP-Modus immer auch WPA-PSK-SHA256 an, daran scheitert der
 // Broadcom-Chip (BCM43430) beim Handshake, Handys melden „Passwort falsch“. hostapd mit reinem WPA-PSK geht.
 const HOTSPOT_UNIT = "trainingsrahmen-hotspot.service";
@@ -103,7 +110,7 @@ function findBacklight() {
   }
 }
 
-module.exports = function createPiAdapter({ port }) {
+module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
   const events = new EventEmitter();
   const hw = { hotspot: null, wifi: null, backlight: true, ip: null, signal: null };
   const backlight = findBacklight();
@@ -172,6 +179,37 @@ module.exports = function createPiAdapter({ port }) {
       });
   }
   watchPir();
+
+  // Radar-Einstellungen: beim ersten Messwert nach jedem (Neu-)Start der Brücke die gespeicherten schreiben,
+  // damit ein getauschter oder per App verstellter Sensor wieder zur Konfiguration passt.
+  let radar = null;
+  const radarOnline = () => Date.now() - (radar?.latest()?.at ?? 0) < SENSOR_STALE_MS;
+  function watchRadar() {
+    if (SENSOR_UART === "off") return;
+    let logged = false;
+    (function start() {
+      const proc = spawn("python3", [SENSOR_BRIDGE, SENSOR_UART], { stdio: ["pipe", "pipe", "pipe"] });
+      const link = ld2410.createSensor(buf => proc.stdin.write(buf));
+      let applied = false;
+      proc.stdout.on("data", chunk => {
+        link.push(chunk);
+        if (applied || !link.latest()) return;
+        applied = true;
+        radar = link;
+        link.configure(sensorSettings).catch(err => console.error(`Radar: ${err.message}`));
+      });
+      proc.stdin.on("error", () => {});
+      proc.stderr.on("data", d => { if (!logged) console.error(`Radar (UART): ${String(d).trim()}`); });
+      proc.on("error", err => { if (!logged) console.error(`Radar: Brücke startet nicht (${err.message})`); });
+      proc.on("close", code => {
+        if (!logged) console.error(`Radar: Brücke beendet (${code}), neuer Versuch alle 10 s`);
+        logged = true;
+        if (radar === link) radar = null;
+        setTimeout(start, 10000).unref();
+      });
+    })();
+  }
+  watchRadar();
 
   // Hotspot aus und wlan0 zurück an NetworkManager. Auch nach einem Daemon-Neustart, wenn die Unit noch läuft.
   async function stationMode() {
@@ -300,6 +338,18 @@ module.exports = function createPiAdapter({ port }) {
       } catch (err) {
         throw new FrameError("POWER_FAILED", `${action === "reboot" ? "Neustart" : "Herunterfahren"} gescheitert: ${err.stderr?.trim() || err.message}`);
       }
+    },
+
+    // Gespeichert wird erst, wenn der Sensor bestätigt; sonst Fehler, damit die Oberfläche es anzeigt.
+    async configureSensor(settings) {
+      if (!radarOnline()) throw new FrameError("SENSOR_OFFLINE", "Sensor antwortet nicht (Kabel TX/RX?)");
+      await radar.configure(settings);
+      sensorSettings = settings;
+    },
+
+    sensor() {
+      const latest = radarOnline() ? radar.latest() : null;
+      return { online: Boolean(latest), present: Boolean(latest?.target), distanceCm: latest?.target ? latest.distanceCm : null };
     },
 
     async readCpuTemp() {

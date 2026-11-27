@@ -94,6 +94,7 @@ if [ -n "$bl" ]; then
   [ "$(cat "$bl/max_brightness")" -le 1 ] && bad "max_brightness ≤ 1: nur an/aus, keine Helligkeitsstufen"
 else bad "kein Backlight unter /sys/class/backlight"; fi
 pgrep -x gpiomon >/dev/null && ok "PIR: gpiomon läuft" || info "PIR: gpiomon läuft nicht (FRAME_PIR_PIN=off?)"
+pgrep -f ld2410-bridge >/dev/null && ok "Radar: UART-Brücke läuft" || info "Radar: UART-Brücke läuft nicht (FRAME_SENSOR_UART=off? /dev/serial0 fehlt?)"
 
 head_ "Netz"
 ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | awk -F: '$1 == "yes" {print $2}')

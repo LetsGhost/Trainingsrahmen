@@ -69,6 +69,7 @@ function createFrame({ system, config, saveConfig, hasImages }) {
       adminUrl: s.setup === SETUP.ADMIN ? system.adminUrl() : null,
       deadlines: { slideshowAfterMin: config.slideshowAfterMin, offAfterMin: config.offAfterMin },
       display: config.display,
+      sensor: config.sensor,
       system: system.status()
     };
   }

@@ -24,6 +24,8 @@ const DEFAULTS = {
   // theme: "auto" (Nachtfenster 22–06) | "light" | "dark"; brightness: "low" | "mid" | "high"; skin: "modern" | "sport"
   // (beides nur in den Einstellungen am Rahmen)
   display: { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" },
+  // Radar (HLK-LD2410C): gates = Reichweite in Toren zu 0,75 m (2–8); sensitivity: "low" | "mid" | "high"
+  sensor: { gates: 6, sensitivity: "mid" },
   // Update-Knopf: von diesem Remote und Branch wird gezogen.
   update: { remote: "origin", branch: "production" }
 };
@@ -35,11 +37,12 @@ function load() {
       ...DEFAULTS,
       ...saved,
       display: { ...DEFAULTS.display, ...saved.display },
+      sensor: { ...DEFAULTS.sensor, ...saved.sensor },
       // Update-Quelle ist fest, alte gespeicherte Werte (z. B. master) zählen nicht.
       update: { ...DEFAULTS.update }
     };
   } catch {
-    return { ...DEFAULTS, display: { ...DEFAULTS.display }, update: { ...DEFAULTS.update } };
+    return { ...DEFAULTS, display: { ...DEFAULTS.display }, sensor: { ...DEFAULTS.sensor }, update: { ...DEFAULTS.update } };
   }
 }
 

@@ -56,7 +56,7 @@ if (DEMO && !configStore.exists()) {
   demo.seedConfig(config);
   configStore.save(config);
 }
-const system = createSystemAdapter({ dev: DEV, demo: DEMO, sim, port: PORT });
+const system = createSystemAdapter({ dev: DEV, demo: DEMO, sim, port: PORT, sensor: config.sensor });
 const backend = createBackend({ dev: DEV || DEMO, sim, fixture: () => path.join(FIXTURE_DIR, dev.plan),
   athleteptFixture: path.join(FIXTURE_DIR, "athletept.json"), garminFixture: path.join(FIXTURE_DIR, "garmin.json")
 });
@@ -268,7 +268,7 @@ async function handleDebug(req, res) {
 // Ohne Admin-Login, dafür nur vom Display auf dem Pi (localhost). Gefährliches bestätigt das Display durch 2 s Halten.
 const FRAME_ACTIONS = {
   sync: () => sync.syncAll(),
-  settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines }),
+  settings: body => admin.updateSettings({ display: body.display, deadlines: body.deadlines, sensor: body.sensor }),
   "wifi-reset": () => frame.reset({ keepAdmin: true }),
   "admin-reset": () => admin.resetPassword(),
   reboot: () => system.power("reboot"),
@@ -389,6 +389,11 @@ function handle(req, res) {
     if (pathname === "/api/slides") return sendJson(res, 200, slides.list());
     const file = slides.file(pathname.slice("/api/slides/".length));
     return file ? sendFile(res, file) : sendJson(res, 404, { error: "Nicht gefunden" });
+  }
+  // Live-Wert des Radars; Display und Admin fragen ihn nur ab, solange die Sensor-Einstellung offen ist.
+  if (pathname === "/api/sensor") {
+    if (!isLocal(req) && !admin.isAuthed(req)) return sendJson(res, 401, { error: "Nicht angemeldet" });
+    return sendJson(res, 200, system.sensor());
   }
   if (pathname === "/events") return openEvents(req, res);
   // commit: damit self-update.sh nach dem Neustart prüfen kann, ob der neue Stand läuft.

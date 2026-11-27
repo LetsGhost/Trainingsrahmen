@@ -2,7 +2,10 @@
 // Links die Tabs Status · Anzeige · Anpassen · System, rechts der Inhalt. Gefährliches (WLAN ändern, Neustart, Aus) braucht 2 s Halten.
 import { hhmm, esc } from "./util.js";
 
-export const TABS = [["status", "STATUS"], ["display", "ANZEIGE"], ["customize", "ANPASSEN"], ["system", "SYSTEM"]];
+export const TABS = [["status", "STATUS"], ["display", "ANZEIGE"], ["sensor", "SENSOR"], ["customize", "ANPASSEN"], ["system", "SYSTEM"]];
+// Radar-Reichweite in Toren zu 0,75 m (wie daemon/system/ld2410.js).
+export const MIN_GATES = 2, MAX_GATES = 8;
+export const meters = gates => `${(gates * 0.75).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} m`;
 const SOURCES = [["plan", "Sport-Analytics"], ["athletept", "AthletePT"], ["garmin", "Garmin"], ["weather", "Wetter"]];
 // Raster der Stepper; Grenzen wie im Admin (Slideshow 1–120, Display aus danach bis 600).
 const STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 600];
@@ -82,13 +85,13 @@ function segment(key, value, options) {
     `<button type="button" aria-pressed="${v === value}" data-set="${key}" data-value="${v}">${label}</button>`).join("")}</div>`;
 }
 
-function stepper(key, label, sub, value, canDown, canUp) {
+function stepper(key, label, sub, text, canDown, canUp) {
   return `
     <div class="st-step-row">
       <div><div class="st-step-label">${label}</div><div class="st-step-sub">${sub}</div></div>
       <div class="st-stepper">
         <button type="button" aria-label="Weniger" data-step="${key}" data-dir="-1"${canDown ? "" : " disabled"}>−</button>
-        <div class="st-step-value">${minutes(value)}</div>
+        <div class="st-step-value">${text}</div>
         <button type="button" aria-label="Mehr" data-step="${key}" data-dir="1"${canUp ? "" : " disabled"}>+</button>
       </div>
     </div>`;
@@ -106,9 +109,35 @@ function renderDisplay({ settings, deadlines }) {
     <div class="st-rule tight"></div>
     <div class="st-card">
     <div class="st-kicker">RUHE-FRISTEN</div>
-    ${stepper("slideshowAfterMin", "Slideshow nach", "ohne Berührung", slide, stepDown(slide) !== undefined,
+    ${stepper("slideshowAfterMin", "Slideshow nach", "ohne Berührung", minutes(slide), stepDown(slide) !== undefined,
       (stepUp(slide) ?? Infinity) < off && stepUp(slide) <= SLIDESHOW_MAX)}
-    ${stepper("offAfterMin", "Display aus nach", "immer später als die Slideshow", off, (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX)}
+    ${stepper("offAfterMin", "Display aus nach", "immer später als die Slideshow", minutes(off), (stepDown(off) ?? 0) > slide, stepUp(off) <= OFF_MAX)}
+    </div>`;
+}
+
+// Live-Wert aus /api/sensor (null, bis die erste Antwort da ist). display.js tauscht nur dieses Stück jede Sekunde aus.
+export function renderSensorLive(live) {
+  const [mark, title, sub] = !live ? ["", "…", "frage den Sensor ab"]
+    : !live.online ? [" warn", "Sensor antwortet nicht", "Kabel TX/RX und serielle Schnittstelle prüfen"]
+    : live.present ? [" on", `Erkannt · ${(live.distanceCm / 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} m`, "Abstand zum nächsten Ziel"]
+    : ["", "Niemand erkannt", "im eingestellten Bereich"];
+  return `<span class="st-dot${mark}"></span><div class="st-wifi-text"><div class="st-wifi-name${mark === " warn" ? " warn" : ""}">${title}</div><div class="st-wifi-sub">${sub}</div></div>`;
+}
+
+function renderSensor({ sensor, sensorLive }) {
+  const { gates, sensitivity } = sensor;
+  return `
+    <div class="st-card">
+      <div class="st-kicker">LIVE</div>
+      <div class="st-live" id="st-live">${renderSensorLive(sensorLive)}</div>
+    </div>
+    <div class="st-rule tight"></div>
+    <div class="st-card">
+      <div class="st-kicker">REICHWEITE</div>
+      ${stepper("gates", "Erkennt bis", "Abstand vom Rahmen", meters(gates), gates > MIN_GATES, gates < MAX_GATES)}
+      <div class="st-kicker gap">EMPFINDLICHKEIT</div>
+      ${segment("sensitivity", sensitivity, [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
+      <div class="st-hint">Zum Testen vor den Rahmen stellen und den Abstand ändern. Hoch erkennt auch still Sitzende sicherer.</div>
     </div>`;
 }
 
@@ -146,7 +175,7 @@ function renderSystem({ d, daemon, app }) {
 
 // notice: Fehlermeldung der letzten Aktion (z. B. Neustart verweigert), steht in der Kopfzeile.
 export function renderSettings(p) {
-  const body = ({ status: renderStatus, display: renderDisplay, customize: renderCustomize, system: renderSystem }[p.tab] ?? renderStatus)(p);
+  const body = ({ status: renderStatus, display: renderDisplay, sensor: renderSensor, customize: renderCustomize, system: renderSystem }[p.tab] ?? renderStatus)(p);
   return `
     <header class="st-head">
       <button type="button" class="st-back" data-close><span aria-hidden="true">←</span><span>Einstellungen</span></button>

@@ -7,6 +7,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const SLIDE_W = 800, SLIDE_H = 480;
 const STATUS_REFRESH_MS = 10000;
 const UPDATE_POLL_MS = 2000;
+const SENSOR_POLL_MS = 1000;
 // Länger als fetch + update.sh + 30 s Health-Prüfung + Rollback; danach hängt etwas.
 const UPDATE_GIVE_UP_MS = 5 * 60 * 1000;
 const SETUP_LABELS = {
@@ -294,7 +295,45 @@ function renderDisplay() {
       </div>
       <div class="setting-hint pad">Gezählt ab der letzten Bewegung oder Berührung. Ohne Bilder geht das Display schon nach der ersten Frist aus.</div>
       <div class="row"><button class="secondary">Speichern</button><div class="msg" id="rest-msg"></div></div>
-    </form>`;
+    </form>
+
+    <div class="kicker-row">PRÄSENZSENSOR</div>
+    <div class="list">
+      <div class="setting">
+        <div class="setting-name">Live</div>
+        <div class="setting-name" id="sensor-live">…</div>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-name">Reichweite</div>
+          <div class="setting-hint">Abstand vom Rahmen, bis zu dem jemand zählt</div>
+        </div>
+        <select class="num" id="sensor-gates">${[2, 3, 4, 5, 6, 7, 8].map(g =>
+          `<option value="${g}"${g === s.sensor.gates ? " selected" : ""}>${(g * 0.75).toLocaleString("de-DE")} m</option>`).join("")}
+        </select>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-name">Empfindlichkeit</div>
+          <div class="setting-hint">Hoch erkennt auch still Sitzende sicherer</div>
+        </div>
+        ${toggle("sensitivity", [["low", "NIEDRIG"], ["mid", "MITTEL"], ["high", "HOCH"]], s.sensor.sensitivity)}
+      </div>
+    </div>
+    <div class="msg" id="sensor-msg"></div>`;
+
+  const saveSensor = async change => {
+    if (!(await save({ sensor: { ...state.settings.sensor, ...change } }, "sensor-msg"))) renderDisplay();
+  };
+  $("#sensor-gates").addEventListener("change", e => saveSensor({ gates: Number(e.target.value) }));
+  const sensitivity = $('[data-toggle="sensitivity"]');
+  sensitivity.addEventListener("click", async e => {
+    const value = e.target.dataset.value;
+    if (value === undefined) return;
+    await saveSensor({ sensitivity: value });
+    sensitivity.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.value === state.settings.sensor.sensitivity));
+  });
+  pollSensor();
 
   $("#geo-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -316,7 +355,7 @@ function renderDisplay() {
   });
 
   // brightness/skin: undefined fällt beim JSON weg; der Daemon behält dann die am Rahmen eingestellten Werte.
-  document.querySelectorAll("[data-toggle]").forEach(t => t.addEventListener("click", async e => {
+  document.querySelectorAll('[data-toggle="theme"]').forEach(t => t.addEventListener("click", async e => {
     const value = e.target.dataset.value;
     if (value === undefined) return;
     if (await save({ display: { ...state.settings.display, brightness: undefined, skin: undefined, theme: value } }, "display-msg")) {
@@ -333,6 +372,25 @@ function renderDisplay() {
     e.preventDefault();
     save({ deadlines: { slideshowAfterMin: Number($("#slideshowAfter").value), offAfterMin: Number($("#offAfter").value) } }, "rest-msg");
   });
+}
+
+// Live-Wert des Radars, jede Sekunde, solange der Bereich Anzeige offen ist.
+let sensorTimer = null;
+function pollSensor() {
+  clearInterval(sensorTimer);
+  const tick = async () => {
+    const el = $("#sensor-live");
+    if (!el) return clearInterval(sensorTimer);
+    let live = null;
+    try {
+      const res = await fetch("/api/sensor", { cache: "no-store" });
+      live = res.ok ? await res.json() : null;
+    } catch {}
+    el.textContent = !live?.online ? "Sensor antwortet nicht"
+      : live.present ? `Erkannt · ${(live.distanceCm / 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} m` : "Niemand erkannt";
+  };
+  sensorTimer = setInterval(tick, SENSOR_POLL_MS);
+  tick();
 }
 
 // --- Dienste ---

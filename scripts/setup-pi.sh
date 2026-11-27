@@ -39,7 +39,7 @@ sudo apt-get install -y \
   nodejs \
   cage chromium wlr-randr \
   network-manager dnsmasq-base hostapd \
-  gpiod i2c-tools libinput-tools \
+  gpiod i2c-tools libinput-tools python3 \
   avahi-daemon \
   fonts-dejavu-core
 
@@ -77,6 +77,20 @@ else
   echo "dtoverlay=$DSI_OVERLAY eingetragen (gilt nach dem Neustart)."
 fi
 
+step "Serielle Schnittstelle für den Radar (UART an GPIO 14/15)"
+# Darüber stellt der Daemon den LD2410C ein (scripts/ld2410-bridge.py). Login-Konsole runter von der UART, UART an.
+# Bluetooth des Pi aus, damit die genaue PL011-UART an GPIO 14/15 liegt: Die Mini-UART hängt am GPU-Takt
+# und trifft 256000 Baud nicht sicher.
+sudo raspi-config nonint do_serial_cons 1 || echo "WARNUNG: serielle Konsole nicht abgeschaltet (raspi-config zu alt?)." >&2
+sudo raspi-config nonint do_serial_hw 0 || echo "WARNUNG: UART nicht eingeschaltet (raspi-config zu alt?)." >&2
+if grep -qE '^dtoverlay=disable-bt' "$CONFIG"; then
+  echo "disable-bt ist schon eingetragen."
+else
+  printf '\n[all]\n# Trainingsrahmen: PL011-UART für den Radar statt Bluetooth\ndtoverlay=disable-bt\n' | sudo tee -a "$CONFIG" >/dev/null
+  echo "dtoverlay=disable-bt eingetragen (gilt nach dem Neustart)."
+fi
+sudo systemctl disable --now hciuart.service 2>/dev/null || true
+
 step "Hostname"
 if [ "$(hostname)" = "raspberrypi" ]; then
   sudo raspi-config nonint do_hostname rahmen
@@ -85,8 +99,8 @@ else
   echo "Bleibt „$(hostname)“ (erreichbar als $(hostname).local)."
 fi
 
-step "Gruppen für GPIO, Display, Touch, Netzwerk"
-for group in gpio i2c video render input netdev; do
+step "Gruppen für GPIO, UART, Display, Touch, Netzwerk"
+for group in gpio dialout i2c video render input netdev; do
   if getent group "$group" >/dev/null; then
     sudo usermod -aG "$group" "$APP_USER"
   fi
@@ -112,6 +126,7 @@ if chromium --headless=new --disable-gpu --user-data-dir="$(mktemp -d)" --dump-d
 else
   echo "WARNUNG: Chromium startet nicht – SD-Karte/Installation prüfen." >&2
 fi
+[ -e /dev/serial0 ] && echo "UART da (/dev/serial0 → $(readlink /dev/serial0))." || echo "Hinweis: /dev/serial0 gibt es erst nach dem Neustart." >&2
 command -v gpiomon >/dev/null && echo "gpiomon da ($(gpiomon --version | head -1))." || echo "WARNUNG: gpiomon fehlt, PIR geht nicht." >&2
 broken="$(sudo dpkg --verify 2>/dev/null | grep -v ' c /' || true)"
 if [ -n "$broken" ]; then

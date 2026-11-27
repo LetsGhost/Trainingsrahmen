@@ -22,7 +22,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .msg.error { color: var(--accent-ink); }
 .msg.ok { color: var(--sub); }
 
-input[type="text"], input[type="password"], input[type="url"], input[type="number"] {
+input[type="text"], input[type="password"], input[type="url"], input[type="number"], select {
   font-size: 16px;
   font-weight: 600;
   padding: 10px 12px;
@@ -160,7 +160,7 @@ input[readonly] { background: var(--card); color: var(--label); }
 .setting-hint { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
 .setting-hint.pad { padding-top: 12px; }
 #rest-form > .row { padding: 12px 0 16px; }
-input.num { width: 110px; flex: none; }
+input.num, select.num { width: 110px; flex: none; }
 
 /* Umschalter wie in der Vorlage: Kasten mit zwei bzw. drei Feldern */
 .toggle { display: flex; border: 2px solid var(--ink); flex: none; }
