@@ -163,7 +163,6 @@ function renderCustomize({ settings }) {
     <div class="st-card">
       <div class="st-kicker">THEME</div>
       ${segment("skin", settings.skin ?? "modern", [["modern", "Modern"], ["sport", "Sport"]])}
-      <div class="st-hint">Sport: Kalk-Weiß, jede Sportart in ihrer Farbe. Hell/Dunkel unter Anzeige.</div>
     </div>`;
 }
 
@@ -186,7 +185,7 @@ function renderSystem({ d, daemon, app }) {
     <div class="st-grow"></div>
     <div class="st-kicker st-modern">NEUSTART &amp; AUS</div>
     <div class="st-holds">${hold("reboot", "Neu starten", { big: true })}${hold("poweroff", "Herunterfahren", { big: true, warn: true })}</div>
-    <div class="st-hint">Loslassen bricht ab – es passiert nichts.</div>`;
+    `;
 }
 
 // notice: Fehlermeldung der letzten Aktion (z. B. Neustart verweigert), steht in der Kopfzeile.
@@ -203,7 +202,6 @@ export function renderSettings(p) {
       <nav class="st-tabs">
         ${TABS.map(([k, label]) => `<button type="button" data-tab="${k}"${k === p.tab ? ' aria-current="page"' : ""}>${label}</button>`).join("")}
         <div class="st-grow"></div>
-        <div class="st-admin">Mehr im Admin<br>rahmen.local</div>
       </nav>
       <div class="st-divider"></div>
       <div class="st-body">${body}</div>
@@ -218,7 +216,7 @@ export function renderPower(action) {
       <div class="pw-main"><div class="pw-bar"></div><div class="pw-title">${reboot ? "Startet<br>neu …" : "Fährt<br>herunter …"}</div></div>
       <div class="rule"></div>
       <div class="pw-foot">
-        <span>${reboot ? "BITTE NICHT VOM STROM TRENNEN" : "STROM ERST TRENNEN, WENN DAS DISPLAY AUS IST"}</span>
+        <span>${reboot ? "NICHT VOM STROM TRENNEN" : "STROM ERST TRENNEN, WENN DAS DISPLAY AUS IST"}</span>
         <span>${reboot ? "ZURÜCK IN CA. 40 S" : "CA. 15 S"}</span>
       </div>
       <div class="pw-track"><div style="animation-duration:${reboot ? 40 : 15}s"></div></div>

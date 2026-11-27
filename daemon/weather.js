@@ -1,5 +1,6 @@
 // Wetter von Open-Meteo (ohne Key), übersetzt in das Modell, das das Display anzeigt:
-// { place, label, icon, temp, feels, wind, precip, low, sunset, forecast: [{ icon, label, hi, lo }] } – forecast beginnt mit heute.
+// { place, label, icon, temp, feels, wind, windDir, humidity, precip, low, sunrise, sunset, forecast: [{ icon, label, hi, lo }],
+//   hours: [{ hour, precip, temp }] } – forecast beginnt mit heute, hours mit der laufenden Stunde (12 Stück, precip in mm).
 // In der Entwicklung kommt das Wetter aus fixtures/weather.json, außer die Dev-Leiste schaltet „Echtes Wetter“ ein.
 const fs = require("fs");
 const { FrameError } = require("./errors");
@@ -25,6 +26,19 @@ function describe(code, isDay = true) {
 }
 
 const round = n => (Number.isFinite(n) ? Math.round(n) : null);
+const DIRS = ["Nord", "Nordost", "Ost", "Südost", "Süd", "Südwest", "West", "Nordwest"];
+const compass = deg => (Number.isFinite(deg) ? DIRS[Math.round(deg / 45) % 8] : null);
+
+// Ab der laufenden Stunde (current.time, Ortszeit) die nächsten 12 Stunden.
+function nextHours(h, now) {
+  if (!h?.time?.length) return [];
+  const start = Math.max(0, h.time.findIndex(t => t.slice(0, 13) === String(now).slice(0, 13)));
+  return h.time.slice(start, start + 12).map((t, i) => ({
+    hour: Number(t.slice(11, 13)),
+    precip: Math.round((h.precipitation[start + i] ?? 0) * 10) / 10,
+    temp: round(h.temperature_2m[start + i])
+  }));
+}
 
 function adapt(json, place) {
   const c = json.current, d = json.daily;
@@ -37,10 +51,14 @@ function adapt(json, place) {
     temp: round(c.temperature_2m),
     feels: round(c.apparent_temperature),
     wind: round(c.wind_speed_10m),
+    windDir: compass(c.wind_direction_10m),
+    humidity: round(c.relative_humidity_2m),
     precip: Number.isFinite(d.precipitation_sum?.[0]) ? Math.round(d.precipitation_sum[0] * 10) / 10 : 0,
     // Tiefstwert der kommenden Nacht ≈ Minimum des nächsten Tages.
     low: round(d.temperature_2m_min[1] ?? d.temperature_2m_min[0]),
+    sunrise: String(d.sunrise?.[0] ?? "").slice(11, 16),
     sunset: String(d.sunset?.[0] ?? "").slice(11, 16),
+    hours: nextHours(json.hourly, c.time),
     forecast: d.time.map((_, i) => ({
       ...describe(d.weather_code[i]),
       hi: round(d.temperature_2m_max[i]),
@@ -59,8 +77,9 @@ module.exports = function createWeather({ dev, sim, fixture }) {
       const params = new URLSearchParams({
         latitude: lat,
         longitude: lon,
-        current: "temperature_2m,apparent_temperature,wind_speed_10m,weather_code,is_day",
-        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunset",
+        current: "temperature_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,relative_humidity_2m,weather_code,is_day",
+        hourly: "temperature_2m,precipitation",
+        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset",
         timezone: "auto",
         forecast_days: 7
       });

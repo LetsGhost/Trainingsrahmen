@@ -393,3 +393,67 @@
 .sd-dot[data-sport="waves"] { --c: var(--c-swim); }
 .sd-dot[data-sport="dumbbell"] { --c: var(--c-strength); }
 .sd-done .icon, .sd-more-done .icon { width: 12px; height: 12px; stroke-width: 2; }
+
+/* Wetter-Vollbild Sport (Entwurf #ws, eigenes Markup aus weather-sport.js): jetzt in Schwimm-Blau, Hinweis in der
+   Farbe der nächsten Einheit, Regenbalken blau, Temperaturspanne senf. */
+.sw-top { display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 20px 0 12px; border-bottom: 1px solid var(--rule); flex: none; }
+.sw-back {
+  display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 14px; border-radius: 22px;
+  background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+}
+.sw-back span:first-child { font-size: 18px; line-height: 1; }
+.sw-title, .sw-clock, .sw-temp, .sw-val, .sw-hour-temp, .sw-hi { font-style: italic; font-stretch: 125%; font-weight: 900; letter-spacing: -0.03em; }
+.sw-title, .sw-clock { font-size: 22px; }
+.sw-date { flex: 1; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); }
+.sw-label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; color: var(--muted); }
+
+.sw { --c: var(--c-other); --c-text: var(--on-color); flex: 1; display: grid; grid-template-columns: 296px minmax(0, 1fr); gap: 12px; padding: 10px 12px 12px; min-height: 0; }
+.sw[data-sport="footprints"] { --c: var(--c-run); }
+.sw[data-sport="bike"] { --c: var(--c-bike); --c-text: var(--on-bike); }
+.sw[data-sport="waves"] { --c: var(--c-swim); }
+.sw[data-sport="dumbbell"] { --c: var(--c-strength); }
+.sw-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; }
+.sw-spacer { flex: 1; }
+
+.sw-now { display: flex; flex-direction: column; padding: 12px 16px; border-radius: 18px; background: var(--c-swim); color: var(--on-color); flex: none; }
+.sw-now-top { display: flex; justify-content: space-between; align-items: center; }
+.sw-now .sw-label { font-size: 11px; letter-spacing: 0.16em; color: inherit; }
+.sw-now .icon { width: 26px; height: 26px; stroke-width: 2; }
+.sw-temp { margin-top: 4px; font-size: 76px; line-height: 0.85; }
+.sw-now-sub { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; font-size: 17px; font-weight: 800; white-space: nowrap; }
+.sw-now-sub span + span { font-size: 13px; font-weight: 600; opacity: 0.85; }
+
+.sw-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px; border-radius: 16px; background: var(--paper); flex: none; }
+.sw-fact { display: flex; flex-direction: column; gap: 2px; padding: 7px 12px; border-radius: 12px; background: var(--bg); min-width: 0; }
+.sw-val { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-val small { display: block; margin-top: 1px; font-size: 11px; font-style: normal; font-stretch: 100%; font-weight: 600; letter-spacing: 0; color: var(--muted); }
+
+.sw-hint { display: flex; flex-direction: column; gap: 3px; padding: 8px 14px; border-radius: 16px; background: var(--c); color: var(--c-text); flex: none; }
+.sw-hint .sw-label { letter-spacing: 0.14em; color: inherit; }
+.sw-hint-text { font-size: 14px; font-weight: 700; line-height: 1.3; }
+
+.sw-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; border-radius: 16px; background: var(--paper); flex: none; }
+.sw-card-head { display: flex; justify-content: space-between; }
+.sw-card > .sw-label, .sw-card-head .sw-label:first-child { font-size: 11px; letter-spacing: 0.16em; }
+.sw-legend { color: var(--c-swim); }
+.sw-hours { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 5px; }
+.sw-hour { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.sw-hour-label { font-size: 11px; font-weight: 800; color: var(--muted); }
+.sw-hour.now .sw-hour-label { color: var(--ink); }
+.sw-hour-temp { font-size: 15px; }
+.sw-bar-box { width: 100%; height: 30px; display: flex; align-items: flex-end; }
+.sw-bar { width: 100%; border-radius: 4px; background: color-mix(in srgb, var(--c-swim) 18%, transparent); }
+.sw-bar.wet { background: var(--c-swim); }
+.sw-bar.train { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--c); }
+
+.sw-week { flex: 1; gap: 0; padding: 10px 16px 6px; min-height: 0; }
+.sw-week > .sw-label { padding-bottom: 4px; }
+.sw-day { display: grid; grid-template-columns: 62px 22px 34px minmax(0, 1fr) 34px; align-items: center; gap: 10px; height: 27px; }
+.sw-day + .sw-day { border-top: 1px solid var(--rule); }
+.sw-dow { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; }
+.sw-dow.today { color: var(--accent-ink); }
+.sw-day .icon { width: 18px; height: 18px; stroke-width: 2; }
+.sw-lo { font-size: 13px; font-weight: 700; color: var(--muted); text-align: right; }
+.sw-range { position: relative; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.sw-range div { position: absolute; top: 0; bottom: 0; min-width: 8px; border-radius: 4px; background: var(--c-bike); }
+.sw-hi { font-size: 15px; }

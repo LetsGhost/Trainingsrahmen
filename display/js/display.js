@@ -1,6 +1,7 @@
 import { adaptPlan } from "./adapter.js";
 import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
+import { renderWeather } from "./weather.js";
 import { renderSetup } from "./setup.js";
 import { renderSettings, renderPower, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
@@ -17,18 +18,18 @@ const SETUP_DONE_MS = 4000;
 const HOLD_MS = 2000;
 
 // Entwicklungs-Parameter: ?theme=dark|light, ?skin=modern|sport, ?now=2026-09-09T18:42 (verstellte Uhr) und
-// ?day=0…6, ?day=recovery bzw. ?day=settings (&tab=status|display|sensor|customize|system): Ansicht offen, ohne Rücksprung.
+// ?day=0…6, ?day=recovery, ?day=weather bzw. ?day=settings (&tab=status|display|sensor|customize|system): Ansicht offen, ohne Rücksprung.
 // Sie haben Vorrang vor den Einstellungen aus der Dev-Leiste.
 const params = new URLSearchParams(location.search);
 const urlTheme = params.get("theme");
 const urlSkin = params.get("skin");
 const urlClockOffset = params.get("now") ? new Date(params.get("now")).getTime() - Date.now() : null;
-const urlDay = ["recovery", "settings"].includes(params.get("day")) ? params.get("day") : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
+const urlDay = ["recovery", "weather", "settings"].includes(params.get("day")) ? params.get("day") : /^[0-6]$/.test(params.get("day") ?? "") ? Number(params.get("day")) : null;
 
 const frame = document.getElementById("frame");
 // daemon und sync: letzte Momentaufnahme aus /events (null, bis die Verbindung steht); dev: Dev-Leiste oder null.
 // app: { commit, demo } des laufenden Daemons.
-// openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht, "settings" für die Einstellungen
+// openDay: Index des Tages in der Tagesansicht, "recovery" für die Erholungs-Ansicht, "weather" fürs Wetter-Vollbild, "settings" für die Einstellungen
 // oder null. setupDoneUntil: bis dahin steht 3C.
 // settingsTab, syncing, notice: Einstellungs-Screen. power: "reboot" | "poweroff", sobald ausgelöst (Vollbild bis zum Aus).
 // sensorLive: letzter Wert aus /api/sensor, nur abgefragt, solange der Tab SENSOR offen ist.
@@ -159,6 +160,7 @@ function screenFor(f) {
   if (f?.rest === "SLIDESHOW") return "slideshow";
   if (f?.rest === "AUS") return "off";
   if (state.openDay === "settings") return "settings";
+  if (state.openDay === "weather") return shownWeather() ? "weather" : "plan";
   if (state.openDay === null || !state.plan) return "plan";
   return state.openDay === "recovery" ? "recovery" : "day";
 }
@@ -183,6 +185,9 @@ function render() {
   }
   else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
+  else if (screen === "weather") {
+    frame.innerHTML = renderWeather({ d, w: shownWeather(), plan: state.plan, today: dowIndex(d), sport: document.documentElement.dataset.skin === "sport" });
+  }
   else if (screen === "recovery") frame.innerHTML = renderRecovery({ d, r: state.plan.recoveryRaw });
   else if (screen === "day") {
     const index = state.openDay;
@@ -264,7 +269,7 @@ document.addEventListener("click", e => {
   e.stopPropagation();
 }, true);
 
-// Tagesansicht: Tipp auf einen Tag öffnet ihn, Tipp auf die Erholungswerte die Erholungs-Ansicht;
+// Tagesansicht: Tipp auf einen Tag öffnet ihn, Tipp auf die Erholungswerte die Erholungs-Ansicht, aufs Wetter das Wetter-Vollbild;
 // ein weiterer Tipp oder 60 s führen zurück zur Woche.
 let dayTimer = null;
 
@@ -412,7 +417,7 @@ frame.addEventListener("click", e => {
   if (frame.dataset.screen === "settings") return settingsClick(e);
   const session = e.target.closest("[data-session]");
   if (frame.dataset.screen === "day" && session) return openDay(state.openDay, Number(session.dataset.session));
-  if (frame.dataset.screen === "day" || frame.dataset.screen === "recovery") return closeDay();
+  if (["day", "recovery", "weather"].includes(frame.dataset.screen)) return closeDay();
   if (frame.dataset.screen !== "plan") return;
   const day = e.target.closest("[data-day]");
   if (e.target.closest("[data-settings]")) {
@@ -421,6 +426,7 @@ frame.addEventListener("click", e => {
     openDay("settings");
   } else if (day) openDay(Number(day.dataset.day));
   else if (e.target.closest(".recovery")) openDay("recovery");
+  else if (e.target.closest(".weather")) openDay("weather");
 });
 
 render();

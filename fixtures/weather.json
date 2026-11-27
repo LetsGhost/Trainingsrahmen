@@ -5,8 +5,11 @@
   "temp": 19,
   "feels": 17,
   "wind": 14,
+  "windDir": "Südwest",
+  "humidity": 86,
   "precip": 4,
   "low": 12,
+  "sunrise": "06:52",
   "sunset": "19:48",
   "forecast": [
     { "icon": "cloud-rain", "label": "Regen", "hi": 19, "lo": 12 },
@@ -16,5 +19,19 @@
     { "icon": "cloud-sun", "label": "Heiter", "hi": 20, "lo": 14 },
     { "icon": "cloud-drizzle", "label": "Niesel", "hi": 17, "lo": 11 },
     { "icon": "cloud-sun", "label": "Heiter", "hi": 21, "lo": 13 }
+  ],
+  "hours": [
+    { "hour": 14, "precip": 0.8, "temp": 19 },
+    { "hour": 15, "precip": 1.2, "temp": 19 },
+    { "hour": 16, "precip": 0.6, "temp": 18 },
+    { "hour": 17, "precip": 0, "temp": 18 },
+    { "hour": 18, "precip": 0, "temp": 17 },
+    { "hour": 19, "precip": 0, "temp": 16 },
+    { "hour": 20, "precip": 0, "temp": 15 },
+    { "hour": 21, "precip": 0.2, "temp": 14 },
+    { "hour": 22, "precip": 0.4, "temp": 14 },
+    { "hour": 23, "precip": 0, "temp": 13 },
+    { "hour": 0, "precip": 0, "temp": 13 },
+    { "hour": 1, "precip": 0, "temp": 12 }
   ]
 }
