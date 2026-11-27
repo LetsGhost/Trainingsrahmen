@@ -104,6 +104,12 @@ function ipAddress() {
 }
 
 const BRIGHTNESS = { low: 0.2, mid: 0.55, high: 1 };
+// Nach dem Einschalten des Ausgangs ignoriert das Panel Helligkeitswerte eine Weile und übernimmt danach nur den
+// letzten. Am Pi gemessen: nach 0,3 s noch zu früh, nach 2 s fährt es weich hoch. Erst dann hochfahren.
+// shortcut: 2 s ist der einzige getestete Wert; kürzer (1 s?) am Pi ausprobieren, das verkürzt das Aufwachen.
+const PANEL_READY_MS = 2000;
+// Hochfahren über die Dauer der Aufwach-Animation im Display (motion.js, 600 ms).
+const RAMP_MS = 600, RAMP_STEPS = 12;
 
 function findBacklight() {
   try {
@@ -119,11 +125,20 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
   const hw = { hotspot: null, wifi: null, backlight: true, ip: null, signal: null };
   const backlight = findBacklight();
   let level = "high";
-  const writeBrightness = () => {
+  // share: Anteil der eingestellten Stufe, fürs Hochfahren beim Aufwachen.
+  const writeBrightness = (share = 1) => {
     const max = Number(readFile(path.join(backlight, "max_brightness"))) || 255;
     // Waveshare-Treiber (10-0045) ignoriert bl_power teils; erst brightness 0 macht das Licht wirklich aus.
-    const value = hw.backlight ? Math.max(1, Math.round(max * BRIGHTNESS[level])) : 0;
+    const value = hw.backlight ? Math.max(1, Math.round(max * BRIGHTNESS[level] * share)) : 0;
     fs.writeFileSync(path.join(backlight, "brightness"), String(value));
+  };
+  // Quadratisch, weil das Auge kleine Helligkeiten viel stärker unterscheidet als große.
+  const rampUp = async () => {
+    for (let i = 1; i <= RAMP_STEPS; i++) {
+      if (!hw.backlight) return; // währenddessen wieder aus
+      writeBrightness((i / RAMP_STEPS) ** 2);
+      await sleep(RAMP_MS / RAMP_STEPS);
+    }
   };
   const portalPort = process.env.FRAME_PORTAL_PORT || port;
   // Zuletzt erfolgreich angelegtes WLAN; gleiche Daten → nur neu verbinden statt neu anlegen.
@@ -321,15 +336,28 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
     },
 
     // Ohne Backlight unter /sys (z. B. HDMI-Display) bleibt nur das schwarze Bild des Displays im Zustand AUS.
+    // Aufwachen (aus → an) löst erst auf, wenn das Panel bereit ist; dann startet das Hochfahren, und state.js meldet
+    // „wach“ ans Display, dessen Aufwach-Animation so gleichzeitig läuft.
     async setBacklight(on) {
+      const waking = on && !hw.backlight;
       hw.backlight = on;
       // Der Waveshare-Treiber glimmt bei brightness 0 noch; erst den Ausgang in cage abzuschalten macht das Panel ganz dunkel.
-      // Beim Einschalten zuerst den Ausgang, danach die Helligkeit, falls der Treiber sie beim Aktivieren zurücksetzt.
       const output = () => run("wlr-randr", ["--output", DISPLAY_OUTPUT, on ? "--on" : "--off"], 5000, WAYLAND_ENV)
         .catch(err => console.error(`Display-Ausgang: ${err.message}`));
       if (on) await output();
       else output();
+      if (waking) await sleep(PANEL_READY_MS);
       if (!backlight) return;
+      if (waking) {
+        if (!hw.backlight) return; // in der Pause wieder ausgegangen; das Ausschalten hat schon alles geschrieben
+        try {
+          fs.writeFileSync(path.join(backlight, "bl_power"), "0");
+        } catch (err) {
+          console.error(`Backlight bl_power: ${err.message}`);
+        }
+        rampUp().catch(err => console.error(`Backlight brightness: ${err.message}`));
+        return;
+      }
       // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness 0 trotzdem geschrieben werden.
       try {
         writeBrightness();

@@ -85,7 +85,12 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     };
   }
 
-  const changed = () => emitter.emit("change", snapshot());
+  // waking: Das Display wird gerade eingeschaltet (bis 2 s, system/pi.js). Solange wird nichts gemeldet, sonst liefe die
+  // Aufwach-Animation im Dunkeln ab; danach geht der aktuelle Stand in einem Zug raus.
+  let waking = false;
+  const changed = () => {
+    if (!waking) emitter.emit("change", snapshot());
+  };
 
   // --- Ruhe ---
 
@@ -95,7 +100,13 @@ function createFrame({ system, config, saveConfig, hasImages }) {
     const wasOff = s.rest === REST.OFF;
     s.rest = next;
     if (next === REST.OFF) system.setBacklight(false);
-    else if (wasOff) system.setBacklight(true);
+    else if (wasOff) {
+      waking = true;
+      Promise.resolve(system.setBacklight(true)).catch(() => {}).finally(() => {
+        waking = false;
+        changed();
+      });
+    }
     return true;
   }
 
