@@ -171,6 +171,7 @@ function render() {
   applyTheme(d, screen);
   frame.dataset.screen = screen;
   if (screen !== "slideshow") stopSlideshow();
+  pollSensor(screen === "settings" && state.settingsTab === "sensor");
   if (screen === "power") frame.innerHTML = renderPower(state.power);
   else if (screen === "setup") frame.innerHTML = renderSetup(state.daemon, setupDone());
   else if (screen === "settings") {
@@ -180,7 +181,6 @@ function render() {
       sensor: sensorSettings(), sensorLive: state.sensorLive
     });
   }
-  pollSensor(screen === "settings" && state.settingsTab === "sensor");
   else if (screen === "slideshow") showSlideshow(frame, d);
   else if (screen === "off") frame.innerHTML = "";
   else if (screen === "recovery") frame.innerHTML = renderRecovery({ d, r: state.plan.recoveryRaw });
