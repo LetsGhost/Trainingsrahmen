@@ -104,6 +104,7 @@ function ipAddress() {
 }
 
 const BRIGHTNESS = { low: 0.2, mid: 0.55, high: 1 };
+const RAMP_MS = 600, RAMP_STEPS = 12;
 
 function findBacklight() {
   try {
@@ -119,11 +120,21 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
   const hw = { hotspot: null, wifi: null, backlight: true, ip: null, signal: null };
   const backlight = findBacklight();
   let level = "high";
-  const writeBrightness = () => {
+  // share: Anteil der eingestellten Stufe, fürs Hochfahren beim Aufwachen.
+  const writeBrightness = (share = 1) => {
     const max = Number(readFile(path.join(backlight, "max_brightness"))) || 255;
     // Waveshare-Treiber (10-0045) ignoriert bl_power teils; erst brightness 0 macht das Licht wirklich aus.
-    const value = hw.backlight ? Math.max(1, Math.round(max * BRIGHTNESS[level])) : 0;
+    const value = hw.backlight ? Math.max(1, Math.round(max * BRIGHTNESS[level] * share)) : 0;
     fs.writeFileSync(path.join(backlight, "brightness"), String(value));
+  };
+  // Aufwachen: Licht über die Dauer der Aufwach-Animation im Display (motion.js, 600 ms) hochfahren statt springen.
+  // Quadratisch, weil das Auge kleine Helligkeiten viel stärker unterscheidet als große.
+  const rampUp = async () => {
+    for (let i = 1; i <= RAMP_STEPS; i++) {
+      if (!hw.backlight) return; // währenddessen wieder aus
+      writeBrightness((i / RAMP_STEPS) ** 2);
+      await sleep(RAMP_MS / RAMP_STEPS);
+    }
   };
   const portalPort = process.env.FRAME_PORTAL_PORT || port;
   // Zuletzt erfolgreich angelegtes WLAN; gleiche Daten → nur neu verbinden statt neu anlegen.
@@ -330,14 +341,20 @@ module.exports = function createPiAdapter({ port, sensor: sensorSettings }) {
       if (on) await output();
       else output();
       if (!backlight) return;
-      // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness 0 trotzdem geschrieben werden.
+      // Getrennt: Scheitert bl_power (Rechte, Treiber), muss brightness trotzdem geschrieben werden.
+      const brightness = on ? rampUp : async () => writeBrightness();
       try {
-        writeBrightness();
+        if (on) fs.writeFileSync(path.join(backlight, "bl_power"), "0");
+      } catch (err) {
+        console.error(`Backlight bl_power: ${err.message}`);
+      }
+      try {
+        await brightness();
       } catch (err) {
         console.error(`Backlight brightness: ${err.message}`);
       }
       try {
-        fs.writeFileSync(path.join(backlight, "bl_power"), on ? "0" : "4");
+        if (!on) fs.writeFileSync(path.join(backlight, "bl_power"), "4");
       } catch (err) {
         console.error(`Backlight bl_power: ${err.message}`);
       }
