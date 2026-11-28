@@ -18,9 +18,10 @@ function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
   const statusFile = path.join(dataDir, "update.json");
 
   // Commit des laufenden Codes; /health meldet ihn, damit self-update.sh den Neustart prüfen kann.
-  let commit = null;
+  // subject: Betreff des laufenden Commits, im Admin-Bereich als Changelog.
+  let commit = null, subject = null;
   try {
-    commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: rootDir }).toString().trim();
+    [commit, subject] = execFileSync("git", ["log", "-1", "--format=%H%n%s"], { cwd: rootDir }).toString().trim().split("\n");
   } catch {}
 
   function git(args) {
@@ -52,7 +53,7 @@ function createUpdater({ dev, rootDir, baseDir, dataDir, config, port }) {
   return {
     commit: () => commit,
 
-    status: () => ({ ...config.update, commit, lastRun: lastRun(), running: isRunning() }),
+    status: () => ({ ...config.update, commit, subject, lastRun: lastRun(), running: isRunning() }),
 
     // Meldung des laufenden Updates fürs Display, sonst null.
     running: () => (isRunning() ? lastRun().message : null),

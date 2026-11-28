@@ -659,6 +659,11 @@ function renderUpdate(info, { changes = null, message = null, ok = true } = {}) 
         ? `<button class="primary wide" id="update-install"><span>Installieren</span>${icon("download")}</button>`
         : `<button class="secondary wide" id="update-check"${info.running ? " disabled" : ""}><span>Nach Updates suchen</span>${icon("refresh-cw")}</button>`}
     </div>
+    ${info.subject ? `
+      <div class="field changes">
+        <div class="label">AKTUELLE VERSION</div>
+        <div class="muted" style="font-size:13px;line-height:1.5">${esc(info.subject)}</div>
+      </div>` : ""}
     ${available ? `
       <div class="field changes">
         <div class="label">${changes.length} NEUE ÄNDERUNG${changes.length === 1 ? "" : "EN"}</div>
