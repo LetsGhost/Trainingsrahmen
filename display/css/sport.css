@@ -21,9 +21,10 @@
 }
 
 :root[data-skin="sport"] {
-  --bg: #f2ebdd;
+  /* Wärmer als am Monitor nötig: das DSI-Panel wäscht schwache Töne bei voller Helligkeit zu Weiß aus. */
+  --bg: #ead9b9;
   --ink: #1f1b16;
-  --paper: #fbf6ec;
+  --paper: #f5ead3;
   --on-color: #fff6ea;
   --accent: #b04a26;
   --accent-ink: #b04a26;
