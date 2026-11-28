@@ -22,9 +22,9 @@
 
 :root[data-skin="sport"] {
   /* Wärmer als am Monitor nötig: das DSI-Panel wäscht schwache Töne bei voller Helligkeit zu Weiß aus. */
-  --bg: #ead9b9;
+  --bg: #e3cca3;
   --ink: #1f1b16;
-  --paper: #f5ead3;
+  --paper: #f0e0c0;
   --on-color: #fff6ea;
   --accent: #b04a26;
   --accent-ink: #b04a26;
@@ -37,7 +37,7 @@
   --today-date: var(--on-color);
   --card: var(--paper);
   --card-today: var(--paper);
-  --bar: #c9b49a;
+  --bar: #b39a74;
   --rest-bar: var(--rule);
   --ok: #5e6b2e;
   --warn: #b04a26;
@@ -50,7 +50,7 @@
   --c-strength: #5e6b2e;
   --c-other: #7a5230;
   --swim-light: #9dbbbf;
-  --more-bg: #d8c3a0;
+  --more-bg: #d2b88a;
   /* Schrift auf Flächen in --ink bzw. auf Senf (Rad); --on-color bleibt die helle Schrift auf den Sportfarben. */
   --on-ink: var(--on-color);
   --on-bike: #1f1b16;
