@@ -3,12 +3,11 @@ import { renderDay } from "./day.js";
 import { renderRecovery } from "./recovery.js";
 import { renderWeather } from "./weather.js";
 import { renderSetup } from "./setup.js";
-import { renderSettings, renderPower, renderUpdate, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO } from "./settings.js";
+import { renderSettings, renderPower, renderUpdate, renderSensorLive, stepUp, stepDown, MIN_GATES, MAX_GATES, NIGHT_FROM, NIGHT_TO, DARK_FROM, DARK_TO } from "./settings.js";
 import { showSlideshow, stopSlideshow } from "./slideshow.js";
 import * as motion from "./motion.js";
 import { DOW_SHORT, DOW_LONG, MONTHS, pad, hhmm, esc, icon, dowIndex, hyphenate } from "./util.js";
 
-const NIGHT_START = 22, NIGHT_END = 6;
 const ACTIVITY_THROTTLE_MS = 2000;
 const DAY_VIEW_MS = 60 * 1000;
 // Ab so vielen Einheiten an einem Tag wird die Spalte kompakter, damit alles ohne Scrollen passt.
@@ -55,14 +54,15 @@ function isoWeek(d) {
 }
 
 // Einstellungen aus dem Admin-Bereich (über /events); fehlen sie, gilt alles als an.
-const settings = () => state.daemon?.display ?? { theme: "auto", showWeather: true, showRecovery: true, brightness: "high", skin: "modern" };
+const settings = () => state.daemon?.display ?? { theme: "auto", darkFrom: 22, darkTo: 6, showWeather: true, showRecovery: true, brightness: "high", skin: "modern" };
 const shownWeather = () => (settings().showWeather ? state.weather : null);
 const shownRecovery = () => (settings().showRecovery ? state.plan?.recovery ?? [] : []);
 
 // Die Einrichtung ist laut Vorlage immer dunkel. Vorrang: URL, Dev-Leiste, Admin-Einstellung, Nachtfenster.
 function applyTheme(d, screen) {
   const h = d.getHours();
-  const auto = screen === "setup" || h >= NIGHT_START || h < NIGHT_END ? "dark" : "light";
+  const { darkFrom = 22, darkTo = 6 } = settings();
+  const auto = screen === "setup" || h >= darkFrom || h < darkTo ? "dark" : "light";
   const admin = settings().theme === "auto" ? null : settings().theme;
   const override = urlTheme ?? state.dev?.theme ?? admin;
   document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
@@ -459,6 +459,11 @@ function changeSetting(el) {
     const [key, steps] = el.dataset.step === "nightFrom" ? ["from", NIGHT_FROM] : ["to", NIGHT_TO];
     night[key] = steps[Math.min(steps.length - 1, Math.max(0, steps.indexOf(night[key]) + Number(el.dataset.dir)))];
     return frameAction("settings", { night }).then(render);
+  }
+  if (el.dataset.step === "darkFrom" || el.dataset.step === "darkTo") {
+    const key = el.dataset.step, steps = key === "darkFrom" ? DARK_FROM : DARK_TO;
+    const i = Math.min(steps.length - 1, Math.max(0, steps.indexOf(settings()[key]) + Number(el.dataset.dir)));
+    return frameAction("settings", { display: { ...settings(), [key]: steps[i] } }).then(render);
   }
   if (el.dataset.set === "sensitivity" || el.dataset.step === "gates") {
     const sensor = { ...sensorSettings() };

@@ -100,14 +100,24 @@ function stepper(label, sub, buttons) {
     </div>`;
 }
 
+// Auto-Dunkel in vollen Stunden: abends ab, morgens bis. Die Bereiche überlappen nie.
+export const DARK_FROM = [16, 17, 18, 19, 20, 21, 22, 23], DARK_TO = [4, 5, 6, 7, 8, 9, 10];
+const pad = h => String(h).padStart(2, "0");
+
 function renderDisplay({ settings, deadlines }) {
   const { slideshowAfterMin: slide, offAfterMin: off } = deadlines;
+  const { darkFrom: dFrom = 22, darkTo: dTo = 6 } = settings;
+  const fi = DARK_FROM.indexOf(dFrom), ti = DARK_TO.indexOf(dTo);
   return `
     <div class="st-card">
       <div class="st-kicker">HELLIGKEIT</div>
       ${segment("brightness", settings.brightness ?? "high", [["low", "Niedrig"], ["mid", "Mittel"], ["high", "Hoch"]])}
       <div class="st-kicker gap">THEME</div>
-      ${segment("theme", settings.theme, [["auto", "Auto <span>22–06</span>"], ["light", "Hell"], ["dark", "Dunkel"]])}
+      ${segment("theme", settings.theme, [["auto", `Auto <span>${pad(dFrom)}–${pad(dTo)}</span>`], ["light", "Hell"], ["dark", "Dunkel"]])}
+      ${settings.theme === "auto" ? stepper("Dunkel", "von – bis", `<div class="st-steppers">
+        ${stepButtons("darkFrom", clock(dFrom), fi > 0, fi < DARK_FROM.length - 1)}
+        ${stepButtons("darkTo", clock(dTo), ti > 0, ti < DARK_TO.length - 1)}
+      </div>`) : ""}
     </div>
     <div class="st-rule tight"></div>
     <div class="st-card">

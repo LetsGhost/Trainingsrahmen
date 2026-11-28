@@ -258,7 +258,7 @@ function renderDisplay() {
       <div class="setting">
         <div>
           <div class="setting-name">Erscheinungsbild</div>
-          <div class="setting-hint">Automatisch folgt dem Nachtfenster 22:00 – 06:00</div>
+          <div class="setting-hint">Automatisch ist dunkel von ${s.display.darkFrom ?? 22}:00 bis ${s.display.darkTo ?? 6}:00 · Zeiten am Rahmen</div>
         </div>
         ${toggle("theme", [["light", "HELL"], ["dark", "DUNKEL"], ["auto", "AUTOMATISCH"]], s.display.theme)}
       </div>
