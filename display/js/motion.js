@@ -188,6 +188,25 @@ export async function sheetDown(frame, _src, apply) {
   ]));
 }
 
+// Einstellungen, Tabwechsel: wie open(), nur wächst die Fläche aus dem angetippten Tab in den Inhaltsbereich.
+// Kein swap(): der Screen bleibt "settings".
+export async function tab(frame, src, apply) {
+  const old = ghost(frame, 1);
+  apply();
+  const btn = frame.querySelector(src.box), body = frame.querySelector(".st-body");
+  if (!btn || !body) return old.remove();
+  const bg = getComputedStyle(frame).backgroundColor;
+  const base = surface(0, bg), morph = surface(2, bg);
+  frame.style.zIndex = 3;
+  frame.style.background = "transparent";
+  // Ganzer Inhaltsbereich statt einzelner Karten: im Modern-Design sind .st-card display: contents, da wirkt opacity nicht.
+  await run(frame, [base, old, morph], () => Promise.all([
+    anim(morph, [{ transform: rectTransform(rel(frame, btn)) }, { transform: rectTransform(rel(frame, body)) }], 300, EASE_OUT),
+    anim(old, [{ opacity: 1 }, { opacity: 0 }], 160, EASE),
+    anim(body, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], 220, EASE_OUT, 140)
+  ]));
+}
+
 // Auto-Zurück nach 60 s und Slideshow an/aus: der neue Screen blendet langsam über den alten.
 export async function fade(frame, _src, apply) {
   const old = swap(frame, 1, apply);

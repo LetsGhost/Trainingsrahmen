@@ -486,8 +486,12 @@ function settingsClick(e) {
   const el = e.target.closest("[data-tab], [data-action], [data-set], [data-step]");
   if (!el || el.disabled) return;
   if (el.dataset.tab) {
-    state.settingsTab = el.dataset.tab;
-    render();
+    if (el.dataset.tab === state.settingsTab) return;
+    const apply = () => {
+      state.settingsTab = el.dataset.tab;
+      render();
+    };
+    motion.tab(frame, { box: `[data-tab="${el.dataset.tab}"]` }, apply).then(flushRender);
   } else if (el.dataset.action === "sync") syncNow();
   else changeSetting(el);
 }
