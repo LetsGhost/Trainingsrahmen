@@ -21,9 +21,9 @@ const DEFAULTS = {
   location: { name: "Berlin", lat: 52.52, lon: 13.405 },
   // Admin-Passwort als scrypt-Hash: { salt, hash } oder null, solange es nicht gesetzt ist.
   admin: null,
-  // theme: "auto" (dunkel von darkFrom bis darkTo Uhr) | "light" | "dark"; brightness: "low" | "mid" | "high"; skin: "modern" | "sport"
-  // (beides nur in den Einstellungen am Rahmen)
-  display: { theme: "auto", darkFrom: 22, darkTo: 6, showWeather: true, showRecovery: true, brightness: "high", skin: "modern" },
+  // theme: "auto" (dunkel von darkFrom bis darkTo Uhr) | "light" | "dark"; brightness: "low" | "mid" | "high"; skin: "modern" | "sport";
+  // tone: "pale" | "warm" | "sand" (Hintergrund des hellen Sport-Designs) (alle drei nur in den Einstellungen am Rahmen)
+  display: { theme: "auto", darkFrom: 22, darkTo: 6, showWeather: true, showRecovery: true, brightness: "high", skin: "modern", tone: "sand" },
   // Radar (HLK-LD2410C): gates = Reichweite in Toren zu 0,75 m (1–8); sensitivity: "low" | "mid" | "high"
   sensor: { gates: 6, sensitivity: "mid" },
   // Nachtruhe: von from bis to Uhr (volle Stunden) zählt der Radar nicht, nur Touch weckt; from: null = aus.

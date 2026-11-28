@@ -488,6 +488,22 @@ body {
 .st-seg button span { font-weight: 600; }
 .frame .st-seg button[aria-pressed="true"] { background: var(--accent-ink); color: var(--bg); }
 
+/* Auswahl mit Mini-Vorschau (Anpassen): Woche als Skizze in festen Farben, siehe settings.js mini(). */
+.frame .st-seg.st-pick button { flex-direction: column; gap: 6px; height: auto; padding: 10px 8px 8px; }
+.st-pick button > span:last-child { font-weight: 700; }
+.st-mini { display: flex; flex-direction: column; gap: 5px; width: 120px; height: 66px; padding: 7px; box-sizing: border-box; background: var(--m-bg); }
+.st-mini b { width: 38px; height: 9px; background: #201e1d; }
+.st-mini > span { flex: 1; display: flex; gap: 4px; }
+.st-mini i { flex: 1; }
+.st-mini em { height: 6px; }
+.st-mini.modern i { background: var(--m-paper); border-left: 2px solid #605d5d; }
+.st-mini.modern i:last-child { border-left-color: #ec3013; }
+.st-mini.modern em { height: 1px; background: #201e1d; }
+.st-mini.sport { border-radius: 8px; }
+.st-mini.sport b { border-radius: 2px; background: #1f1b16; transform: skewX(-10deg); }
+.st-mini.sport i { border-radius: 3px; }
+.st-mini.sport em { border-radius: 3px; background: var(--m-paper); }
+
 .st-step-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 56px; border-bottom: 1px solid var(--rule-soft); }
 .st-step-label { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .st-step-sub { font-size: 11px; font-weight: 600; color: var(--muted); }

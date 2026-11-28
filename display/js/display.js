@@ -54,7 +54,7 @@ function isoWeek(d) {
 }
 
 // Einstellungen aus dem Admin-Bereich (über /events); fehlen sie, gilt alles als an.
-const settings = () => state.daemon?.display ?? { theme: "auto", darkFrom: 22, darkTo: 6, showWeather: true, showRecovery: true, brightness: "high", skin: "modern" };
+const settings = () => state.daemon?.display ?? { theme: "auto", darkFrom: 22, darkTo: 6, showWeather: true, showRecovery: true, brightness: "high", skin: "modern", tone: "sand" };
 const shownWeather = () => (settings().showWeather ? state.weather : null);
 const shownRecovery = () => (settings().showRecovery ? state.plan?.recovery ?? [] : []);
 
@@ -67,6 +67,7 @@ function applyTheme(d, screen) {
   const override = urlTheme ?? state.dev?.theme ?? admin;
   document.documentElement.dataset.theme = override === "dark" || override === "light" ? override : auto;
   document.documentElement.dataset.skin = urlSkin ?? settings().skin ?? "modern";
+  document.documentElement.dataset.tone = settings().tone ?? "sand";
 }
 
 function renderHead(d, dates) {

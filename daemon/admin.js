@@ -164,13 +164,14 @@ function createAdmin({ config, saveConfig, frame, sync, slides, backend, updater
     }
     if (input.display) {
       // Fehlende Felder bleiben, wie sie sind; so überschreiben sich Rahmen und Admin nicht gegenseitig.
-      const { theme, darkFrom, darkTo, showWeather, showRecovery, brightness, skin } = { ...config.display, ...input.display };
+      const { theme, darkFrom, darkTo, showWeather, showRecovery, brightness, skin, tone } = { ...config.display, ...input.display };
       if (!["auto", "light", "dark"].includes(theme)) throw new FrameError("INVALID", "Erscheinungsbild ungültig");
       const hour = h => Number.isInteger(h) && h >= 0 && h <= 23;
       if (!hour(darkFrom) || !hour(darkTo) || darkFrom === darkTo) throw new FrameError("INVALID", "Dunkel-Zeiten ungültig");
       if (!["low", "mid", "high"].includes(brightness)) throw new FrameError("INVALID", "Helligkeit ungültig");
       if (!["modern", "sport"].includes(skin)) throw new FrameError("INVALID", "Theme ungültig");
-      next.display = { theme, darkFrom, darkTo, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery), brightness, skin };
+      if (!["pale", "warm", "sand"].includes(tone)) throw new FrameError("INVALID", "Farbton ungültig");
+      next.display = { theme, darkFrom, darkTo, showWeather: Boolean(showWeather), showRecovery: Boolean(showRecovery), brightness, skin, tone };
     }
     if (input.deadlines) {
       const slideshowAfterMin = Number(input.deadlines.slideshowAfterMin);

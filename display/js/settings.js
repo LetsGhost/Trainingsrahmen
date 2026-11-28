@@ -168,12 +168,34 @@ function renderSensor({ sensor, sensorLive, night }) {
 }
 
 // Theme = Aussehen aller Screens (Modern: bisheriges Layout, Sport: Sport-Edition.dc). Hell/Dunkel bleibt unter Anzeige.
+// Farbtöne des hellen Sport-Designs, gleiche Werte wie in sport.css ([data-tone]): Hintergrund, Karten.
+export const TONES = [["pale", "Hell", "#f2ebdd", "#fbf6ec"], ["warm", "Warm", "#ead9b9", "#f5ead3"], ["sand", "Sand", "#e3cca3", "#f0e0c0"]];
+const SPORT_CARDS = ["#b04a26", "#c9922e", "#2f6470", "#5e6b2e"];
+
+// Mini-Woche in festen Farben, unabhängig vom gerade aktiven Design.
+function mini(kind, bg, paper) {
+  const cards = kind === "sport" ? SPORT_CARDS.map(c => `<i style="background:${c}"></i>`) : SPORT_CARDS.map(() => "<i></i>");
+  return `<span class="st-mini ${kind}" aria-hidden="true" style="--m-bg:${bg};--m-paper:${paper}"><b></b><span>${cards.join("")}</span><em></em></span>`;
+}
+
+function picker(key, value, options) {
+  return `<div class="st-seg st-pick">${options.map(([v, label, preview]) =>
+    `<button type="button" aria-pressed="${v === value}" data-set="${key}" data-value="${v}">${preview}<span>${label}</span></button>`).join("")}</div>`;
+}
+
 function renderCustomize({ settings }) {
+  const skin = settings.skin ?? "modern";
   return `
     <div class="st-card">
       <div class="st-kicker">THEME</div>
-      ${segment("skin", settings.skin ?? "modern", [["modern", "Modern"], ["sport", "Sport"]])}
-    </div>`;
+      ${picker("skin", skin, [["modern", "Modern", mini("modern", "#f3f2f2", "#eae9e9")], ["sport", "Sport", mini("sport", TONES[2][2], TONES[2][3])]])}
+    </div>
+    ${skin === "sport" ? `
+    <div class="st-rule tight"></div>
+    <div class="st-card">
+      <div class="st-kicker">FARBTON · HELLES THEME</div>
+      ${picker("tone", settings.tone ?? "sand", TONES.map(([v, label, bg, paper]) => [v, label, mini("sport", bg, paper)]))}
+    </div>` : ""}`;
 }
 
 function uptime(bootAt, d) {

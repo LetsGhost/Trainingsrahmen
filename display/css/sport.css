@@ -21,7 +21,7 @@
 }
 
 :root[data-skin="sport"] {
-  /* Wärmer als am Monitor nötig: das DSI-Panel wäscht schwache Töne bei voller Helligkeit zu Weiß aus. */
+  /* Farbton „Sand“ (Standard). Wärmer als am Monitor nötig: das DSI-Panel wäscht schwache Töne zu Weiß aus. */
   --bg: #e3cca3;
   --ink: #1f1b16;
   --paper: #f0e0c0;
@@ -55,6 +55,10 @@
   --on-ink: var(--on-color);
   --on-bike: #1f1b16;
 }
+
+/* Weitere Farbtöne (Anpassen → Farbton), nur hell; Vorschau-Farben in settings.js TONES. */
+:root[data-skin="sport"][data-tone="pale"]:not([data-theme="dark"]) { --bg: #f2ebdd; --paper: #fbf6ec; --bar: #c9b49a; --more-bg: #d8c3a0; }
+:root[data-skin="sport"][data-tone="warm"]:not([data-theme="dark"]) { --bg: #ead9b9; --paper: #f5ead3; --bar: #c9b49a; --more-bg: #d8c3a0; }
 
 :root[data-skin="sport"][data-theme="dark"] {
   --bg: #1c1915;
@@ -291,6 +295,8 @@
 :root[data-skin="sport"] .frame .st-seg button { height: 40px; border-radius: 20px; letter-spacing: 0; }
 :root[data-skin="sport"] .frame .st-seg button + button { border: 0; }
 :root[data-skin="sport"] .frame .st-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+:root[data-skin="sport"] .frame .st-seg.st-pick { border-radius: 20px; }
+:root[data-skin="sport"] .frame .st-seg.st-pick button { height: auto; border-radius: 16px; }
 :root[data-skin="sport"] .st-card:has(.st-step-row) { padding: 8px 16px; }
 :root[data-skin="sport"] .st-card:has(.st-step-row) .st-kicker { padding-top: 6px; }
 :root[data-skin="sport"] .st-step-row { border: 0; }

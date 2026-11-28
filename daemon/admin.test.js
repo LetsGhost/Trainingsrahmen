@@ -70,6 +70,12 @@ test("Admin: Einmal-Code, Sperre nach 5 Fehlversuchen, Sitzung, Teil-Einstellung
   assert.equal((await post("/api/frame/settings", { display: { darkFrom: 20, darkTo: 7 } })).status, 200);
   assert.deepEqual([stored().display.darkFrom, stored().display.darkTo], [20, 7]);
 
+  // Farbton: Standard Sand, nur die drei Presets.
+  assert.equal(stored().display.tone, "sand");
+  assert.equal((await post("/api/frame/settings", { display: { tone: "rosa" } })).status, 400);
+  assert.equal((await post("/api/frame/settings", { display: { tone: "pale" } })).status, 200);
+  assert.equal(stored().display.tone, "pale");
+
   // Richtiges Passwort setzt den Zähler zurück; danach sperren 5 falsche auch das richtige.
   assert.equal((await post("/api/admin/login", { password: "geheim123" })).status, 200);
   for (let i = 0; i < 5; i++) assert.equal((await post("/api/admin/login", { password: "falsch" })).status, 403);
